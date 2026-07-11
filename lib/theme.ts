@@ -1,0 +1,4 @@
+export type Palette = typeof darkColors;
+export const darkColors = { bg:'#0C0F0D',surface:'#151A17',surface2:'#1B211D',line:'#283029',text:'#F4F2EA',muted:'#9EA79F',kiwi:'#B8D957',lime:'#DDF08A',amber:'#F4BE6A',coral:'#F2796B',blue:'#78AFC4',ink:'#161A18',tabBar:'#101411F2',note:'#C7CDC8',amberWash:'#2C271D' };
+export const lightColors: Palette = { bg:'#F6F7F2',surface:'#FFFFFF',surface2:'#EEF1EA',line:'#DDE2D8',text:'#182019',muted:'#687269',kiwi:'#7EA52D',lime:'#DDF08A',amber:'#B46D13',coral:'#C95449',blue:'#397E98',ink:'#151A16',tabBar:'#FFFFFFF2',note:'#4C574E',amberWash:'#FFF2DA' };
+export const colors = darkColors;
