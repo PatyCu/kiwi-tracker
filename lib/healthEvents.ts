@@ -1,10 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { DEFAULT_PET } from '@/lib/pets';
 const STORAGE_KEY = '@kiwi-tracker/health-events/v1';
 
 export type HealthEventKind = 'Vomiting' | 'Diarrhea' | 'Other';
 
 export type HealthEvent = {
   id: string;
+  petId: string;
   kind: HealthEventKind;
   note: string;
   occurredAt: string;
@@ -42,14 +44,15 @@ export async function loadHealthEvents(): Promise<HealthEvent[]> {
     throw new HealthEventStorageError('INVALID_DATA', 'Stored health events are not valid JSON.', error);
   }
 
-  if (!Array.isArray(parsed) || !parsed.every(isHealthEvent)) {
+  if (!Array.isArray(parsed) || !parsed.every(isStoredHealthEvent)) {
     throw new HealthEventStorageError(
       'INVALID_DATA',
       'Stored health events do not match the expected data format.',
     );
   }
 
-  return parsed;
+  // Events created before multi-pet support belong to the original Kiwi profile.
+  return parsed.map((event) => ({ ...event, petId: event.petId ?? DEFAULT_PET.id }));
 }
 
 export async function saveHealthEvents(events: HealthEvent[]): Promise<void> {
@@ -60,9 +63,12 @@ export async function saveHealthEvents(events: HealthEvent[]): Promise<void> {
   }
 }
 
-function isHealthEvent(value: unknown): value is HealthEvent {
+type StoredHealthEvent = Omit<HealthEvent, 'petId'> & { petId?: string };
+
+function isStoredHealthEvent(value: unknown): value is StoredHealthEvent {
   if (!value || typeof value !== 'object') return false;
-  const event = value as Partial<HealthEvent>;
+  const event = value as Partial<StoredHealthEvent>;
   return typeof event.id === 'string' && ['Vomiting', 'Diarrhea', 'Other'].includes(event.kind ?? '') &&
-    typeof event.note === 'string' && typeof event.occurredAt === 'string';
+    typeof event.note === 'string' && typeof event.occurredAt === 'string' &&
+    (event.petId === undefined || typeof event.petId === 'string');
 }
