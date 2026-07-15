@@ -2,16 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { TimelineEntry } from '@/lib/healthEventPresentation';
 import { Palette } from '@/lib/theme';
-
-export type TimelineEntry = {
-  id: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  title: string;
-  meta: string;
-  note: string;
-  color: string;
-};
 
 type TimelineProps = {
   entries: TimelineEntry[];
