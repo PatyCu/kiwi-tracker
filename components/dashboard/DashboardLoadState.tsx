@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { KiwiMark } from '@/components/KiwiMark';
+import { BrandLogo } from '@/components/BrandLogo';
 import type { DashboardLoadStatus } from '@/hooks/useDashboardData';
 import { Palette } from '@/lib/theme';
 
@@ -22,7 +22,7 @@ export function DashboardLoadState({ status, isDark, colors, onRetry }: Dashboar
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
       <View style={styles.container}>
-        <KiwiMark size={64} />
+        <BrandLogo size={64} />
         {status === 'loading' ? (
           <>
             <ActivityIndicator color={colors.kiwi} size="large" />

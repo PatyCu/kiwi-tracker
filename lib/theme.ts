@@ -33,4 +33,3 @@ export const lightColors: Palette = {
   note: '#4C574E',
   amberWash: '#FFF2DA',
 };
-export const colors = darkColors;

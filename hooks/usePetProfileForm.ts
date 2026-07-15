@@ -1,4 +1,3 @@
-import * as ImagePicker from 'expo-image-picker';
 import { useCallback, useMemo, useState } from 'react';
 
 import {
@@ -8,6 +7,7 @@ import {
 } from '@/lib/dateUtils';
 import type { PetProfileInput } from '@/hooks/useDashboardData';
 import { SelectedPetPhoto } from '@/lib/petImages';
+import { pickPetPhoto as pickPetPhotoFromLibrary } from '@/lib/petPhotoPicker';
 import type { SavePetProfileResult } from '@/lib/petProfileService';
 import { Pet } from '@/lib/pets';
 
@@ -47,26 +47,12 @@ export function usePetProfileForm({ onSubmit }: UsePetProfileFormInput) {
   const close = useCallback(() => setVisible(false), []);
 
   const pickPhoto = useCallback(async (): Promise<PhotoPickResult> => {
-    try {
-      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!permission.granted) return 'permission-denied';
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.7,
-        base64: true,
-      });
-      if (result.canceled) return 'cancelled';
-
-      const asset = result.assets[0];
-      setPhotoUri(asset.uri);
-      setSelectedPhoto({ uri: asset.uri, base64: asset.base64, mimeType: asset.mimeType });
-      return 'selected';
-    } catch {
-      return 'failed';
+    const result = await pickPetPhotoFromLibrary();
+    if (result.status === 'selected') {
+      setPhotoUri(result.photo.uri);
+      setSelectedPhoto(result.photo);
     }
+    return result.status;
   }, []);
 
   const submit = useCallback(async (): Promise<PetProfileSubmitResult> => {

@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { KiwiMark } from '@/components/KiwiMark';
+import { BrandLogo } from '@/components/BrandLogo';
 import { Palette } from '@/lib/theme';
 
 type DashboardHeaderProps = {
@@ -17,7 +17,7 @@ export function DashboardHeader({ isDark, colors, onOpenAppearance }: DashboardH
   return (
     <View style={styles.header}>
       <View style={styles.brand}>
-        <KiwiMark size={52} />
+        <BrandLogo size={52} />
         <View>
           <Text style={styles.eyebrow}>KIWI TRACKER</Text>
           <Text style={styles.greeting}>Good morning, Alex</Text>
