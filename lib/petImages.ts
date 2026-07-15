@@ -66,34 +66,36 @@ export async function migrateLegacyPetPhotos(pets: Pet[]): Promise<{
   const failedPetNames: string[] = [];
   let didChange = false;
 
-  const migratedPets = await Promise.all(pets.map(async (pet) => {
-    if (!pet.photoUri) return pet;
-    if (Platform.OS === 'web') {
-      if (pet.photoUri.startsWith('data:') && pet.photoStorageVersion !== 1) {
-        try {
-          const photoUri = await optimizeWebPhoto(pet.photoUri);
-          didChange = true;
-          return { ...pet, photoUri, photoStorageVersion: 1 as const };
-        } catch {
-          failedPetNames.push(pet.name);
-          return pet;
+  const migratedPets = await Promise.all(
+    pets.map(async (pet) => {
+      if (!pet.photoUri) return pet;
+      if (Platform.OS === 'web') {
+        if (pet.photoUri.startsWith('data:') && pet.photoStorageVersion !== 1) {
+          try {
+            const photoUri = await optimizeWebPhoto(pet.photoUri);
+            didChange = true;
+            return { ...pet, photoUri, photoStorageVersion: 1 as const };
+          } catch {
+            failedPetNames.push(pet.name);
+            return pet;
+          }
         }
+        if (isPersistedPetPhoto(pet.photoUri)) return pet;
+        failedPetNames.push(pet.name);
+        return pet;
       }
       if (isPersistedPetPhoto(pet.photoUri)) return pet;
-      failedPetNames.push(pet.name);
-      return pet;
-    }
-    if (isPersistedPetPhoto(pet.photoUri)) return pet;
-    try {
-      const photoUri = await persistPetPhoto({ uri: pet.photoUri }, pet.id);
-      createdUris.push(photoUri);
-      didChange = true;
-      return { ...pet, photoUri, photoStorageVersion: 1 as const };
-    } catch {
-      failedPetNames.push(pet.name);
-      return pet;
-    }
-  }));
+      try {
+        const photoUri = await persistPetPhoto({ uri: pet.photoUri }, pet.id);
+        createdUris.push(photoUri);
+        didChange = true;
+        return { ...pet, photoUri, photoStorageVersion: 1 as const };
+      } catch {
+        failedPetNames.push(pet.name);
+        return pet;
+      }
+    }),
+  );
 
   return { pets: migratedPets, createdUris, failedPetNames, didChange };
 }
@@ -106,7 +108,9 @@ function isPersistedPetPhoto(uri: string): boolean {
 function getExtension(uri: string): string {
   const match = uri.split('?')[0].match(/\.([a-zA-Z0-9]+)$/);
   const extension = match?.[1]?.toLowerCase();
-  return extension && ['jpg', 'jpeg', 'png', 'webp', 'heic'].includes(extension) ? extension : 'jpg';
+  return extension && ['jpg', 'jpeg', 'png', 'webp', 'heic'].includes(extension)
+    ? extension
+    : 'jpg';
 }
 
 function optimizeWebPhoto(dataUri: string): Promise<string> {

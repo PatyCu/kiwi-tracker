@@ -74,10 +74,15 @@ export async function saveActivePetId(activePetId: string): Promise<void> {
 function isPet(value: unknown): value is Pet {
   if (!value || typeof value !== 'object') return false;
   const pet = value as Partial<Pet>;
-  return typeof pet.id === 'string' && typeof pet.name === 'string' && pet.name.trim().length > 0 &&
-    ['Cat', 'Dog', 'Other'].includes(pet.species ?? '') && typeof pet.createdAt === 'string' &&
+  return (
+    typeof pet.id === 'string' &&
+    typeof pet.name === 'string' &&
+    pet.name.trim().length > 0 &&
+    ['Cat', 'Dog', 'Other'].includes(pet.species ?? '') &&
+    typeof pet.createdAt === 'string' &&
     (pet.breed === undefined || typeof pet.breed === 'string') &&
     (pet.birthDate === undefined || typeof pet.birthDate === 'string') &&
     (pet.photoUri === undefined || typeof pet.photoUri === 'string') &&
-    (pet.photoStorageVersion === undefined || pet.photoStorageVersion === 1);
+    (pet.photoStorageVersion === undefined || pet.photoStorageVersion === 1)
+  );
 }

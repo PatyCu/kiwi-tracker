@@ -51,7 +51,11 @@ export async function loadHealthEvents(): Promise<HealthEvent[]> {
   try {
     parsed = JSON.parse(stored);
   } catch (error) {
-    throw new HealthEventStorageError('INVALID_DATA', 'Stored health events are not valid JSON.', error);
+    throw new HealthEventStorageError(
+      'INVALID_DATA',
+      'Stored health events are not valid JSON.',
+      error,
+    );
   }
 
   if (!Array.isArray(parsed) || !parsed.every(isStoredHealthEvent)) {
@@ -78,8 +82,11 @@ type StoredHealthEvent = Omit<HealthEvent, 'petId'> & { petId?: string };
 function isStoredHealthEvent(value: unknown): value is StoredHealthEvent {
   if (!value || typeof value !== 'object') return false;
   const event = value as Partial<StoredHealthEvent>;
-  return typeof event.id === 'string' &&
+  return (
+    typeof event.id === 'string' &&
     HEALTH_EVENT_KINDS.some((kind) => kind === event.kind) &&
-    typeof event.note === 'string' && typeof event.occurredAt === 'string' &&
-    (event.petId === undefined || typeof event.petId === 'string');
+    typeof event.note === 'string' &&
+    typeof event.occurredAt === 'string' &&
+    (event.petId === undefined || typeof event.petId === 'string')
+  );
 }
