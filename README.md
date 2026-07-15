@@ -10,18 +10,19 @@ A mobile-first pet care and health tracker for iOS and web.
 - npm 10
 - Xcode and an iOS Simulator for iOS development
 
-## Setup
+## Install
 
 ```bash
 npm ci
 ```
 
-## Run
+## Develop
 
 ```bash
-npm run ios
-npm run web
+npm start
 ```
+
+From the Expo terminal, press `w` to open the web app or `i` to open the iOS Simulator.
 
 ## Validate
 

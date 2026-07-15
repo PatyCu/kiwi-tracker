@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert as NativeAlert,
   Image,
   ScrollView,
@@ -25,13 +26,9 @@ import {
   loadHealthEvents,
   saveHealthEvents,
 } from '@/lib/healthEvents';
-import { DEFAULT_PET, loadPets, Pet, saveActivePetId, savePets } from '@/lib/pets';
-import {
-  deletePersistedPetPhoto,
-  migrateLegacyPetPhotos,
-  persistPetPhoto,
-  SelectedPetPhoto,
-} from '@/lib/petImages';
+import { DEFAULT_PET, loadPets, Pet, savePets } from '@/lib/pets';
+import { deletePersistedPetPhoto, migrateLegacyPetPhotos, SelectedPetPhoto } from '@/lib/petImages';
+import { savePetProfile } from '@/lib/petProfileService';
 import * as ImagePicker from 'expo-image-picker';
 
 type Event = {
@@ -43,6 +40,7 @@ type Event = {
   color: string;
 };
 type Appearance = 'system' | 'light' | 'dark';
+type LoadStatus = 'loading' | 'ready' | 'error';
 
 const eventTitles: Record<HealthEventKind, string> = {
   Vomiting: 'Vomiting logged',
@@ -126,54 +124,85 @@ export default function Home() {
   const [isSavingPet, setIsSavingPet] = useState(false);
   const [kind, setKind] = useState<HealthEventKind>('Vomiting');
   const [isSaving, setIsSaving] = useState(false);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [loadStatus, setLoadStatus] = useState<LoadStatus>('loading');
   const { width } = useWindowDimensions();
   const wide = width > 780;
-  useEffect(() => {
-    Promise.all([loadHealthEvents(), loadPets()])
-      .then(async ([events, petState]) => {
-        const migration = await migrateLegacyPetPhotos(petState.pets);
-        if (migration.didChange) {
+  const loadData = useCallback(async () => {
+    setLoadStatus('loading');
+    try {
+      const [events, petState] = await Promise.all([loadHealthEvents(), loadPets()]);
+      const migration = await migrateLegacyPetPhotos(petState.pets);
+      let resolvedPetState = petState;
+      if (migration.didChange) {
+        try {
+          await savePets(migration.pets, petState.activePetId);
+          resolvedPetState = { pets: migration.pets, activePetId: petState.activePetId };
+        } catch {
           try {
-            await savePets(migration.pets, petState.activePetId);
-          } catch {
-            await Promise.all(
-              migration.createdUris.map((uri) =>
-                deletePersistedPetPhoto(uri).catch(() => undefined),
-              ),
+            resolvedPetState = await loadPets();
+            const referencedPhotoUris = new Set(
+              resolvedPetState.pets.map((pet) => pet.photoUri).filter(Boolean),
             );
-            migration.pets = petState.pets;
-            migration.failedPetNames = petState.pets
-              .filter((pet) => pet.photoUri && !pet.photoUri.startsWith('data:'))
-              .map((pet) => pet.name);
+            await Promise.all(
+              migration.createdUris
+                .filter((uri) => !referencedPhotoUris.has(uri))
+                .map((uri) => deletePersistedPetPhoto(uri).catch(() => undefined)),
+            );
+          } catch {
+            resolvedPetState = petState;
           }
+          migration.failedPetNames = petState.pets
+            .filter((pet) => {
+              if (!pet.photoUri) return false;
+              const resolvedPet = resolvedPetState.pets.find((item) => item.id === pet.id);
+              return (
+                !resolvedPet ||
+                (resolvedPet.photoUri === pet.photoUri && resolvedPet.photoStorageVersion !== 1)
+              );
+            })
+            .map((pet) => pet.name);
         }
-        setHealthEvents(events);
-        setPets(migration.pets);
-        setActivePetId(petState.activePetId);
-        if (migration.failedPetNames.length > 0)
-          Alert.alert(
-            'Some photos need updating',
-            `Please choose a new photo for ${migration.failedPetNames.join(', ')} so it can be stored permanently.`,
-          );
-      })
-      .catch(() =>
+      }
+      setHealthEvents(events);
+      setPets(resolvedPetState.pets);
+      setActivePetId(resolvedPetState.activePetId);
+      if (migration.failedPetNames.length > 0) {
         Alert.alert(
-          'Could not load your data',
-          'Your locally saved pets and health events could not be loaded.',
-        ),
-      )
-      .finally(() => setIsLoaded(true));
+          'Some photos need updating',
+          `Please choose a new photo for ${migration.failedPetNames.join(', ')} so it can be stored permanently.`,
+        );
+      }
+      setLoadStatus('ready');
+    } catch {
+      setLoadStatus('error');
+    }
   }, []);
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
   const activePet = pets.find((pet) => pet.id === activePetId) ?? pets[0];
   const selectPet = async (petId: string) => {
+    if (loadStatus !== 'ready') return;
     const previous = activePetId;
     setActivePetId(petId);
     try {
-      await saveActivePetId(petId);
+      await savePets(pets, petId);
     } catch {
+      try {
+        const persistedState = await loadPets();
+        if (persistedState.activePetId === petId) {
+          setPets(persistedState.pets);
+          setActivePetId(petId);
+          return;
+        }
+      } catch {
+        // Keep showing the last confirmed in-memory selection until data can be loaded again.
+      }
       setActivePetId(previous);
-      Alert.alert('Pet not selected', 'Please try again. Your previous pet is still selected.');
+      Alert.alert(
+        'Pet not selected',
+        'The new selection could not be confirmed. Your previous pet remains displayed.',
+      );
     }
   };
   const openPetForm = (pet?: Pet) => {
@@ -211,47 +240,39 @@ export default function Home() {
   const savePet = async () => {
     const name = petName.trim();
     const storedBirthDate = toStoredBirthDate(petBirthDate);
-    if (!name || isSavingPet || storedBirthDate === null) return;
+    if (loadStatus !== 'ready' || !name || isSavingPet || storedBirthDate === null) return;
     const existing = pets.find((pet) => pet.id === editingPetId);
-    const petId = existing?.id ?? `pet-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    let createdPhotoUri: string | undefined;
     setIsSavingPet(true);
     try {
-      const photoUri = selectedPetPhoto
-        ? await persistPetPhoto(selectedPetPhoto, petId)
-        : existing?.photoUri;
-      createdPhotoUri = selectedPetPhoto ? photoUri : undefined;
-      const pet: Pet = {
-        id: petId,
+      const result = await savePetProfile({
+        pets,
+        editingPetId,
         name,
         species: petSpecies,
-        breed: petBreed.trim() || undefined,
+        breed: petBreed,
         birthDate: storedBirthDate,
-        photoUri,
-        photoStorageVersion: photoUri ? 1 : undefined,
-        createdAt: existing?.createdAt ?? new Date().toISOString(),
-      };
-      const next = existing
-        ? pets.map((item) => (item.id === pet.id ? pet : item))
-        : [...pets, pet];
-      await savePets(next, pet.id);
-      setPets(next);
-      setActivePetId(pet.id);
+        selectedPhoto: selectedPetPhoto,
+      });
+      setPets(result.pets);
+      setActivePetId(result.activePetId);
       setAddPetOpen(false);
-      if (existing?.photoUri && existing.photoUri !== photoUri)
-        await deletePersistedPetPhoto(existing.photoUri).catch(() => undefined);
+      if (result.previousPhotoCleanupFailed) {
+        Alert.alert(
+          'Pet saved',
+          'The profile was saved, but its previous photo could not be removed from device storage.',
+        );
+      }
     } catch {
-      if (createdPhotoUri) await deletePersistedPetPhoto(createdPhotoUri).catch(() => undefined);
       Alert.alert(
         existing ? 'Pet not updated' : 'Pet not added',
-        'The profile and selected photo could not be saved. Your existing data has not been changed.',
+        'The profile could not be confirmed as saved. Reopen the app before trying again so your local data can be checked safely.',
       );
     } finally {
       setIsSavingPet(false);
     }
   };
   const add = async () => {
-    if (!isLoaded || isSaving || !activePet) return;
+    if (loadStatus !== 'ready' || isSaving || !activePet) return;
     const newEvent: HealthEvent = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       petId: activePet.id,
@@ -287,6 +308,34 @@ export default function Home() {
         })),
     [healthEvents, activePetId, colors.coral],
   );
+  if (loadStatus !== 'ready') {
+    return (
+      <SafeAreaView style={s.safe}>
+        <StatusBar style={isDark ? 'light' : 'dark'} />
+        <View style={s.loadState}>
+          <KiwiMark size={64} />
+          {loadStatus === 'loading' ? (
+            <>
+              <ActivityIndicator color={colors.kiwi} size="large" />
+              <Text style={s.loadTitle}>Loading your data…</Text>
+              <Text style={s.loadBody}>Your saved pets and health events are being prepared.</Text>
+            </>
+          ) : (
+            <>
+              <Ionicons name="cloud-offline-outline" size={34} color={colors.coral} />
+              <Text style={s.loadTitle}>Could not load your data</Text>
+              <Text style={s.loadBody}>
+                Your saved data has not been changed. Check your device storage and try again.
+              </Text>
+              <Pressable accessibilityRole="button" onPress={loadData} style={s.retryButton}>
+                <Text style={s.retryText}>Retry</Text>
+              </Pressable>
+            </>
+          )}
+        </View>
+      </SafeAreaView>
+    );
+  }
   return (
     <SafeAreaView style={s.safe}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
@@ -504,8 +553,8 @@ export default function Home() {
                 style={s.input}
               />
               <Pressable
-                disabled={!isLoaded || isSaving}
-                style={[s.save, (!isLoaded || isSaving) && s.saveDisabled]}
+                disabled={isSaving}
+                style={[s.save, isSaving && s.saveDisabled]}
                 onPress={add}
               >
                 <Text style={s.saveText}>{isSaving ? 'Saving…' : 'Save event'}</Text>
@@ -747,6 +796,30 @@ const makeStyles = (colors: Palette) =>
     editPetText: { color: colors.text, fontSize: 11, fontWeight: '700' },
     addPetCard: { alignItems: 'center', justifyContent: 'center', borderStyle: 'dashed', gap: 8 },
     safe: { flex: 1, backgroundColor: colors.bg },
+    loadState: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 32,
+      gap: 16,
+    },
+    loadTitle: { color: colors.text, fontSize: 21, fontWeight: '700', textAlign: 'center' },
+    loadBody: {
+      maxWidth: 420,
+      color: colors.muted,
+      fontSize: 14,
+      lineHeight: 21,
+      textAlign: 'center',
+    },
+    retryButton: {
+      minWidth: 140,
+      backgroundColor: colors.kiwi,
+      borderRadius: 14,
+      paddingHorizontal: 22,
+      paddingVertical: 14,
+      alignItems: 'center',
+    },
+    retryText: { color: colors.ink, fontSize: 15, fontWeight: '800' },
     shell: { flex: 1, width: '100%', maxWidth: 920, alignSelf: 'center' },
     shellWide: { borderLeftWidth: 1, borderRightWidth: 1, borderColor: colors.line },
     header: {

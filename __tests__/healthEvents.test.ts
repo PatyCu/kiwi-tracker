@@ -56,6 +56,33 @@ describe('health event storage', () => {
     });
   });
 
+  it('treats an empty event document as corrupted data', async () => {
+    mockedStorage.getItem.mockResolvedValueOnce('');
+
+    await expect(loadHealthEvents()).rejects.toMatchObject<Partial<HealthEventStorageError>>({
+      code: 'INVALID_DATA',
+    });
+  });
+
+  it('rejects malformed persisted timestamps', async () => {
+    await mockedStorage.setItem(
+      '@kiwi-tracker/health-events/v1',
+      JSON.stringify([
+        {
+          id: 'event-1',
+          petId: DEFAULT_PET.id,
+          kind: 'Asthma',
+          note: 'After running',
+          occurredAt: 'this morning',
+        },
+      ]),
+    );
+
+    await expect(loadHealthEvents()).rejects.toMatchObject<Partial<HealthEventStorageError>>({
+      code: 'INVALID_DATA',
+    });
+  });
+
   it('distinguishes storage read failures from invalid data', async () => {
     mockedStorage.getItem.mockRejectedValueOnce(new Error('storage unavailable'));
 
@@ -90,5 +117,21 @@ describe('health event storage', () => {
       name: 'HealthEventStorageError',
       code: 'WRITE_FAILED',
     });
+  });
+
+  it('does not write an invalid event', async () => {
+    await expect(
+      saveHealthEvents([
+        {
+          id: 'event-1',
+          petId: '',
+          kind: 'Asthma',
+          note: 'After running',
+          occurredAt: '2025-01-03T09:30:00.000Z',
+        },
+      ]),
+    ).rejects.toMatchObject<Partial<HealthEventStorageError>>({ code: 'INVALID_DATA' });
+
+    expect(mockedStorage.setItem).not.toHaveBeenCalled();
   });
 });
