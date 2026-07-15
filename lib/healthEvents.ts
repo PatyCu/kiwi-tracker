@@ -2,7 +2,17 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DEFAULT_PET } from '@/lib/pets';
 const STORAGE_KEY = '@kiwi-tracker/health-events/v1';
 
-export type HealthEventKind = 'Vomiting' | 'Diarrhea' | 'Other';
+export const HEALTH_EVENT_KINDS = [
+  'Vomiting',
+  'Diarrhea',
+  'Asthma',
+  'Hairball',
+  'Nausea',
+  'Loss of appetite',
+  'Other',
+] as const;
+
+export type HealthEventKind = (typeof HEALTH_EVENT_KINDS)[number];
 
 export type HealthEvent = {
   id: string;
@@ -68,7 +78,8 @@ type StoredHealthEvent = Omit<HealthEvent, 'petId'> & { petId?: string };
 function isStoredHealthEvent(value: unknown): value is StoredHealthEvent {
   if (!value || typeof value !== 'object') return false;
   const event = value as Partial<StoredHealthEvent>;
-  return typeof event.id === 'string' && ['Vomiting', 'Diarrhea', 'Other'].includes(event.kind ?? '') &&
+  return typeof event.id === 'string' &&
+    HEALTH_EVENT_KINDS.some((kind) => kind === event.kind) &&
     typeof event.note === 'string' && typeof event.occurredAt === 'string' &&
     (event.petId === undefined || typeof event.petId === 'string');
 }
