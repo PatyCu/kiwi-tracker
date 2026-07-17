@@ -6,11 +6,24 @@
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
-    "web": { "bundler": "metro" },
+    "web": {
+      "bundler": "metro"
+    },
     "plugins": [
       "expo-router",
-      ["expo-image-picker", { "photosPermission": "Allow Kiwi Tracker to choose a photo for your pet." }]
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Kiwi Tracker to choose a photo for your pet.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ],
+      "expo-asset",
+      "expo-font"
     ],
-    "experiments": { "typedRoutes": true }
+    "experiments": {
+      "typedRoutes": true
+    }
   }
 }

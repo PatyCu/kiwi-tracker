@@ -45,13 +45,17 @@ export async function loadHealthEvents(): Promise<HealthEvent[]> {
     throw new HealthEventStorageError('READ_FAILED', 'Could not read stored health events.', error);
   }
 
-  if (!stored) return [];
+  if (stored === null) return [];
 
   let parsed: unknown;
   try {
     parsed = JSON.parse(stored);
   } catch (error) {
-    throw new HealthEventStorageError('INVALID_DATA', 'Stored health events are not valid JSON.', error);
+    throw new HealthEventStorageError(
+      'INVALID_DATA',
+      'Stored health events are not valid JSON.',
+      error,
+    );
   }
 
   if (!Array.isArray(parsed) || !parsed.every(isStoredHealthEvent)) {
@@ -66,6 +70,13 @@ export async function loadHealthEvents(): Promise<HealthEvent[]> {
 }
 
 export async function saveHealthEvents(events: HealthEvent[]): Promise<void> {
+  if (!events.every(isHealthEvent)) {
+    throw new HealthEventStorageError(
+      'INVALID_DATA',
+      'Health events are not valid and were not saved.',
+    );
+  }
+
   try {
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(events));
   } catch (error) {
@@ -78,8 +89,25 @@ type StoredHealthEvent = Omit<HealthEvent, 'petId'> & { petId?: string };
 function isStoredHealthEvent(value: unknown): value is StoredHealthEvent {
   if (!value || typeof value !== 'object') return false;
   const event = value as Partial<StoredHealthEvent>;
-  return typeof event.id === 'string' &&
+  return (
+    typeof event.id === 'string' &&
+    event.id.trim().length > 0 &&
     HEALTH_EVENT_KINDS.some((kind) => kind === event.kind) &&
-    typeof event.note === 'string' && typeof event.occurredAt === 'string' &&
-    (event.petId === undefined || typeof event.petId === 'string');
+    typeof event.note === 'string' &&
+    isIsoTimestamp(event.occurredAt) &&
+    (event.petId === undefined ||
+      (typeof event.petId === 'string' && event.petId.trim().length > 0))
+  );
+}
+
+function isHealthEvent(value: unknown): value is HealthEvent {
+  return (
+    isStoredHealthEvent(value) && typeof value.petId === 'string' && value.petId.trim().length > 0
+  );
+}
+
+function isIsoTimestamp(value: unknown): value is string {
+  if (typeof value !== 'string') return false;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) && new Date(parsed).toISOString() === value;
 }
