@@ -4,10 +4,18 @@
     "slug": "kiwi-tracker",
     "scheme": "kiwitracker",
     "version": "0.1.0",
+    "icon": "./assets/images/app-icon.png",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#18251F"
+      }
+    },
     "web": {
-      "bundler": "metro"
+      "bundler": "metro",
+      "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
       "expo-router",
