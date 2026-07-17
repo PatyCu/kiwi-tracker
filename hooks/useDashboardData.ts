@@ -15,24 +15,42 @@ export function useDashboardData() {
   const [loadStatus, setLoadStatus] = useState<DashboardLoadStatus>('loading');
   const [photoMigrationWarningPetNames, setPhotoMigrationWarningPetNames] = useState<string[]>([]);
 
+  const applyDashboardData = useCallback((data: Awaited<ReturnType<typeof loadDashboardData>>) => {
+    setHealthEvents(data.healthEvents);
+    setPets(data.petState.pets);
+    setActivePetId(data.petState.activePetId);
+    setPhotoMigrationWarningPetNames(data.photoMigrationWarningPetNames);
+    setLoadStatus('ready');
+  }, []);
+
   const loadData = useCallback(async () => {
     setLoadStatus('loading');
     setPhotoMigrationWarningPetNames([]);
     try {
       const data = await loadDashboardData();
-      setHealthEvents(data.healthEvents);
-      setPets(data.petState.pets);
-      setActivePetId(data.petState.activePetId);
-      setPhotoMigrationWarningPetNames(data.photoMigrationWarningPetNames);
-      setLoadStatus('ready');
+      applyDashboardData(data);
     } catch {
       setLoadStatus('error');
     }
-  }, []);
+  }, [applyDashboardData]);
 
   useEffect(() => {
-    void loadData();
-  }, [loadData]);
+    let isCurrent = true;
+
+    const loadInitialData = async () => {
+      try {
+        const data = await loadDashboardData();
+        if (isCurrent) applyDashboardData(data);
+      } catch {
+        if (isCurrent) setLoadStatus('error');
+      }
+    };
+
+    void loadInitialData();
+    return () => {
+      isCurrent = false;
+    };
+  }, [applyDashboardData]);
 
   const activePet = useMemo(
     () => pets.find((pet) => pet.id === activePetId) ?? pets[0] ?? DEFAULT_PET,

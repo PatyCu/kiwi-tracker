@@ -18,12 +18,14 @@
 - Follow existing project patterns before introducing new ones.
 - Keep changes scoped to the requested task; do not modify unrelated files.
 - Explain significant architectural decisions and their trade-offs.
+- Prefer names that communicate responsibility or domain meaning without requiring project-specific knowledge.
 
 ## Modularity and code organization
 
 - Treat maintainability and clear module boundaries as primary requirements.
 - Give each module one cohesive responsibility and a clear reason to change. This does not require one function per file.
 - Keep presentation, business logic, persistence, and external integrations separate. UI components should not contain storage or API implementation details.
+- Treat screens primarily as composition roots: assemble feature components, coordinate screen-level UI state, and delegate business rules and integrations.
 - Encapsulate device storage and future API calls behind typed modules with explicit inputs, outputs, and error behavior.
 - Extract logic from screens when it represents business rules, reusable state transitions, data mapping, or side effects. Keep purely visual behavior close to the component that owns it.
 - Prefer small, composable components and functions, but do not split code solely to reduce file length or create abstractions before a real boundary exists.
@@ -34,9 +36,11 @@
 - Inspect the relevant code and configuration before making changes.
 - Use `npm`, which is the package manager established by `package-lock.json`; do not add another lockfile.
 - Ask for confirmation before adding a new production dependency.
-- After code changes, run `npm run typecheck` and the relevant Expo check or build.
+- After code changes, run `npm run typecheck` and the relevant Expo check or build. Validate each affected platform when behavior or configuration is cross-platform.
 - Run lint and tests when corresponding project scripts exist. If a relevant check is unavailable, state that clearly instead of claiming it passed.
 - Treat console errors and warnings as part of the current task: investigate and resolve them before finishing. Do not knowingly leave warnings to accumulate; if a warning cannot be fixed safely within scope, explain the cause and required follow-up.
+- When phased delivery is requested, keep a visible checklist and complete implementation, automated validation, manual verification, and commit in that order for each phase.
+- Keep developer documentation concise and current, covering prerequisites, installation, development, and validation. Add troubleshooting guidance only for recurring issues.
 
 ## Data and UX
 
