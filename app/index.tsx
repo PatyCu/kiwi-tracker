@@ -1,10 +1,8 @@
-import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useMemo, useState } from 'react';
 import {
   Alert as NativeAlert,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   useColorScheme,
@@ -163,9 +161,6 @@ export default function Home() {
             if (nextTab === 'Pet') petProfileForm.open(activePet);
           }}
         />
-        <Pressable style={styles.floatingButton} onPress={healthEventForm.open}>
-          <Ionicons name="add" size={28} color={colors.ink} />
-        </Pressable>
         <HealthEventModal
           visible={healthEventForm.visible}
           kind={healthEventForm.kind}
@@ -217,15 +212,4 @@ const makeStyles = (colors: Palette) =>
     shell: { flex: 1, width: '100%', maxWidth: 920, alignSelf: 'center' },
     wideShell: { borderLeftWidth: 1, borderRightWidth: 1, borderColor: colors.line },
     content: { padding: 20, paddingBottom: 120 },
-    floatingButton: {
-      position: 'absolute',
-      right: 22,
-      bottom: 91,
-      width: 56,
-      height: 56,
-      borderRadius: 18,
-      backgroundColor: colors.kiwi,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
   });
