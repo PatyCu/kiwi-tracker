@@ -35,6 +35,8 @@
 
 - Inspect the relevant code and configuration before making changes.
 - Before asking a developer to repeat setup or authentication, verify whether the failure is caused by sandbox, keychain, network, or permission restrictions in the agent's execution environment.
+- For GitHub publishing, attempt the HTTPS push outside the sandbox with `GIT_TERMINAL_PROMPT=0` first so keychain prompts cannot hang it. Do not add a preflight authentication check to the successful path.
+- Only if that noninteractive push returns an authentication or credential error, run `gh auth status` with keychain access outside the sandbox. Treat sandboxed invalid-token or credential errors as environment failures, and ask the developer to log in again only when the outside-sandbox check also fails.
 - Use `npm`, which is the package manager established by `package-lock.json`; do not add another lockfile.
 - Ask for confirmation before adding a new production dependency.
 - After code changes, run `npm run typecheck` and the relevant Expo check or build. Validate each affected platform when behavior or configuration is cross-platform.
