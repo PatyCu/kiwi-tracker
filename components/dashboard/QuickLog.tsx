@@ -12,8 +12,8 @@ type QuickLogProps = {
 export function QuickLog({ colors, onLog }: QuickLogProps) {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const actions = [
-    { icon: 'medical-outline', label: 'Symptom', color: colors.coral },
-    { icon: 'restaurant-outline', label: 'Meal', color: colors.kiwi },
+    { icon: 'pulse-outline', label: 'Symptom', color: colors.coral },
+    { icon: 'restaurant-outline', label: 'Diet change', color: colors.kiwi },
     { icon: 'walk-outline', label: 'Activity', color: colors.blue },
     { icon: 'water-outline', label: 'Medicine', color: colors.amber },
   ] as const;

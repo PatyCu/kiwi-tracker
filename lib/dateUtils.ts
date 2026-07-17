@@ -11,6 +11,43 @@ export function formatEventTime(iso: string, now = new Date()): string {
   return `${day} · ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
 }
 
+export type DisplayedHealthEventDateTime = {
+  date: string;
+  time: string;
+};
+
+export function toDisplayedHealthEventDateTime(value = new Date()): DisplayedHealthEventDateTime {
+  const day = String(value.getDate()).padStart(2, '0');
+  const month = String(value.getMonth() + 1).padStart(2, '0');
+  const year = value.getFullYear();
+  const hour = String(value.getHours()).padStart(2, '0');
+  const minute = String(value.getMinutes()).padStart(2, '0');
+
+  return { date: `${day}-${month}-${year}`, time: `${hour}:${minute}` };
+}
+
+export function toHealthEventTimestamp(dateValue: string, timeValue: string): string | null {
+  if (!/^\d{2}-\d{2}-\d{4}$/.test(dateValue) || !/^\d{2}:\d{2}$/.test(timeValue)) {
+    return null;
+  }
+
+  const [day, month, year] = dateValue.split('-').map(Number);
+  const [hour, minute] = timeValue.split(':').map(Number);
+  const value = new Date(year, month - 1, day, hour, minute, 0, 0);
+
+  if (
+    value.getFullYear() !== year ||
+    value.getMonth() !== month - 1 ||
+    value.getDate() !== day ||
+    value.getHours() !== hour ||
+    value.getMinutes() !== minute
+  ) {
+    return null;
+  }
+
+  return value.toISOString();
+}
+
 export function isValidDisplayedBirthDate(value: string): boolean {
   return toStoredBirthDate(value) !== null;
 }

@@ -13,6 +13,8 @@ const mockedImagePicker = jest.mocked(ImagePicker);
 
 describe('form hooks', () => {
   it('submits and resets the health event form', async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date(2026, 6, 17, 14, 5));
     const onSubmit = jest.fn().mockResolvedValue(undefined);
     const { result } = renderHook(() => useHealthEventForm({ onSubmit }));
 
@@ -20,6 +22,8 @@ describe('form hooks', () => {
       result.current.open();
       result.current.setKind('Asthma');
       result.current.setNote('Recovered quickly.');
+      result.current.setOccurredDate('16-07-2026');
+      result.current.setOccurredTime('09:30');
     });
 
     let saved = false;
@@ -28,8 +32,65 @@ describe('form hooks', () => {
     });
 
     expect(saved).toBe(true);
-    expect(onSubmit).toHaveBeenCalledWith('Asthma', 'Recovered quickly.');
-    expect(result.current).toMatchObject({ visible: false, kind: 'Vomiting', note: '' });
+    expect(onSubmit).toHaveBeenCalledWith(
+      'Asthma',
+      'Recovered quickly.',
+      new Date(2026, 6, 16, 9, 30).toISOString(),
+    );
+    expect(result.current).toMatchObject({
+      visible: false,
+      kind: 'Vomiting',
+      note: '',
+      isDirty: false,
+    });
+    jest.useRealTimers();
+  });
+
+  it('prefills the current event date and time and rejects invalid edits', async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date(2026, 6, 17, 14, 5));
+    const onSubmit = jest.fn().mockResolvedValue(undefined);
+    const { result } = renderHook(() => useHealthEventForm({ onSubmit }));
+
+    act(() => result.current.open());
+
+    expect(result.current).toMatchObject({
+      occurredDate: '17-07-2026',
+      occurredTime: '14:05',
+      dateTimeIsValid: true,
+    });
+
+    act(() => result.current.setOccurredTime('25:00'));
+
+    expect(result.current.dateTimeIsValid).toBe(false);
+    expect(result.current.isDirty).toBe(true);
+    await act(async () => {
+      expect(await result.current.submit()).toBe(false);
+    });
+    expect(onSubmit).not.toHaveBeenCalled();
+    jest.useRealTimers();
+  });
+
+  it('discards an unfinished health event when the form closes', () => {
+    const { result } = renderHook(() =>
+      useHealthEventForm({ onSubmit: jest.fn().mockResolvedValue(undefined) }),
+    );
+
+    act(() => {
+      result.current.open();
+      result.current.setKind('Hairball');
+      result.current.setNote('After breakfast');
+    });
+    expect(result.current.isDirty).toBe(true);
+
+    act(() => result.current.close());
+
+    expect(result.current).toMatchObject({
+      visible: false,
+      kind: 'Vomiting',
+      note: '',
+      isDirty: false,
+    });
   });
 
   it('validates and submits pet profile form values', async () => {

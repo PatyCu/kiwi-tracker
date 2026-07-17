@@ -57,7 +57,7 @@ describe('dashboard components', () => {
     const onLog = jest.fn();
     const screen = render(<QuickLog colors={darkColors} onLog={onLog} />);
 
-    fireEvent.press(screen.getByText('Meal'));
+    fireEvent.press(screen.getByText('Diet change'));
 
     expect(onLog).toHaveBeenCalledTimes(1);
   });
@@ -74,7 +74,7 @@ describe('dashboard components', () => {
     );
     expect(emptyScreen.getByText('No events for Kiwi')).toBeTruthy();
     expect(emptyScreen.queryByText('Quick log')).toBeNull();
-    expect(emptyScreen.getByLabelText('Add meal to timeline')).toBeTruthy();
+    expect(emptyScreen.getByLabelText('Add diet change to timeline')).toBeTruthy();
     emptyScreen.unmount();
 
     const timelineScreen = render(

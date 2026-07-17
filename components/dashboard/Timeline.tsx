@@ -19,14 +19,14 @@ export function Timeline({ entries, petName, colors, onLog, onExport }: Timeline
 
   return (
     <View style={styles.container}>
+      <QuickLog colors={colors} onLog={onLog} />
+      <View style={styles.divider} />
       <View style={styles.header}>
         <Text style={styles.title}>Recent timeline</Text>
         <Pressable accessibilityRole="button" onPress={onExport}>
           <Text style={styles.link}>Export for vet</Text>
         </Pressable>
       </View>
-      <QuickLog colors={colors} onLog={onLog} />
-      <View style={styles.divider} />
       <TimelineEvents entries={entries} petName={petName} colors={colors} />
     </View>
   );

@@ -20,7 +20,11 @@ describe('useDashboardData', () => {
 
     await waitFor(() => expect(result.current.loadStatus).toBe('ready'));
     await act(async () => {
-      await result.current.logHealthEvent('Asthma', 'Recovered quickly.');
+      await result.current.logHealthEvent(
+        'Asthma',
+        'Recovered quickly.',
+        '2026-07-16T09:30:00.000Z',
+      );
     });
 
     expect(result.current.healthEvents).toHaveLength(1);
@@ -28,6 +32,7 @@ describe('useDashboardData', () => {
       petId: 'kiwi',
       kind: 'Asthma',
       note: 'Recovered quickly.',
+      occurredAt: '2026-07-16T09:30:00.000Z',
     });
   });
 });

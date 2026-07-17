@@ -84,13 +84,13 @@ export function useDashboardData() {
   );
 
   const logHealthEvent = useCallback(
-    async (kind: HealthEventKind, note: string): Promise<void> => {
+    async (kind: HealthEventKind, note: string, occurredAt: string): Promise<void> => {
       if (loadStatus !== 'ready') throw new Error('Dashboard data is not ready.');
       const newEvent: HealthEvent = {
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         petId: activePet.id,
         kind,
-        occurredAt: new Date().toISOString(),
+        occurredAt,
         note: note.trim() || 'No additional notes.',
       };
       const next = [newEvent, ...healthEvents];

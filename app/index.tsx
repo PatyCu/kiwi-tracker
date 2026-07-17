@@ -1,5 +1,5 @@
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert as NativeAlert,
   Platform,
@@ -58,6 +58,9 @@ export default function Home() {
     saveProfile,
   } = useDashboardData();
   const healthEventForm = useHealthEventForm({ onSubmit: logHealthEvent });
+  const closeHealthEventForm = healthEventForm.close;
+  const healthEventFormIsDirty = healthEventForm.isDirty;
+  const healthEventFormIsSaving = healthEventForm.isSaving;
   const petProfileForm = usePetProfileForm({ onSubmit: saveProfile });
   const timeline = useMemo(
     () => toTimelineEntries(healthEvents, activePetId, colors.coral),
@@ -113,6 +116,26 @@ export default function Home() {
     Alert.alert('Event not saved', 'Please try again. Your event has not been added.');
   };
 
+  const requestCloseHealthEvent = useCallback(() => {
+    if (healthEventFormIsSaving) return;
+    if (!healthEventFormIsDirty) {
+      closeHealthEventForm();
+      return;
+    }
+
+    const title = 'Discard this event?';
+    const message = 'Your changes will not be saved.';
+    if (Platform.OS === 'web') {
+      if (window.confirm(`${title}\n\n${message}`)) closeHealthEventForm();
+      return;
+    }
+
+    NativeAlert.alert(title, message, [
+      { text: 'Keep editing', style: 'cancel' },
+      { text: 'Discard', style: 'destructive', onPress: closeHealthEventForm },
+    ]);
+  }, [closeHealthEventForm, healthEventFormIsDirty, healthEventFormIsSaving]);
+
   if (loadStatus !== 'ready') {
     return (
       <DashboardLoadState status={loadStatus} isDark={isDark} colors={colors} onRetry={retryLoad} />
@@ -165,12 +188,17 @@ export default function Home() {
           visible={healthEventForm.visible}
           kind={healthEventForm.kind}
           note={healthEventForm.note}
+          occurredDate={healthEventForm.occurredDate}
+          occurredTime={healthEventForm.occurredTime}
+          dateTimeIsValid={healthEventForm.dateTimeIsValid}
           isSaving={healthEventForm.isSaving}
           colors={colors}
           onKindChange={healthEventForm.setKind}
           onNoteChange={healthEventForm.setNote}
+          onOccurredDateChange={healthEventForm.setOccurredDate}
+          onOccurredTimeChange={healthEventForm.setOccurredTime}
           onSave={saveHealthEvent}
-          onClose={healthEventForm.close}
+          onClose={requestCloseHealthEvent}
         />
         <AppearanceModal
           visible={appearanceModalOpen}

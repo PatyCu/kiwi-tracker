@@ -2,6 +2,8 @@ import {
   formatEventTime,
   isValidDisplayedBirthDate,
   toDisplayedBirthDate,
+  toDisplayedHealthEventDateTime,
+  toHealthEventTimestamp,
   toStoredBirthDate,
 } from '@/lib/dateUtils';
 
@@ -24,5 +26,21 @@ describe('date utilities', () => {
 
     expect(formatEventTime('2026-07-15T10:30:00.000Z', now)).toContain('Today ·');
     expect(formatEventTime('2026-07-14T10:30:00.000Z', now)).toContain('Yesterday ·');
+  });
+
+  it('converts editable local event date and time values to an ISO timestamp', () => {
+    const localDate = new Date(2026, 6, 17, 14, 5);
+
+    expect(toDisplayedHealthEventDateTime(localDate)).toEqual({
+      date: '17-07-2026',
+      time: '14:05',
+    });
+    expect(toHealthEventTimestamp('17-07-2026', '14:05')).toBe(localDate.toISOString());
+  });
+
+  it('rejects impossible event dates and times', () => {
+    expect(toHealthEventTimestamp('31-02-2026', '14:05')).toBeNull();
+    expect(toHealthEventTimestamp('17-07-2026', '24:00')).toBeNull();
+    expect(toHealthEventTimestamp('2026-07-17', '14:05')).toBeNull();
   });
 });
