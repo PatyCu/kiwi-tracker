@@ -20,7 +20,6 @@ import { DashboardLoadState } from '@/components/dashboard/DashboardLoadState';
 import { HealthEventModal } from '@/components/dashboard/HealthEventModal';
 import { PetProfileModal } from '@/components/dashboard/PetProfileModal';
 import { PetSelector } from '@/components/dashboard/PetSelector';
-import { QuickLog } from '@/components/dashboard/QuickLog';
 import { Timeline } from '@/components/dashboard/Timeline';
 import { TodaySummary } from '@/components/dashboard/TodaySummary';
 import { UpcomingCare } from '@/components/dashboard/UpcomingCare';
@@ -146,11 +145,11 @@ export default function Home() {
             colors={colors}
           />
           <UpcomingCare colors={colors} />
-          <QuickLog colors={colors} onLog={healthEventForm.open} />
           <Timeline
             entries={timeline}
             petName={activePet.name}
             colors={colors}
+            onLog={healthEventForm.open}
             onExport={() => {
               if (Platform.OS === 'web') window.print();
             }}

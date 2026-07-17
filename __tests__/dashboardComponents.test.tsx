@@ -64,9 +64,17 @@ describe('dashboard components', () => {
 
   it('renders the timeline empty state and persisted entries', () => {
     const emptyScreen = render(
-      <Timeline entries={[]} petName="Kiwi" colors={darkColors} onExport={jest.fn()} />,
+      <Timeline
+        entries={[]}
+        petName="Kiwi"
+        colors={darkColors}
+        onLog={jest.fn()}
+        onExport={jest.fn()}
+      />,
     );
     expect(emptyScreen.getByText('No events for Kiwi')).toBeTruthy();
+    expect(emptyScreen.queryByText('Quick log')).toBeNull();
+    expect(emptyScreen.getByLabelText('Add meal to timeline')).toBeTruthy();
     emptyScreen.unmount();
 
     const timelineScreen = render(
@@ -83,6 +91,7 @@ describe('dashboard components', () => {
         ]}
         petName="Kiwi"
         colors={darkColors}
+        onLog={jest.fn()}
         onExport={jest.fn()}
       />,
     );
