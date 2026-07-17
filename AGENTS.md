@@ -34,6 +34,7 @@
 ## Workflow
 
 - Inspect the relevant code and configuration before making changes.
+- Before asking a developer to repeat setup or authentication, verify whether the failure is caused by sandbox, keychain, network, or permission restrictions in the agent's execution environment.
 - Use `npm`, which is the package manager established by `package-lock.json`; do not add another lockfile.
 - Ask for confirmation before adding a new production dependency.
 - After code changes, run `npm run typecheck` and the relevant Expo check or build. Validate each affected platform when behavior or configuration is cross-platform.
