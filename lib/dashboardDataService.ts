@@ -1,15 +1,15 @@
-import { HealthEvent, loadHealthEvents } from '@/lib/healthEvents';
 import { deletePersistedPetPhoto, migrateLegacyPetPhotos } from '@/lib/petImages';
 import { loadPets, Pet, PetState, savePets } from '@/lib/pets';
+import { loadTimelineEvents, TimelineEvent } from '@/lib/timelineEvents';
 
 export type DashboardData = {
-  healthEvents: HealthEvent[];
+  timelineEvents: TimelineEvent[];
   petState: PetState;
   photoMigrationWarningPetNames: string[];
 };
 
 export async function loadDashboardData(): Promise<DashboardData> {
-  const [healthEvents, petState] = await Promise.all([loadHealthEvents(), loadPets()]);
+  const [timelineEvents, petState] = await Promise.all([loadTimelineEvents(), loadPets()]);
   const migration = await migrateLegacyPetPhotos(petState.pets);
   let resolvedPetState = petState;
 
@@ -39,7 +39,7 @@ export async function loadDashboardData(): Promise<DashboardData> {
   }
 
   return {
-    healthEvents,
+    timelineEvents,
     petState: resolvedPetState,
     photoMigrationWarningPetNames: migration.failedPetNames,
   };

@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { QuickLog } from '@/components/dashboard/QuickLog';
 import { TimelineEvents } from '@/components/dashboard/TimelineEvents';
-import { TimelineEntry } from '@/lib/healthEventPresentation';
+import { TimelineEntry } from '@/lib/timelineEventPresentation';
 import { Palette } from '@/lib/theme';
 
 type TimelineProps = {
@@ -11,9 +11,12 @@ type TimelineProps = {
   petName: string;
   colors: Palette;
   deletingEventId: string | null;
-  onLog: () => void;
+  updatingEventId: string | null;
+  onLogSymptom: () => void;
+  onLogDietChange: () => void;
   onExport: () => void;
   onDelete: (entry: TimelineEntry) => void;
+  onEditDateTime: (entry: TimelineEntry) => void;
 };
 
 export function Timeline({
@@ -21,15 +24,18 @@ export function Timeline({
   petName,
   colors,
   deletingEventId,
-  onLog,
+  updatingEventId,
+  onLogSymptom,
+  onLogDietChange,
   onExport,
   onDelete,
+  onEditDateTime,
 }: TimelineProps) {
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   return (
     <View style={styles.container}>
-      <QuickLog colors={colors} onLog={onLog} />
+      <QuickLog colors={colors} onLogSymptom={onLogSymptom} onLogDietChange={onLogDietChange} />
       <View style={styles.divider} />
       <View style={styles.header}>
         <Text style={styles.title}>Recent timeline</Text>
@@ -42,7 +48,9 @@ export function Timeline({
         petName={petName}
         colors={colors}
         deletingEventId={deletingEventId}
+        updatingEventId={updatingEventId}
         onDelete={onDelete}
+        onEditDateTime={onEditDateTime}
       />
     </View>
   );

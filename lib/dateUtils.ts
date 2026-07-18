@@ -11,12 +11,12 @@ export function formatEventTime(iso: string, now = new Date()): string {
   return `${day} · ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
 }
 
-export type DisplayedHealthEventDateTime = {
+export type DisplayedEventDateTime = {
   date: string;
   time: string;
 };
 
-export function toDisplayedHealthEventDateTime(value = new Date()): DisplayedHealthEventDateTime {
+export function toDisplayedEventDateTime(value = new Date()): DisplayedEventDateTime {
   const day = String(value.getDate()).padStart(2, '0');
   const month = String(value.getMonth() + 1).padStart(2, '0');
   const year = value.getFullYear();
@@ -26,7 +26,7 @@ export function toDisplayedHealthEventDateTime(value = new Date()): DisplayedHea
   return { date: `${day}-${month}-${year}`, time: `${hour}:${minute}` };
 }
 
-export function toHealthEventTimestamp(dateValue: string, timeValue: string): string | null {
+export function toEventTimestamp(dateValue: string, timeValue: string): string | null {
   if (!/^\d{2}-\d{2}-\d{4}$/.test(dateValue) || !/^\d{2}:\d{2}$/.test(timeValue)) {
     return null;
   }

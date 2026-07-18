@@ -23,7 +23,7 @@ export function TodaySummary({ pet, hasEvents, wide, colors }: TodaySummaryProps
         <Text style={styles.body}>
           {hasEvents
             ? 'Your latest observations are ready to review.'
-            : 'No health events logged yet.'}
+            : 'No timeline events logged yet.'}
         </Text>
       </View>
       <View style={styles.score}>

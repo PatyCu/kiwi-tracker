@@ -1,23 +1,31 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { loadDashboardData } from '@/lib/dashboardDataService';
-import { HealthEvent, HealthEventKind, saveHealthEvents } from '@/lib/healthEvents';
+import { getCurrentDiet } from '@/lib/diet';
 import { SavePetProfileInput, SavePetProfileResult, savePetProfile } from '@/lib/petProfileService';
 import { DEFAULT_PET, loadPets, Pet, savePets } from '@/lib/pets';
+import {
+  DietChange,
+  DietChangeInput,
+  saveTimelineEvents,
+  SymptomKind,
+  TimelineEvent,
+} from '@/lib/timelineEvents';
 
 export type DashboardLoadStatus = 'loading' | 'ready' | 'error';
 export type PetProfileInput = Omit<SavePetProfileInput, 'pets'>;
 
 export function useDashboardData() {
-  const [healthEvents, setHealthEvents] = useState<HealthEvent[]>([]);
+  const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([]);
   const [pets, setPets] = useState<Pet[]>([DEFAULT_PET]);
   const [activePetId, setActivePetId] = useState(DEFAULT_PET.id);
   const [loadStatus, setLoadStatus] = useState<DashboardLoadStatus>('loading');
-  const [deletingHealthEventId, setDeletingHealthEventId] = useState<string | null>(null);
+  const [deletingTimelineEventId, setDeletingTimelineEventId] = useState<string | null>(null);
+  const [updatingTimelineEventId, setUpdatingTimelineEventId] = useState<string | null>(null);
   const [photoMigrationWarningPetNames, setPhotoMigrationWarningPetNames] = useState<string[]>([]);
 
   const applyDashboardData = useCallback((data: Awaited<ReturnType<typeof loadDashboardData>>) => {
-    setHealthEvents(data.healthEvents);
+    setTimelineEvents(data.timelineEvents);
     setPets(data.petState.pets);
     setActivePetId(data.petState.activePetId);
     setPhotoMigrationWarningPetNames(data.photoMigrationWarningPetNames);
@@ -57,6 +65,10 @@ export function useDashboardData() {
     () => pets.find((pet) => pet.id === activePetId) ?? pets[0] ?? DEFAULT_PET,
     [activePetId, pets],
   );
+  const currentDiet = useMemo(
+    () => getCurrentDiet(timelineEvents, activePet.id),
+    [activePet.id, timelineEvents],
+  );
 
   const selectPet = useCallback(
     async (petId: string): Promise<boolean> => {
@@ -84,42 +96,86 @@ export function useDashboardData() {
     [activePetId, loadStatus, pets],
   );
 
-  const logHealthEvent = useCallback(
-    async (kind: HealthEventKind, note: string, occurredAt: string): Promise<void> => {
+  const logSymptom = useCallback(
+    async (symptom: SymptomKind, note: string, occurredAt: string): Promise<void> => {
       if (loadStatus !== 'ready') throw new Error('Dashboard data is not ready.');
-      const newEvent: HealthEvent = {
-        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      const newEvent: TimelineEvent = {
+        id: createId('symptom'),
         petId: activePet.id,
-        kind,
+        type: 'symptom',
+        symptom,
         occurredAt,
-        note: note.trim() || 'No additional notes.',
+        recordedAt: new Date().toISOString(),
+        ...(note.trim() ? { note: note.trim() } : {}),
       };
-      const next = [newEvent, ...healthEvents];
-      await saveHealthEvents(next);
-      setHealthEvents(next);
+      const next = [newEvent, ...timelineEvents];
+      await saveTimelineEvents(next);
+      setTimelineEvents(next);
     },
-    [activePet.id, healthEvents, loadStatus],
+    [activePet.id, loadStatus, timelineEvents],
   );
 
-  const deleteHealthEvent = useCallback(
+  const logDietChange = useCallback(
+    async (input: DietChangeInput, note: string, occurredAt: string): Promise<void> => {
+      if (loadStatus !== 'ready') throw new Error('Dashboard data is not ready.');
+      const newEvent: TimelineEvent = {
+        id: createId('diet-change'),
+        petId: activePet.id,
+        type: 'diet-change',
+        change: addDietItemIds(input),
+        occurredAt,
+        recordedAt: new Date().toISOString(),
+        ...(note.trim() ? { note: note.trim() } : {}),
+      };
+      const next = [newEvent, ...timelineEvents];
+      await saveTimelineEvents(next);
+      setTimelineEvents(next);
+    },
+    [activePet.id, loadStatus, timelineEvents],
+  );
+
+  const deleteTimelineEvent = useCallback(
     async (eventId: string): Promise<void> => {
       if (loadStatus !== 'ready') throw new Error('Dashboard data is not ready.');
-      if (deletingHealthEventId !== null)
-        throw new Error('A health event is already being deleted.');
-      if (!healthEvents.some((event) => event.id === eventId)) {
-        throw new Error('Health event was not found.');
+      if (deletingTimelineEventId !== null)
+        throw new Error('A timeline event is already being deleted.');
+      if (!timelineEvents.some((event) => event.id === eventId)) {
+        throw new Error('Timeline event was not found.');
       }
 
-      const next = healthEvents.filter((event) => event.id !== eventId);
-      setDeletingHealthEventId(eventId);
+      const next = timelineEvents.filter((event) => event.id !== eventId);
+      setDeletingTimelineEventId(eventId);
       try {
-        await saveHealthEvents(next);
-        setHealthEvents(next);
+        await saveTimelineEvents(next);
+        setTimelineEvents(next);
       } finally {
-        setDeletingHealthEventId(null);
+        setDeletingTimelineEventId(null);
       }
     },
-    [deletingHealthEventId, healthEvents, loadStatus],
+    [deletingTimelineEventId, loadStatus, timelineEvents],
+  );
+
+  const updateTimelineEventOccurredAt = useCallback(
+    async (eventId: string, occurredAt: string): Promise<void> => {
+      if (loadStatus !== 'ready') throw new Error('Dashboard data is not ready.');
+      if (updatingTimelineEventId !== null)
+        throw new Error('A timeline event is already being updated.');
+      if (!timelineEvents.some((event) => event.id === eventId)) {
+        throw new Error('Timeline event was not found.');
+      }
+
+      const next = timelineEvents.map((event) =>
+        event.id === eventId ? { ...event, occurredAt } : event,
+      );
+      setUpdatingTimelineEventId(eventId);
+      try {
+        await saveTimelineEvents(next);
+        setTimelineEvents(next);
+      } finally {
+        setUpdatingTimelineEventId(null);
+      }
+    },
+    [loadStatus, timelineEvents, updatingTimelineEventId],
   );
 
   const saveProfile = useCallback(
@@ -136,18 +192,42 @@ export function useDashboardData() {
   const clearPhotoMigrationWarning = useCallback(() => setPhotoMigrationWarningPetNames([]), []);
 
   return {
-    healthEvents,
+    timelineEvents,
     pets,
     activePet,
     activePetId,
+    currentDiet,
     loadStatus,
     photoMigrationWarningPetNames,
     clearPhotoMigrationWarning,
     retryLoad: loadData,
     selectPet,
-    logHealthEvent,
-    deleteHealthEvent,
-    deletingHealthEventId,
+    logSymptom,
+    logDietChange,
+    deleteTimelineEvent,
+    deletingTimelineEventId,
+    updateTimelineEventOccurredAt,
+    updatingTimelineEventId,
     saveProfile,
   };
+}
+
+function addDietItemIds(input: DietChangeInput): DietChange {
+  if (input.type === 'replace') {
+    return {
+      type: 'replace',
+      previousItem: input.previousItem,
+      nextItem: { ...input.nextItem, id: createId('diet-item') },
+    };
+  }
+
+  if (input.type === 'add') {
+    return { type: 'add', item: { ...input.item, id: createId('diet-item') } };
+  }
+
+  return { type: 'remove', item: input.item };
+}
+
+function createId(prefix: string): string {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }

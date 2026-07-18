@@ -1,35 +1,35 @@
 import { useCallback, useMemo, useState } from 'react';
 
-import { toDisplayedHealthEventDateTime, toHealthEventTimestamp } from '@/lib/dateUtils';
-import { HealthEventKind } from '@/lib/healthEvents';
+import { toDisplayedEventDateTime, toEventTimestamp } from '@/lib/dateUtils';
+import { SymptomKind } from '@/lib/timelineEvents';
 
-type UseHealthEventFormInput = {
-  onSubmit: (kind: HealthEventKind, note: string, occurredAt: string) => Promise<void>;
+type UseSymptomFormInput = {
+  onSubmit: (symptom: SymptomKind, note: string, occurredAt: string) => Promise<void>;
 };
 
-export function useHealthEventForm({ onSubmit }: UseHealthEventFormInput) {
-  const [initialDateTime, setInitialDateTime] = useState(toDisplayedHealthEventDateTime);
+export function useSymptomForm({ onSubmit }: UseSymptomFormInput) {
+  const [initialDateTime, setInitialDateTime] = useState(toDisplayedEventDateTime);
   const [visible, setVisible] = useState(false);
-  const [kind, setKind] = useState<HealthEventKind>('Vomiting');
+  const [symptom, setSymptom] = useState<SymptomKind>('Vomiting');
   const [note, setNote] = useState('');
   const [occurredDate, setOccurredDate] = useState(initialDateTime.date);
   const [occurredTime, setOccurredTime] = useState(initialDateTime.time);
   const [isSaving, setIsSaving] = useState(false);
   const occurredAt = useMemo(
-    () => toHealthEventTimestamp(occurredDate, occurredTime),
+    () => toEventTimestamp(occurredDate, occurredTime),
     [occurredDate, occurredTime],
   );
   const dateTimeIsValid = occurredAt !== null;
   const isDirty =
-    kind !== 'Vomiting' ||
+    symptom !== 'Vomiting' ||
     note.length > 0 ||
     occurredDate !== initialDateTime.date ||
     occurredTime !== initialDateTime.time;
 
   const reset = useCallback(() => {
-    const currentDateTime = toDisplayedHealthEventDateTime();
+    const currentDateTime = toDisplayedEventDateTime();
     setInitialDateTime(currentDateTime);
-    setKind('Vomiting');
+    setSymptom('Vomiting');
     setNote('');
     setOccurredDate(currentDateTime.date);
     setOccurredTime(currentDateTime.time);
@@ -47,7 +47,7 @@ export function useHealthEventForm({ onSubmit }: UseHealthEventFormInput) {
     if (isSaving || occurredAt === null) return false;
     setIsSaving(true);
     try {
-      await onSubmit(kind, note, occurredAt);
+      await onSubmit(symptom, note, occurredAt);
       reset();
       setVisible(false);
       return true;
@@ -56,11 +56,11 @@ export function useHealthEventForm({ onSubmit }: UseHealthEventFormInput) {
     } finally {
       setIsSaving(false);
     }
-  }, [isSaving, kind, note, occurredAt, onSubmit, reset]);
+  }, [isSaving, note, occurredAt, onSubmit, reset, symptom]);
 
   return {
     visible,
-    kind,
+    symptom,
     note,
     occurredDate,
     occurredTime,
@@ -69,7 +69,7 @@ export function useHealthEventForm({ onSubmit }: UseHealthEventFormInput) {
     isSaving,
     open,
     close,
-    setKind,
+    setSymptom,
     setNote,
     setOccurredDate,
     setOccurredTime,

@@ -15,17 +15,21 @@ import { Appearance, AppearanceModal } from '@/components/dashboard/AppearanceMo
 import { BottomNavigation, DashboardTab } from '@/components/dashboard/BottomNavigation';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { DashboardLoadState } from '@/components/dashboard/DashboardLoadState';
-import { DeleteHealthEventModal } from '@/components/dashboard/DeleteHealthEventModal';
-import { HealthEventModal } from '@/components/dashboard/HealthEventModal';
+import { DeleteTimelineEventModal } from '@/components/dashboard/DeleteTimelineEventModal';
+import { DietChangeModal } from '@/components/dashboard/DietChangeModal';
+import { EditTimelineEventDateTimeModal } from '@/components/dashboard/EditTimelineEventDateTimeModal';
 import { PetProfileModal } from '@/components/dashboard/PetProfileModal';
 import { PetSelector } from '@/components/dashboard/PetSelector';
+import { SymptomModal } from '@/components/dashboard/SymptomModal';
 import { Timeline } from '@/components/dashboard/Timeline';
 import { TodaySummary } from '@/components/dashboard/TodaySummary';
 import { UpcomingCare } from '@/components/dashboard/UpcomingCare';
 import { useDashboardData } from '@/hooks/useDashboardData';
-import { useHealthEventForm } from '@/hooks/useHealthEventForm';
+import { useDietChangeForm } from '@/hooks/useDietChangeForm';
 import { usePetProfileForm } from '@/hooks/usePetProfileForm';
-import { TimelineEntry, toTimelineEntries } from '@/lib/healthEventPresentation';
+import { useSymptomForm } from '@/hooks/useSymptomForm';
+import { useTimelineEventDateTimeForm } from '@/hooks/useTimelineEventDateTimeForm';
+import { TimelineEntry, toTimelineEntries } from '@/lib/timelineEventPresentation';
 import { darkColors, lightColors, Palette } from '@/lib/theme';
 
 const Alert = {
@@ -41,35 +45,49 @@ export default function Home() {
   const [appearanceModalOpen, setAppearanceModalOpen] = useState(false);
   const [tab, setTab] = useState<DashboardTab>('Today');
   const [eventPendingDeletion, setEventPendingDeletion] = useState<TimelineEntry | null>(null);
-  const [deleteHealthEventError, setDeleteHealthEventError] = useState<string | null>(null);
+  const [deleteTimelineEventError, setDeleteTimelineEventError] = useState<string | null>(null);
   const isDark = appearance === 'dark' || (appearance === 'system' && scheme === 'dark');
   const colors = isDark ? darkColors : lightColors;
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const wide = useWindowDimensions().width > 780;
 
   const {
-    healthEvents,
+    timelineEvents,
     pets,
     activePet,
     activePetId,
+    currentDiet,
     loadStatus,
     photoMigrationWarningPetNames,
     clearPhotoMigrationWarning,
     retryLoad,
     selectPet: persistPetSelection,
-    logHealthEvent,
-    deleteHealthEvent,
-    deletingHealthEventId,
+    logSymptom,
+    logDietChange,
+    deleteTimelineEvent,
+    deletingTimelineEventId,
+    updateTimelineEventOccurredAt,
+    updatingTimelineEventId,
     saveProfile,
   } = useDashboardData();
-  const healthEventForm = useHealthEventForm({ onSubmit: logHealthEvent });
-  const closeHealthEventForm = healthEventForm.close;
-  const healthEventFormIsDirty = healthEventForm.isDirty;
-  const healthEventFormIsSaving = healthEventForm.isSaving;
+  const symptomForm = useSymptomForm({ onSubmit: logSymptom });
+  const dietChangeForm = useDietChangeForm({ currentDiet, onSubmit: logDietChange });
+  const eventDateTimeForm = useTimelineEventDateTimeForm({
+    onSubmit: updateTimelineEventOccurredAt,
+  });
+  const closeSymptomForm = symptomForm.close;
+  const symptomFormIsDirty = symptomForm.isDirty;
+  const symptomFormIsSaving = symptomForm.isSaving;
+  const closeDietChangeForm = dietChangeForm.close;
+  const dietChangeFormIsDirty = dietChangeForm.isDirty;
+  const dietChangeFormIsSaving = dietChangeForm.isSaving;
+  const closeEventDateTimeForm = eventDateTimeForm.close;
+  const eventDateTimeFormIsDirty = eventDateTimeForm.isDirty;
+  const eventDateTimeFormIsSaving = eventDateTimeForm.isSaving;
   const petProfileForm = usePetProfileForm({ onSubmit: saveProfile });
   const timeline = useMemo(
-    () => toTimelineEntries(healthEvents, activePetId, colors.coral),
-    [activePetId, healthEvents, colors.coral],
+    () => toTimelineEntries(timelineEvents, activePetId, colors.coral, colors.kiwi),
+    [activePetId, colors.coral, colors.kiwi, timelineEvents],
   );
 
   useEffect(() => {
@@ -116,54 +134,111 @@ export default function Home() {
     }
   };
 
-  const saveHealthEvent = async () => {
-    if (await healthEventForm.submit()) return;
-    Alert.alert('Event not saved', 'Please try again. Your event has not been added.');
+  const saveSymptom = async () => {
+    if (await symptomForm.submit()) return;
+    Alert.alert('Symptom not saved', 'Please try again. Your symptom has not been added.');
   };
 
-  const deleteConfirmedHealthEvent = async () => {
+  const saveDietChange = async () => {
+    if (await dietChangeForm.submit()) return;
+    Alert.alert('Diet change not saved', 'Please try again. Your change has not been added.');
+  };
+
+  const saveTimelineEventDateTime = async () => {
+    if (await eventDateTimeForm.submit()) return;
+    Alert.alert(
+      'Date and time not saved',
+      'Please try again. The original event date and time are unchanged.',
+    );
+  };
+
+  const openTimelineEventDateTime = (entry: TimelineEntry) => {
+    eventDateTimeForm.open(entry.id, entry.title, entry.occurredAt);
+  };
+
+  const deleteConfirmedTimelineEvent = async () => {
     if (!eventPendingDeletion) return;
-    setDeleteHealthEventError(null);
+    setDeleteTimelineEventError(null);
     try {
-      await deleteHealthEvent(eventPendingDeletion.id);
+      await deleteTimelineEvent(eventPendingDeletion.id);
       setEventPendingDeletion(null);
     } catch {
-      setDeleteHealthEventError(
+      setDeleteTimelineEventError(
         'This event could not be deleted. It is still saved. Please try again.',
       );
     }
   };
 
-  const requestDeleteHealthEvent = (entry: TimelineEntry) => {
-    setDeleteHealthEventError(null);
+  const requestDeleteTimelineEvent = (entry: TimelineEntry) => {
+    setDeleteTimelineEventError(null);
     setEventPendingDeletion(entry);
   };
 
-  const closeDeleteHealthEventModal = () => {
-    if (deletingHealthEventId !== null) return;
+  const closeDeleteTimelineEventModal = () => {
+    if (deletingTimelineEventId !== null) return;
     setEventPendingDeletion(null);
-    setDeleteHealthEventError(null);
+    setDeleteTimelineEventError(null);
   };
 
-  const requestCloseHealthEvent = useCallback(() => {
-    if (healthEventFormIsSaving) return;
-    if (!healthEventFormIsDirty) {
-      closeHealthEventForm();
+  const requestCloseSymptom = useCallback(() => {
+    if (symptomFormIsSaving) return;
+    if (!symptomFormIsDirty) {
+      closeSymptomForm();
       return;
     }
 
-    const title = 'Discard this event?';
+    const title = 'Discard this symptom?';
     const message = 'Your changes will not be saved.';
     if (Platform.OS === 'web') {
-      if (window.confirm(`${title}\n\n${message}`)) closeHealthEventForm();
+      if (window.confirm(`${title}\n\n${message}`)) closeSymptomForm();
       return;
     }
 
     NativeAlert.alert(title, message, [
       { text: 'Keep editing', style: 'cancel' },
-      { text: 'Discard', style: 'destructive', onPress: closeHealthEventForm },
+      { text: 'Discard', style: 'destructive', onPress: closeSymptomForm },
     ]);
-  }, [closeHealthEventForm, healthEventFormIsDirty, healthEventFormIsSaving]);
+  }, [closeSymptomForm, symptomFormIsDirty, symptomFormIsSaving]);
+
+  const requestCloseDietChange = useCallback(() => {
+    if (dietChangeFormIsSaving) return;
+    if (!dietChangeFormIsDirty) {
+      closeDietChangeForm();
+      return;
+    }
+
+    const title = 'Discard this diet change?';
+    const message = 'Your changes will not be saved.';
+    if (Platform.OS === 'web') {
+      if (window.confirm(`${title}\n\n${message}`)) closeDietChangeForm();
+      return;
+    }
+
+    NativeAlert.alert(title, message, [
+      { text: 'Keep editing', style: 'cancel' },
+      { text: 'Discard', style: 'destructive', onPress: closeDietChangeForm },
+    ]);
+  }, [closeDietChangeForm, dietChangeFormIsDirty, dietChangeFormIsSaving]);
+
+  const requestCloseEventDateTime = useCallback(() => {
+    if (eventDateTimeFormIsSaving) return;
+    if (!eventDateTimeFormIsDirty) {
+      closeEventDateTimeForm();
+      return;
+    }
+
+    const title = 'Discard date and time changes?';
+    const message = 'Your changes will not be saved.';
+    if (Platform.OS === 'web') {
+      if (window.confirm(`${title}\n\n${message}`)) closeEventDateTimeForm();
+      return;
+    }
+
+    NativeAlert.alert(title, message, [
+      { text: 'Keep editing', style: 'cancel' },
+      { text: 'Discard', style: 'destructive', onPress: closeEventDateTimeForm },
+    ]);
+  }, [closeEventDateTimeForm, eventDateTimeFormIsDirty, eventDateTimeFormIsSaving]);
 
   if (loadStatus !== 'ready') {
     return (
@@ -199,9 +274,12 @@ export default function Home() {
             entries={timeline}
             petName={activePet.name}
             colors={colors}
-            deletingEventId={deletingHealthEventId}
-            onLog={healthEventForm.open}
-            onDelete={requestDeleteHealthEvent}
+            deletingEventId={deletingTimelineEventId}
+            updatingEventId={updatingTimelineEventId}
+            onLogSymptom={symptomForm.open}
+            onLogDietChange={dietChangeForm.open}
+            onDelete={requestDeleteTimelineEvent}
+            onEditDateTime={openTimelineEventDateTime}
             onExport={() => {
               if (Platform.OS === 'web') window.print();
             }}
@@ -215,31 +293,69 @@ export default function Home() {
             if (nextTab === 'Pet') petProfileForm.open(activePet);
           }}
         />
-        <DeleteHealthEventModal
+        <DeleteTimelineEventModal
           visible={eventPendingDeletion !== null}
           entry={eventPendingDeletion}
           petName={activePet.name}
-          isDeleting={deletingHealthEventId !== null}
-          error={deleteHealthEventError}
+          isDeleting={deletingTimelineEventId !== null}
+          error={deleteTimelineEventError}
           colors={colors}
-          onCancel={closeDeleteHealthEventModal}
-          onConfirm={() => void deleteConfirmedHealthEvent()}
+          onCancel={closeDeleteTimelineEventModal}
+          onConfirm={() => void deleteConfirmedTimelineEvent()}
         />
-        <HealthEventModal
-          visible={healthEventForm.visible}
-          kind={healthEventForm.kind}
-          note={healthEventForm.note}
-          occurredDate={healthEventForm.occurredDate}
-          occurredTime={healthEventForm.occurredTime}
-          dateTimeIsValid={healthEventForm.dateTimeIsValid}
-          isSaving={healthEventForm.isSaving}
+        <EditTimelineEventDateTimeModal
+          visible={eventDateTimeForm.visible}
+          eventTitle={eventDateTimeForm.eventTitle}
+          occurredDate={eventDateTimeForm.occurredDate}
+          occurredTime={eventDateTimeForm.occurredTime}
+          dateTimeIsValid={eventDateTimeForm.dateTimeIsValid}
+          isDirty={eventDateTimeForm.isDirty}
+          isSaving={eventDateTimeForm.isSaving}
           colors={colors}
-          onKindChange={healthEventForm.setKind}
-          onNoteChange={healthEventForm.setNote}
-          onOccurredDateChange={healthEventForm.setOccurredDate}
-          onOccurredTimeChange={healthEventForm.setOccurredTime}
-          onSave={saveHealthEvent}
-          onClose={requestCloseHealthEvent}
+          onOccurredDateChange={eventDateTimeForm.setOccurredDate}
+          onOccurredTimeChange={eventDateTimeForm.setOccurredTime}
+          onSave={saveTimelineEventDateTime}
+          onClose={requestCloseEventDateTime}
+        />
+        <SymptomModal
+          visible={symptomForm.visible}
+          symptom={symptomForm.symptom}
+          note={symptomForm.note}
+          occurredDate={symptomForm.occurredDate}
+          occurredTime={symptomForm.occurredTime}
+          dateTimeIsValid={symptomForm.dateTimeIsValid}
+          isSaving={symptomForm.isSaving}
+          colors={colors}
+          onSymptomChange={symptomForm.setSymptom}
+          onNoteChange={symptomForm.setNote}
+          onOccurredDateChange={symptomForm.setOccurredDate}
+          onOccurredTimeChange={symptomForm.setOccurredTime}
+          onSave={saveSymptom}
+          onClose={requestCloseSymptom}
+        />
+        <DietChangeModal
+          visible={dietChangeForm.visible}
+          changeType={dietChangeForm.changeType}
+          selectedItemId={dietChangeForm.selectedItemId}
+          currentDiet={currentDiet}
+          productName={dietChangeForm.productName}
+          foodType={dietChangeForm.foodType}
+          note={dietChangeForm.note}
+          occurredDate={dietChangeForm.occurredDate}
+          occurredTime={dietChangeForm.occurredTime}
+          dateTimeIsValid={dietChangeForm.dateTimeIsValid}
+          itemIsValid={dietChangeForm.itemIsValid}
+          isSaving={dietChangeForm.isSaving}
+          colors={colors}
+          onChangeTypeChange={dietChangeForm.setChangeType}
+          onSelectedItemChange={dietChangeForm.setSelectedItemId}
+          onProductNameChange={dietChangeForm.setProductName}
+          onFoodTypeChange={dietChangeForm.setFoodType}
+          onNoteChange={dietChangeForm.setNote}
+          onOccurredDateChange={dietChangeForm.setOccurredDate}
+          onOccurredTimeChange={dietChangeForm.setOccurredTime}
+          onSave={saveDietChange}
+          onClose={requestCloseDietChange}
         />
         <AppearanceModal
           visible={appearanceModalOpen}

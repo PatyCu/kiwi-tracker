@@ -27,7 +27,7 @@ export function DashboardLoadState({ status, isDark, colors, onRetry }: Dashboar
           <>
             <ActivityIndicator color={colors.kiwi} size="large" />
             <Text style={styles.title}>Loading your data…</Text>
-            <Text style={styles.body}>Your saved pets and health events are being prepared.</Text>
+            <Text style={styles.body}>Your saved pets and timeline are being prepared.</Text>
           </>
         ) : (
           <>

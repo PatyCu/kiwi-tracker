@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { TimelineEntry } from '@/lib/healthEventPresentation';
+import { TimelineEntry } from '@/lib/timelineEventPresentation';
 import { Palette } from '@/lib/theme';
 
 type TimelineEventsProps = {
@@ -10,7 +10,9 @@ type TimelineEventsProps = {
   petName: string;
   colors: Palette;
   deletingEventId: string | null;
+  updatingEventId: string | null;
   onDelete: (entry: TimelineEntry) => void;
+  onEditDateTime: (entry: TimelineEntry) => void;
 };
 
 export function TimelineEvents({
@@ -18,7 +20,9 @@ export function TimelineEvents({
   petName,
   colors,
   deletingEventId,
+  updatingEventId,
   onDelete,
+  onEditDateTime,
 }: TimelineEventsProps) {
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
@@ -39,8 +43,9 @@ export function TimelineEvents({
       showConnector={index < entries.length - 1}
       styles={styles}
       deleteColor={colors.muted}
-      deleteDisabled={deletingEventId !== null}
+      actionsDisabled={deletingEventId !== null || updatingEventId !== null}
       onDelete={onDelete}
+      onEditDateTime={onEditDateTime}
     />
   ));
 }
@@ -50,8 +55,9 @@ type TimelineEventProps = {
   showConnector: boolean;
   styles: ReturnType<typeof makeStyles>;
   deleteColor: string;
-  deleteDisabled: boolean;
+  actionsDisabled: boolean;
   onDelete: (entry: TimelineEntry) => void;
+  onEditDateTime: (entry: TimelineEntry) => void;
 };
 
 function TimelineEvent({
@@ -59,9 +65,13 @@ function TimelineEvent({
   showConnector,
   styles,
   deleteColor,
-  deleteDisabled,
+  actionsDisabled,
   onDelete,
+  onEditDateTime,
 }: TimelineEventProps) {
+  const [metaActive, setMetaActive] = useState(false);
+  const editIconVisible = Platform.OS !== 'web' || metaActive;
+
   return (
     <View style={styles.event}>
       <View style={styles.rail}>
@@ -77,21 +87,52 @@ function TimelineEvent({
             accessibilityRole="button"
             accessibilityLabel={`Delete timeline event: ${entry.title}, ${entry.meta}`}
             accessibilityHint="Asks for confirmation before permanently deleting this event."
-            accessibilityState={{ disabled: deleteDisabled }}
-            disabled={deleteDisabled}
+            accessibilityState={{ disabled: actionsDisabled }}
+            disabled={actionsDisabled}
             hitSlop={12}
             onPress={() => onDelete(entry)}
             style={({ pressed }) => [
               styles.deleteButton,
               pressed && styles.deleteButtonPressed,
-              deleteDisabled && styles.deleteButtonDisabled,
+              actionsDisabled && styles.deleteButtonDisabled,
             ]}
           >
             <Ionicons name="trash-outline" size={14} color={deleteColor} />
           </Pressable>
         </View>
-        <Text style={styles.meta}>{entry.meta}</Text>
-        <Text style={styles.note}>{entry.note}</Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Edit date and time for ${entry.title}, currently ${entry.meta}`}
+          accessibilityHint="Opens a form to change when this event occurred."
+          accessibilityState={{ disabled: actionsDisabled }}
+          disabled={actionsDisabled}
+          hitSlop={8}
+          onBlur={() => setMetaActive(false)}
+          onFocus={() => setMetaActive(true)}
+          onHoverIn={() => setMetaActive(true)}
+          onHoverOut={() => setMetaActive(false)}
+          onPress={() => onEditDateTime(entry)}
+          testID={`timeline-event-meta-${entry.id}`}
+          style={({ pressed }) => [
+            styles.metaButton,
+            pressed && styles.metaButtonPressed,
+            actionsDisabled && styles.metaButtonDisabled,
+          ]}
+        >
+          <Text
+            testID={`timeline-event-meta-text-${entry.id}`}
+            style={[styles.meta, metaActive && styles.activeMeta]}
+          >
+            {entry.meta}
+          </Text>
+          <View
+            testID={`timeline-event-edit-icon-${entry.id}`}
+            style={[styles.editIcon, !editIconVisible && styles.hiddenEditIcon]}
+          >
+            <Ionicons name="pencil-outline" size={11} color={deleteColor} />
+          </View>
+        </Pressable>
+        {entry.note && <Text style={styles.note}>{entry.note}</Text>}
       </View>
     </View>
   );
@@ -128,7 +169,22 @@ const makeStyles = (colors: Palette) =>
     deleteButtonPressed: { backgroundColor: colors.surface2 },
     deleteButtonDisabled: { opacity: 0.45 },
     cardTitle: { fontSize: 15, color: colors.text, fontWeight: '700' },
-    meta: { fontSize: 12, color: colors.muted, marginTop: 5 },
+    metaButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      alignSelf: 'flex-start',
+      borderRadius: 6,
+      marginTop: 3,
+      marginLeft: -4,
+      paddingHorizontal: 4,
+      minHeight: 24,
+    },
+    metaButtonPressed: { backgroundColor: colors.surface2 },
+    metaButtonDisabled: { opacity: 0.45 },
+    meta: { fontSize: 12, color: colors.muted },
+    activeMeta: { textDecorationLine: 'underline' },
+    editIcon: { width: 16, marginLeft: 3, alignItems: 'center' },
+    hiddenEditIcon: { opacity: 0 },
     note: { fontSize: 13, color: colors.note, marginTop: 8, lineHeight: 18 },
     empty: {
       borderWidth: 1,

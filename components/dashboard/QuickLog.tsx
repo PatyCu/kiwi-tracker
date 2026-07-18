@@ -6,17 +6,28 @@ import { Palette } from '@/lib/theme';
 
 type QuickLogProps = {
   colors: Palette;
-  onLog: () => void;
+  onLogSymptom: () => void;
+  onLogDietChange: () => void;
 };
 
-export function QuickLog({ colors, onLog }: QuickLogProps) {
+export function QuickLog({ colors, onLogSymptom, onLogDietChange }: QuickLogProps) {
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const actions = [
-    { icon: 'pulse-outline', label: 'Symptom', color: colors.coral },
-    { icon: 'restaurant-outline', label: 'Diet change', color: colors.kiwi },
+  const actions: {
+    icon: keyof typeof Ionicons.glyphMap;
+    label: string;
+    color: string;
+    onPress?: () => void;
+  }[] = [
+    { icon: 'pulse-outline', label: 'Symptom', color: colors.coral, onPress: onLogSymptom },
+    {
+      icon: 'restaurant-outline',
+      label: 'Diet change',
+      color: colors.kiwi,
+      onPress: onLogDietChange,
+    },
     { icon: 'walk-outline', label: 'Activity', color: colors.blue },
     { icon: 'water-outline', label: 'Medicine', color: colors.amber },
-  ] as const;
+  ];
 
   return (
     <View style={styles.actions}>
@@ -24,9 +35,11 @@ export function QuickLog({ colors, onLog }: QuickLogProps) {
         <Pressable
           accessibilityLabel={`Add ${action.label.toLowerCase()} to timeline`}
           accessibilityRole="button"
+          accessibilityState={{ disabled: !action.onPress }}
+          disabled={!action.onPress}
           key={action.label}
-          onPress={onLog}
-          style={styles.action}
+          onPress={action.onPress}
+          style={[styles.action, !action.onPress && styles.disabledAction]}
         >
           <View style={[styles.icon, { backgroundColor: `${action.color}22` }]}>
             <Ionicons name={action.icon} size={23} color={action.color} />
@@ -45,6 +58,7 @@ const makeStyles = (colors: Palette) =>
   StyleSheet.create({
     actions: { flexDirection: 'row', justifyContent: 'space-between' },
     action: { alignItems: 'center', gap: 8, width: '23%' },
+    disabledAction: { opacity: 0.5 },
     icon: {
       width: 56,
       height: 56,

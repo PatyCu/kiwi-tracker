@@ -10,10 +10,10 @@ import {
   View,
 } from 'react-native';
 
-import { TimelineEntry } from '@/lib/healthEventPresentation';
+import { TimelineEntry } from '@/lib/timelineEventPresentation';
 import { Palette } from '@/lib/theme';
 
-type DeleteHealthEventModalProps = {
+type DeleteTimelineEventModalProps = {
   visible: boolean;
   entry: TimelineEntry | null;
   petName: string;
@@ -24,7 +24,7 @@ type DeleteHealthEventModalProps = {
   onConfirm: () => void;
 };
 
-export function DeleteHealthEventModal({
+export function DeleteTimelineEventModal({
   visible,
   entry,
   petName,
@@ -33,7 +33,7 @@ export function DeleteHealthEventModal({
   colors,
   onCancel,
   onConfirm,
-}: DeleteHealthEventModalProps) {
+}: DeleteTimelineEventModalProps) {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const centered = useWindowDimensions().width > 600;
   const onCancelRef = useRef(onCancel);

@@ -11,19 +11,19 @@ import {
   View,
 } from 'react-native';
 
-import { HEALTH_EVENT_KINDS, HealthEventKind } from '@/lib/healthEvents';
+import { SYMPTOM_KINDS, SymptomKind } from '@/lib/timelineEvents';
 import { Palette } from '@/lib/theme';
 
-type HealthEventModalProps = {
+type SymptomModalProps = {
   visible: boolean;
-  kind: HealthEventKind;
+  symptom: SymptomKind;
   note: string;
   occurredDate: string;
   occurredTime: string;
   dateTimeIsValid: boolean;
   isSaving: boolean;
   colors: Palette;
-  onKindChange: (kind: HealthEventKind) => void;
+  onSymptomChange: (symptom: SymptomKind) => void;
   onNoteChange: (note: string) => void;
   onOccurredDateChange: (date: string) => void;
   onOccurredTimeChange: (time: string) => void;
@@ -31,22 +31,22 @@ type HealthEventModalProps = {
   onClose: () => void;
 };
 
-export function HealthEventModal({
+export function SymptomModal({
   visible,
-  kind,
+  symptom,
   note,
   occurredDate,
   occurredTime,
   dateTimeIsValid,
   isSaving,
   colors,
-  onKindChange,
+  onSymptomChange,
   onNoteChange,
   onOccurredDateChange,
   onOccurredTimeChange,
   onSave,
   onClose,
-}: HealthEventModalProps) {
+}: SymptomModalProps) {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const saveDisabled = isSaving || !dateTimeIsValid;
   const isIos = Platform.OS === 'ios';
@@ -67,10 +67,8 @@ export function HealthEventModal({
     }
 
     const previouslyFocused = document.activeElement as HTMLElement | null;
-    const sheet = document.querySelector<HTMLElement>('[data-testid="health-event-modal-sheet"]');
-    const closeButton = document.querySelector<HTMLElement>(
-      '[data-testid="health-event-modal-close"]',
-    );
+    const sheet = document.querySelector<HTMLElement>('[data-testid="symptom-modal-sheet"]');
+    const closeButton = document.querySelector<HTMLElement>('[data-testid="symptom-modal-close"]');
     const focusFrame = window.requestAnimationFrame(() => closeButton?.focus());
 
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -116,7 +114,7 @@ export function HealthEventModal({
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.overlay} onPress={onClose}>
-        <Pressable accessibilityViewIsModal testID="health-event-modal-sheet" style={styles.sheet}>
+        <Pressable accessibilityViewIsModal testID="symptom-modal-sheet" style={styles.sheet}>
           <View style={styles.header}>
             {isIos && (
               <Pressable
@@ -129,7 +127,7 @@ export function HealthEventModal({
                 <Text style={styles.cancelText}>Cancel</Text>
               </Pressable>
             )}
-            <Text style={[styles.title, isIos && styles.iosTitle]}>Log a health event</Text>
+            <Text style={[styles.title, isIos && styles.iosTitle]}>Log a symptom</Text>
             {isIos ? (
               <View style={styles.headerSpacer} />
             ) : (
@@ -138,7 +136,7 @@ export function HealthEventModal({
                 accessibilityRole="button"
                 disabled={isSaving}
                 onPress={onClose}
-                testID="health-event-modal-close"
+                testID="symptom-modal-close"
                 style={styles.closeButton}
               >
                 <Ionicons name="close" size={24} color={colors.text} />
@@ -148,13 +146,15 @@ export function HealthEventModal({
           <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
             <Text style={styles.label}>WHAT HAPPENED?</Text>
             <View style={styles.choices}>
-              {HEALTH_EVENT_KINDS.map((option) => (
+              {SYMPTOM_KINDS.map((option) => (
                 <Pressable
                   key={option}
-                  onPress={() => onKindChange(option)}
-                  style={[styles.choice, kind === option && styles.selectedChoice]}
+                  onPress={() => onSymptomChange(option)}
+                  style={[styles.choice, symptom === option && styles.selectedChoice]}
                 >
-                  <Text style={[styles.choiceText, kind === option && styles.selectedChoiceText]}>
+                  <Text
+                    style={[styles.choiceText, symptom === option && styles.selectedChoiceText]}
+                  >
                     {option}
                   </Text>
                 </Pressable>

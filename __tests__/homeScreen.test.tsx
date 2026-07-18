@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import { Platform } from 'react-native';
 import Home from '@/app/index';
+import { toDisplayedEventDateTime, toEventTimestamp } from '@/lib/dateUtils';
 
 jest.mock('@expo/vector-icons', () => {
   const React = require('react');
@@ -24,17 +25,45 @@ describe('home screen behavior', () => {
     jest.clearAllMocks();
   });
 
-  it('opens the existing health-event form from quick log', async () => {
+  it('opens the dedicated diet-change form from quick log', async () => {
     const screen = render(<Home />);
 
     await waitFor(() => expect(screen.getByText('Your pets')).toBeTruthy());
     fireEvent.press(screen.getByText('Diet change'));
 
-    expect(screen.getByText('Log a health event')).toBeTruthy();
-    expect(screen.getByText('Vomiting')).toBeTruthy();
-    expect(screen.getByLabelText('Event date').props.value).toMatch(/^\d{2}-\d{2}-\d{4}$/);
-    expect(screen.getByLabelText('Event time').props.value).toMatch(/^\d{2}:\d{2}$/);
+    expect(screen.getByText('Log a diet change')).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: 'Added an item' }).props.accessibilityState,
+    ).toMatchObject({ selected: true });
+    expect(
+      screen.getByRole('button', { name: 'Switched an item' }).props.accessibilityState,
+    ).toMatchObject({ disabled: true });
+    expect(screen.queryByText('WHAT DID THIS REPLACE?')).toBeNull();
+    expect(screen.getByLabelText('Diet change date').props.value).toMatch(/^\d{2}-\d{2}-\d{4}$/);
+    expect(screen.getByLabelText('Diet change time').props.value).toMatch(/^\d{2}:\d{2}$/);
     expect(screen.getByLabelText(Platform.OS === 'ios' ? 'Cancel' : 'Close')).toBeTruthy();
+  });
+
+  it('logs a diet addition and displays it on the timeline', async () => {
+    const screen = render(<Home />);
+
+    await waitFor(() => expect(screen.getByText('Your pets')).toBeTruthy());
+    fireEvent.press(screen.getByText('Diet change'));
+    fireEvent.press(screen.getByText('Added an item'));
+    fireEvent.press(screen.getByLabelText('Food type'));
+    fireEvent.press(screen.getByLabelText('Select Snack'));
+    fireEvent.changeText(screen.getByLabelText('Diet product name'), 'Greenies Dental chew');
+    fireEvent.press(screen.getByText('Save diet change'));
+
+    await waitFor(() => expect(screen.getByText('Added Greenies Dental chew')).toBeTruthy());
+    await expect(mockedStorage.getItem('@kiwi-tracker/timeline-events/v1')).resolves.toContain(
+      'diet-change',
+    );
+
+    fireEvent.press(screen.getByText('Diet change'));
+    expect(
+      screen.getByRole('button', { name: 'Switched an item' }).props.accessibilityState,
+    ).toMatchObject({ disabled: false });
   });
 
   it('validates an impossible birth date in the pet form', async () => {
@@ -47,7 +76,7 @@ describe('home screen behavior', () => {
     expect(screen.getByText('Use DD-MM-YYYY and choose today or an earlier date.')).toBeTruthy();
   });
 
-  it('confirms before discarding an edited health event on web', async () => {
+  it('confirms before discarding an edited symptom on web', async () => {
     const originalPlatform = Platform.OS;
     const hadConfirm = 'confirm' in window;
     const originalConfirm = window.confirm;
@@ -67,14 +96,14 @@ describe('home screen behavior', () => {
       fireEvent.press(screen.getByLabelText('Close'));
 
       expect(confirm).toHaveBeenCalledWith(
-        'Discard this event?\n\nYour changes will not be saved.',
+        'Discard this symptom?\n\nYour changes will not be saved.',
       );
-      expect(screen.getByText('Log a health event')).toBeTruthy();
+      expect(screen.getByText('Log a symptom')).toBeTruthy();
 
       confirm.mockReturnValue(true);
       fireEvent.press(screen.getByLabelText('Close'));
 
-      expect(screen.queryByText('Log a health event')).toBeNull();
+      expect(screen.queryByText('Log a symptom')).toBeNull();
     } finally {
       if (hadConfirm) {
         Object.defineProperty(window, 'confirm', { configurable: true, value: originalConfirm });
@@ -85,16 +114,55 @@ describe('home screen behavior', () => {
     }
   });
 
-  it('cancels and confirms timeline deletion through the app dialog', async () => {
+  it('edits an existing timeline event date and time', async () => {
+    const originalOccurredAt = '2026-07-16T09:30:00.000Z';
     await mockedStorage.setItem(
-      '@kiwi-tracker/health-events/v1',
+      '@kiwi-tracker/timeline-events/v1',
       JSON.stringify([
         {
           id: 'event-1',
           petId: 'kiwi',
-          kind: 'Asthma',
+          type: 'symptom',
+          symptom: 'Asthma',
+          occurredAt: originalOccurredAt,
+          recordedAt: '2026-07-16T09:31:00.000Z',
+        },
+      ]),
+    );
+    const expectedDisplay = toDisplayedEventDateTime(new Date(originalOccurredAt));
+    const screen = render(<Home />);
+
+    await waitFor(() => expect(screen.getByText('Asthma logged')).toBeTruthy());
+    fireEvent.press(screen.getByLabelText(/Edit date and time for Asthma logged/));
+
+    expect(screen.getByText('Edit date and time')).toBeTruthy();
+    expect(screen.getByLabelText('Updated event date').props.value).toBe(expectedDisplay.date);
+    expect(screen.getByLabelText('Updated event time').props.value).toBe(expectedDisplay.time);
+    fireEvent.changeText(screen.getByLabelText('Updated event time'), '12:45');
+    fireEvent.press(screen.getByText('Save date and time'));
+
+    const expectedOccurredAt = toEventTimestamp(expectedDisplay.date, '12:45');
+    await waitFor(async () => {
+      const stored = JSON.parse(
+        (await mockedStorage.getItem('@kiwi-tracker/timeline-events/v1')) ?? '[]',
+      );
+      expect(stored[0].occurredAt).toBe(expectedOccurredAt);
+    });
+    expect(screen.queryByText('Edit date and time')).toBeNull();
+  });
+
+  it('cancels and confirms timeline deletion through the app dialog', async () => {
+    await mockedStorage.setItem(
+      '@kiwi-tracker/timeline-events/v1',
+      JSON.stringify([
+        {
+          id: 'event-1',
+          petId: 'kiwi',
+          type: 'symptom',
+          symptom: 'Asthma',
           note: 'Recovered quickly.',
           occurredAt: '2026-07-16T09:30:00.000Z',
+          recordedAt: '2026-07-16T09:31:00.000Z',
         },
       ]),
     );
@@ -116,7 +184,7 @@ describe('home screen behavior', () => {
     fireEvent.press(screen.getByText('Delete'));
     await waitFor(() =>
       expect(mockedStorage.setItem).toHaveBeenLastCalledWith(
-        '@kiwi-tracker/health-events/v1',
+        '@kiwi-tracker/timeline-events/v1',
         '[]',
       ),
     );
@@ -124,19 +192,21 @@ describe('home screen behavior', () => {
     await waitFor(() => expect(screen.queryByText('Recovered quickly.')).toBeNull());
     expect(screen.getByText('No events for Kiwi')).toBeTruthy();
     expect(screen.queryByText('Delete this event?')).toBeNull();
-    await expect(mockedStorage.getItem('@kiwi-tracker/health-events/v1')).resolves.toBe('[]');
+    await expect(mockedStorage.getItem('@kiwi-tracker/timeline-events/v1')).resolves.toBe('[]');
   });
 
   it('keeps the delete dialog open with an inline error when storage fails', async () => {
     await mockedStorage.setItem(
-      '@kiwi-tracker/health-events/v1',
+      '@kiwi-tracker/timeline-events/v1',
       JSON.stringify([
         {
           id: 'event-1',
           petId: 'kiwi',
-          kind: 'Asthma',
+          type: 'symptom',
+          symptom: 'Asthma',
           note: 'Recovered quickly.',
           occurredAt: '2026-07-16T09:30:00.000Z',
+          recordedAt: '2026-07-16T09:31:00.000Z',
         },
       ]),
     );
