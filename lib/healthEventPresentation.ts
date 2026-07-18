@@ -29,6 +29,7 @@ export function toTimelineEntries(
 ): TimelineEntry[] {
   return events
     .filter((event) => event.petId === activePetId)
+    .sort((left, right) => Date.parse(right.occurredAt) - Date.parse(left.occurredAt))
     .map((event) => ({
       id: event.id,
       icon: 'pulse-outline',
