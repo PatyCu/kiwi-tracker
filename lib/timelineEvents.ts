@@ -73,7 +73,12 @@ export type DietChangeEvent = TimelineEventBase & {
   change: DietChange;
 };
 
-export type TimelineEvent = SymptomEvent | DietChangeEvent;
+export type OtherEvent = TimelineEventBase & {
+  type: 'other';
+  title: string;
+};
+
+export type TimelineEvent = SymptomEvent | DietChangeEvent | OtherEvent;
 
 export type TimelineEventStorageErrorCode = 'READ_FAILED' | 'INVALID_DATA' | 'WRITE_FAILED';
 
@@ -148,7 +153,11 @@ function isTimelineEvent(value: unknown): value is TimelineEvent {
     return SYMPTOM_KINDS.some((symptom) => symptom === event.symptom);
   }
 
-  return event.type === 'diet-change' && isDietChange(event.change);
+  if (event.type === 'diet-change') {
+    return isDietChange(event.change);
+  }
+
+  return event.type === 'other' && isNonEmptyString(event.title);
 }
 
 function isTimelineEventBase(value: unknown): value is TimelineEventBase & { type?: unknown } {

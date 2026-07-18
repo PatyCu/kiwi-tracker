@@ -64,6 +64,27 @@ describe('useDashboardData', () => {
     });
   });
 
+  it('persists a custom other event', async () => {
+    const { result } = renderHook(() => useDashboardData());
+
+    await waitFor(() => expect(result.current.loadStatus).toBe('ready'));
+    await act(async () => {
+      await result.current.logOtherEvent(
+        ' Started sleeping upstairs ',
+        ' Near the radiator. ',
+        '2026-07-16T09:30:00.000Z',
+      );
+    });
+
+    expect(result.current.timelineEvents[0]).toMatchObject({
+      petId: 'kiwi',
+      type: 'other',
+      title: 'Started sleeping upstairs',
+      note: 'Near the radiator.',
+      occurredAt: '2026-07-16T09:30:00.000Z',
+    });
+  });
+
   it('persists an event deletion before removing it from the dashboard', async () => {
     const { result } = renderHook(() => useDashboardData());
 

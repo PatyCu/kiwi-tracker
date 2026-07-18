@@ -33,23 +33,36 @@ export function toTimelineEntries(
   activePetId: string,
   symptomColor: string,
   dietColor: string,
+  otherColor: string = symptomColor,
 ): TimelineEntry[] {
   return events
     .filter((event) => event.petId === activePetId)
     .sort((left, right) => Date.parse(right.occurredAt) - Date.parse(left.occurredAt))
-    .map((event) =>
-      event.type === 'symptom'
-        ? {
-            id: event.id,
-            icon: 'pulse-outline',
-            title: symptomTitles[event.symptom],
-            meta: formatEventTime(event.occurredAt),
-            occurredAt: event.occurredAt,
-            note: event.note,
-            color: symptomColor,
-          }
-        : toDietChangeEntry(event, dietColor),
-    );
+    .map((event) => {
+      if (event.type === 'symptom') {
+        return {
+          id: event.id,
+          icon: 'pulse-outline',
+          title: symptomTitles[event.symptom],
+          meta: formatEventTime(event.occurredAt),
+          occurredAt: event.occurredAt,
+          note: event.note,
+          color: symptomColor,
+        };
+      }
+
+      if (event.type === 'diet-change') return toDietChangeEntry(event, dietColor);
+
+      return {
+        id: event.id,
+        icon: 'ellipsis-horizontal-circle-outline',
+        title: event.title,
+        meta: formatEventTime(event.occurredAt),
+        occurredAt: event.occurredAt,
+        note: event.note,
+        color: otherColor,
+      };
+    });
 }
 
 function toDietChangeEntry(event: DietChangeEvent, color: string): TimelineEntry {

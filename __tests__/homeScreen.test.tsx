@@ -70,6 +70,27 @@ describe('home screen behavior', () => {
     ).toMatchObject({ disabled: false });
   });
 
+  it('logs a custom event from Other and displays it on the timeline', async () => {
+    const screen = render(<Home />);
+
+    await waitFor(() => expect(screen.getByText('Your pets')).toBeTruthy());
+    fireEvent.press(screen.getByText('Other'));
+
+    expect(screen.getByText('Log another event')).toBeTruthy();
+    const saveButton = screen.getByRole('button', { name: 'Save event' });
+    expect(saveButton.props.accessibilityState).toMatchObject({ disabled: true });
+
+    fireEvent.changeText(screen.getByLabelText('Event title'), 'Started sleeping upstairs');
+    fireEvent.changeText(screen.getByLabelText('Event notes'), 'Near the radiator.');
+    fireEvent.press(saveButton);
+
+    await waitFor(() => expect(screen.getByText('Started sleeping upstairs')).toBeTruthy());
+    expect(screen.getByText('Near the radiator.')).toBeTruthy();
+    await expect(mockedStorage.getItem('@kiwi-tracker/timeline-events/v1')).resolves.toContain(
+      '"type":"other"',
+    );
+  });
+
   it('selects a birth date from a picker bounded to today', async () => {
     const testStartedAt = Date.now();
     const screen = render(<Home />);

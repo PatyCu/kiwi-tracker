@@ -2,6 +2,7 @@ import { act, renderHook } from '@testing-library/react-native';
 import * as ImagePicker from 'expo-image-picker';
 
 import { useDietChangeForm } from '@/hooks/useDietChangeForm';
+import { useOtherEventForm } from '@/hooks/useOtherEventForm';
 import { usePetProfileForm } from '@/hooks/usePetProfileForm';
 import { useSymptomForm } from '@/hooks/useSymptomForm';
 import { useTimelineEventDateTimeForm } from '@/hooks/useTimelineEventDateTimeForm';
@@ -144,6 +145,37 @@ describe('form hooks', () => {
       expect(await result.current.submit()).toBe(false);
     });
     expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it('requires a title and submits a custom event', async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date(2026, 6, 17, 14, 5));
+    const onSubmit = jest.fn().mockResolvedValue(undefined);
+    const { result } = renderHook(() => useOtherEventForm({ onSubmit }));
+
+    act(() => result.current.open());
+    await act(async () => {
+      expect(await result.current.submit()).toBe(false);
+    });
+    expect(onSubmit).not.toHaveBeenCalled();
+
+    act(() => {
+      result.current.setTitle(' Started sleeping upstairs ');
+      result.current.setNote('Near the radiator.');
+      result.current.setOccurredDate('16-07-2026');
+      result.current.setOccurredTime('09:30');
+    });
+    await act(async () => {
+      expect(await result.current.submit()).toBe(true);
+    });
+
+    expect(onSubmit).toHaveBeenCalledWith(
+      'Started sleeping upstairs',
+      'Near the radiator.',
+      new Date(2026, 6, 16, 9, 30).toISOString(),
+    );
+    expect(result.current).toMatchObject({ visible: false, title: '', note: '', isDirty: false });
+    jest.useRealTimers();
   });
 
   it('edits and submits a timeline event date and time', async () => {

@@ -14,6 +14,7 @@ type TimelineProps = {
   updatingEventId: string | null;
   onLogSymptom: () => void;
   onLogDietChange: () => void;
+  onLogOther: () => void;
   onExport: () => void;
   onDelete: (entry: TimelineEntry) => void;
   onEditDateTime: (entry: TimelineEntry) => void;
@@ -27,6 +28,7 @@ export function Timeline({
   updatingEventId,
   onLogSymptom,
   onLogDietChange,
+  onLogOther,
   onExport,
   onDelete,
   onEditDateTime,
@@ -35,7 +37,12 @@ export function Timeline({
 
   return (
     <View style={styles.container}>
-      <QuickLog colors={colors} onLogSymptom={onLogSymptom} onLogDietChange={onLogDietChange} />
+      <QuickLog
+        colors={colors}
+        onLogSymptom={onLogSymptom}
+        onLogDietChange={onLogDietChange}
+        onLogOther={onLogOther}
+      />
       <View style={styles.divider} />
       <View style={styles.header}>
         <Text style={styles.title}>Recent timeline</Text>

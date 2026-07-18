@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import { Palette } from '@/lib/theme';
 
@@ -8,25 +8,33 @@ type QuickLogProps = {
   colors: Palette;
   onLogSymptom: () => void;
   onLogDietChange: () => void;
+  onLogOther: () => void;
 };
 
-export function QuickLog({ colors, onLogSymptom, onLogDietChange }: QuickLogProps) {
+export function QuickLog({ colors, onLogSymptom, onLogDietChange, onLogOther }: QuickLogProps) {
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const compact = useWindowDimensions().width < 480;
   const actions: {
     icon: keyof typeof Ionicons.glyphMap;
     label: string;
     color: string;
     onPress?: () => void;
   }[] = [
-    { icon: 'pulse-outline', label: 'Symptom', color: colors.coral, onPress: onLogSymptom },
     {
       icon: 'restaurant-outline',
       label: 'Diet change',
       color: colors.kiwi,
       onPress: onLogDietChange,
     },
-    { icon: 'walk-outline', label: 'Activity', color: colors.blue },
-    { icon: 'water-outline', label: 'Medicine', color: colors.amber },
+    { icon: 'home-outline', label: 'Environment', color: colors.blue },
+    { icon: 'pulse-outline', label: 'Symptom', color: colors.coral, onPress: onLogSymptom },
+    { icon: 'medkit-outline', label: 'Treatment', color: colors.amber },
+    {
+      icon: 'ellipsis-horizontal-circle-outline',
+      label: 'Other',
+      color: colors.muted,
+      onPress: onLogOther,
+    },
   ];
 
   return (
@@ -39,7 +47,11 @@ export function QuickLog({ colors, onLogSymptom, onLogDietChange }: QuickLogProp
           disabled={!action.onPress}
           key={action.label}
           onPress={action.onPress}
-          style={[styles.action, !action.onPress && styles.disabledAction]}
+          style={[
+            styles.action,
+            compact ? styles.compactAction : styles.wideAction,
+            !action.onPress && styles.disabledAction,
+          ]}
         >
           <View style={[styles.icon, { backgroundColor: `${action.color}22` }]}>
             <Ionicons name={action.icon} size={23} color={action.color} />
@@ -56,8 +68,15 @@ export function QuickLog({ colors, onLogSymptom, onLogDietChange }: QuickLogProp
 
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
-    actions: { flexDirection: 'row', justifyContent: 'space-between' },
-    action: { alignItems: 'center', gap: 8, width: '23%' },
+    actions: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'center',
+      rowGap: 16,
+    },
+    action: { alignItems: 'center', gap: 8 },
+    compactAction: { width: '33.333%' },
+    wideAction: { flex: 1 },
     disabledAction: { opacity: 0.5 },
     icon: {
       width: 56,
@@ -78,5 +97,11 @@ const makeStyles = (colors: Palette) =>
       alignItems: 'center',
       justifyContent: 'center',
     },
-    label: { fontSize: 12, color: colors.muted, fontWeight: '600' },
+    label: {
+      width: '100%',
+      color: colors.muted,
+      fontSize: 11,
+      fontWeight: '600',
+      textAlign: 'center',
+    },
   });

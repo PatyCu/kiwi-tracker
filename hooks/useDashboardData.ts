@@ -134,6 +134,27 @@ export function useDashboardData() {
     [activePet.id, loadStatus, timelineEvents],
   );
 
+  const logOtherEvent = useCallback(
+    async (title: string, note: string, occurredAt: string): Promise<void> => {
+      if (loadStatus !== 'ready') throw new Error('Dashboard data is not ready.');
+      const trimmedTitle = title.trim();
+      if (!trimmedTitle) throw new Error('Other events require a title.');
+      const newEvent: TimelineEvent = {
+        id: createId('other'),
+        petId: activePet.id,
+        type: 'other',
+        title: trimmedTitle,
+        occurredAt,
+        recordedAt: new Date().toISOString(),
+        ...(note.trim() ? { note: note.trim() } : {}),
+      };
+      const next = [newEvent, ...timelineEvents];
+      await saveTimelineEvents(next);
+      setTimelineEvents(next);
+    },
+    [activePet.id, loadStatus, timelineEvents],
+  );
+
   const deleteTimelineEvent = useCallback(
     async (eventId: string): Promise<void> => {
       if (loadStatus !== 'ready') throw new Error('Dashboard data is not ready.');
@@ -204,6 +225,7 @@ export function useDashboardData() {
     selectPet,
     logSymptom,
     logDietChange,
+    logOtherEvent,
     deleteTimelineEvent,
     deletingTimelineEventId,
     updateTimelineEventOccurredAt,

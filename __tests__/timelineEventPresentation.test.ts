@@ -4,7 +4,7 @@ import { TimelineEvent } from '@/lib/timelineEvents';
 const recordedAt = '2026-07-18T12:00:00.000Z';
 
 describe('timeline event presentation', () => {
-  it('maps symptom and diet events for only the active pet', () => {
+  it('maps symptom, diet, and other events for only the active pet', () => {
     const events: TimelineEvent[] = [
       {
         id: 'kiwi-symptom',
@@ -36,6 +36,15 @@ describe('timeline event presentation', () => {
         recordedAt,
       },
       {
+        id: 'kiwi-other',
+        petId: 'kiwi',
+        type: 'other',
+        title: 'Started sleeping upstairs',
+        note: 'Near the radiator.',
+        occurredAt: '2026-07-18T11:30:00.000Z',
+        recordedAt,
+      },
+      {
         id: 'miso-symptom',
         petId: 'miso',
         type: 'symptom',
@@ -45,16 +54,22 @@ describe('timeline event presentation', () => {
       },
     ];
 
-    const entries = toTimelineEntries(events, 'kiwi', '#f00', '#0f0');
+    const entries = toTimelineEntries(events, 'kiwi', '#f00', '#0f0', '#999');
 
-    expect(entries).toHaveLength(2);
+    expect(entries).toHaveLength(3);
     expect(entries[0]).toMatchObject({
+      id: 'kiwi-other',
+      title: 'Started sleeping upstairs',
+      note: 'Near the radiator.',
+      color: '#999',
+    });
+    expect(entries[1]).toMatchObject({
       id: 'kiwi-symptom',
       title: 'Asthma logged',
       note: 'Recovered quickly.',
       color: '#f00',
     });
-    expect(entries[1]).toMatchObject({
+    expect(entries[2]).toMatchObject({
       id: 'kiwi-diet',
       title: "Switched to Hill's Digestive Care",
       note: 'Replaced Previous Old food.',

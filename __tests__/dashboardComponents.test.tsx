@@ -57,20 +57,34 @@ describe('dashboard components', () => {
   it('routes symptom and diet quick-log actions to their own flows', () => {
     const onLogSymptom = jest.fn();
     const onLogDietChange = jest.fn();
+    const onLogOther = jest.fn();
     const screen = render(
       <QuickLog
         colors={darkColors}
         onLogSymptom={onLogSymptom}
         onLogDietChange={onLogDietChange}
+        onLogOther={onLogOther}
       />,
     );
 
     fireEvent.press(screen.getByText('Symptom'));
     fireEvent.press(screen.getByText('Diet change'));
+    fireEvent.press(screen.getByText('Other'));
 
     expect(onLogSymptom).toHaveBeenCalledTimes(1);
     expect(onLogDietChange).toHaveBeenCalledTimes(1);
-    expect(screen.getByLabelText('Add activity to timeline').props.accessibilityState).toEqual({
+    expect(onLogOther).toHaveBeenCalledTimes(1);
+    expect(screen.getAllByRole('button').map((button) => button.props.accessibilityLabel)).toEqual([
+      'Add diet change to timeline',
+      'Add environment to timeline',
+      'Add symptom to timeline',
+      'Add treatment to timeline',
+      'Add other to timeline',
+    ]);
+    expect(screen.getByLabelText('Add environment to timeline').props.accessibilityState).toEqual({
+      disabled: true,
+    });
+    expect(screen.getByLabelText('Add treatment to timeline').props.accessibilityState).toEqual({
       disabled: true,
     });
   });
@@ -85,6 +99,7 @@ describe('dashboard components', () => {
         updatingEventId={null}
         onLogSymptom={jest.fn()}
         onLogDietChange={jest.fn()}
+        onLogOther={jest.fn()}
         onExport={jest.fn()}
         onDelete={jest.fn()}
         onEditDateTime={jest.fn()}
@@ -115,6 +130,7 @@ describe('dashboard components', () => {
         updatingEventId={null}
         onLogSymptom={jest.fn()}
         onLogDietChange={jest.fn()}
+        onLogOther={jest.fn()}
         onExport={jest.fn()}
         onDelete={onDelete}
         onEditDateTime={onEditDateTime}
@@ -156,6 +172,7 @@ describe('dashboard components', () => {
         updatingEventId={null}
         onLogSymptom={jest.fn()}
         onLogDietChange={jest.fn()}
+        onLogOther={jest.fn()}
         onExport={jest.fn()}
         onDelete={onDelete}
         onEditDateTime={jest.fn()}
@@ -193,6 +210,7 @@ describe('dashboard components', () => {
           updatingEventId={null}
           onLogSymptom={jest.fn()}
           onLogDietChange={jest.fn()}
+          onLogOther={jest.fn()}
           onExport={jest.fn()}
           onDelete={jest.fn()}
           onEditDateTime={jest.fn()}

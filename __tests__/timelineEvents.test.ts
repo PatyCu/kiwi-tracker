@@ -51,7 +51,7 @@ describe('timeline event storage', () => {
     });
   });
 
-  it('serializes symptom and diet-change events together', async () => {
+  it('serializes symptom, diet-change, and other events together', async () => {
     const events: TimelineEvent[] = [
       {
         id: 'symptom-1',
@@ -75,6 +75,15 @@ describe('timeline event storage', () => {
         },
         occurredAt: '2026-07-17T09:30:00.000Z',
         recordedAt: '2026-07-17T09:31:00.000Z',
+      },
+      {
+        id: 'other-1',
+        petId: 'kiwi',
+        type: 'other',
+        title: 'Started sleeping upstairs',
+        note: 'First noticed after dinner.',
+        occurredAt: '2026-07-18T09:30:00.000Z',
+        recordedAt: '2026-07-18T09:31:00.000Z',
       },
     ];
 

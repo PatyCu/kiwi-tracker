@@ -18,6 +18,7 @@ import { DashboardLoadState } from '@/components/dashboard/DashboardLoadState';
 import { DeleteTimelineEventModal } from '@/components/dashboard/DeleteTimelineEventModal';
 import { DietChangeModal } from '@/components/dashboard/DietChangeModal';
 import { EditTimelineEventDateTimeModal } from '@/components/dashboard/EditTimelineEventDateTimeModal';
+import { OtherEventModal } from '@/components/dashboard/OtherEventModal';
 import { PetProfileModal } from '@/components/dashboard/PetProfileModal';
 import { PetSelector } from '@/components/dashboard/PetSelector';
 import { SymptomModal } from '@/components/dashboard/SymptomModal';
@@ -26,6 +27,7 @@ import { TodaySummary } from '@/components/dashboard/TodaySummary';
 import { UpcomingCare } from '@/components/dashboard/UpcomingCare';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useDietChangeForm } from '@/hooks/useDietChangeForm';
+import { useOtherEventForm } from '@/hooks/useOtherEventForm';
 import { usePetProfileForm } from '@/hooks/usePetProfileForm';
 import { useSymptomForm } from '@/hooks/useSymptomForm';
 import { useTimelineEventDateTimeForm } from '@/hooks/useTimelineEventDateTimeForm';
@@ -64,6 +66,7 @@ export default function Home() {
     selectPet: persistPetSelection,
     logSymptom,
     logDietChange,
+    logOtherEvent,
     deleteTimelineEvent,
     deletingTimelineEventId,
     updateTimelineEventOccurredAt,
@@ -72,6 +75,7 @@ export default function Home() {
   } = useDashboardData();
   const symptomForm = useSymptomForm({ onSubmit: logSymptom });
   const dietChangeForm = useDietChangeForm({ currentDiet, onSubmit: logDietChange });
+  const otherEventForm = useOtherEventForm({ onSubmit: logOtherEvent });
   const eventDateTimeForm = useTimelineEventDateTimeForm({
     onSubmit: updateTimelineEventOccurredAt,
   });
@@ -81,13 +85,16 @@ export default function Home() {
   const closeDietChangeForm = dietChangeForm.close;
   const dietChangeFormIsDirty = dietChangeForm.isDirty;
   const dietChangeFormIsSaving = dietChangeForm.isSaving;
+  const closeOtherEventForm = otherEventForm.close;
+  const otherEventFormIsDirty = otherEventForm.isDirty;
+  const otherEventFormIsSaving = otherEventForm.isSaving;
   const closeEventDateTimeForm = eventDateTimeForm.close;
   const eventDateTimeFormIsDirty = eventDateTimeForm.isDirty;
   const eventDateTimeFormIsSaving = eventDateTimeForm.isSaving;
   const petProfileForm = usePetProfileForm({ onSubmit: saveProfile });
   const timeline = useMemo(
-    () => toTimelineEntries(timelineEvents, activePetId, colors.coral, colors.kiwi),
-    [activePetId, colors.coral, colors.kiwi, timelineEvents],
+    () => toTimelineEntries(timelineEvents, activePetId, colors.coral, colors.kiwi, colors.muted),
+    [activePetId, colors.coral, colors.kiwi, colors.muted, timelineEvents],
   );
 
   useEffect(() => {
@@ -142,6 +149,11 @@ export default function Home() {
   const saveDietChange = async () => {
     if (await dietChangeForm.submit()) return;
     Alert.alert('Diet change not saved', 'Please try again. Your change has not been added.');
+  };
+
+  const saveOtherEvent = async () => {
+    if (await otherEventForm.submit()) return;
+    Alert.alert('Event not saved', 'Please try again. Your event has not been added.');
   };
 
   const saveTimelineEventDateTime = async () => {
@@ -220,6 +232,26 @@ export default function Home() {
     ]);
   }, [closeDietChangeForm, dietChangeFormIsDirty, dietChangeFormIsSaving]);
 
+  const requestCloseOtherEvent = useCallback(() => {
+    if (otherEventFormIsSaving) return;
+    if (!otherEventFormIsDirty) {
+      closeOtherEventForm();
+      return;
+    }
+
+    const title = 'Discard this event?';
+    const message = 'Your changes will not be saved.';
+    if (Platform.OS === 'web') {
+      if (window.confirm(`${title}\n\n${message}`)) closeOtherEventForm();
+      return;
+    }
+
+    NativeAlert.alert(title, message, [
+      { text: 'Keep editing', style: 'cancel' },
+      { text: 'Discard', style: 'destructive', onPress: closeOtherEventForm },
+    ]);
+  }, [closeOtherEventForm, otherEventFormIsDirty, otherEventFormIsSaving]);
+
   const requestCloseEventDateTime = useCallback(() => {
     if (eventDateTimeFormIsSaving) return;
     if (!eventDateTimeFormIsDirty) {
@@ -278,6 +310,7 @@ export default function Home() {
             updatingEventId={updatingTimelineEventId}
             onLogSymptom={symptomForm.open}
             onLogDietChange={dietChangeForm.open}
+            onLogOther={otherEventForm.open}
             onDelete={requestDeleteTimelineEvent}
             onEditDateTime={openTimelineEventDateTime}
             onExport={() => {
@@ -356,6 +389,23 @@ export default function Home() {
           onOccurredTimeChange={dietChangeForm.setOccurredTime}
           onSave={saveDietChange}
           onClose={requestCloseDietChange}
+        />
+        <OtherEventModal
+          visible={otherEventForm.visible}
+          title={otherEventForm.title}
+          note={otherEventForm.note}
+          occurredDate={otherEventForm.occurredDate}
+          occurredTime={otherEventForm.occurredTime}
+          titleIsValid={otherEventForm.titleIsValid}
+          dateTimeIsValid={otherEventForm.dateTimeIsValid}
+          isSaving={otherEventForm.isSaving}
+          colors={colors}
+          onTitleChange={otherEventForm.setTitle}
+          onNoteChange={otherEventForm.setNote}
+          onOccurredDateChange={otherEventForm.setOccurredDate}
+          onOccurredTimeChange={otherEventForm.setOccurredTime}
+          onSave={saveOtherEvent}
+          onClose={requestCloseOtherEvent}
         />
         <AppearanceModal
           visible={appearanceModalOpen}
