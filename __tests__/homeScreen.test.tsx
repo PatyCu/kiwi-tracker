@@ -85,6 +85,77 @@ describe('home screen behavior', () => {
     }
   });
 
+  it('cancels and confirms timeline deletion through the app dialog', async () => {
+    await mockedStorage.setItem(
+      '@kiwi-tracker/health-events/v1',
+      JSON.stringify([
+        {
+          id: 'event-1',
+          petId: 'kiwi',
+          kind: 'Asthma',
+          note: 'Recovered quickly.',
+          occurredAt: '2026-07-16T09:30:00.000Z',
+        },
+      ]),
+    );
+
+    const screen = render(<Home />);
+
+    await waitFor(() => expect(screen.getByText('Recovered quickly.')).toBeTruthy());
+    const deleteButton = screen.getByLabelText(/Delete timeline event: Asthma logged/);
+    fireEvent.press(deleteButton);
+
+    expect(screen.getByText('Delete this event?')).toBeTruthy();
+    expect(screen.getByText("This will permanently remove it from Kiwi's timeline.")).toBeTruthy();
+    fireEvent.press(screen.getByText('Cancel'));
+
+    expect(screen.queryByText('Delete this event?')).toBeNull();
+    expect(screen.getByText('Recovered quickly.')).toBeTruthy();
+
+    fireEvent.press(deleteButton);
+    fireEvent.press(screen.getByText('Delete'));
+    await waitFor(() =>
+      expect(mockedStorage.setItem).toHaveBeenLastCalledWith(
+        '@kiwi-tracker/health-events/v1',
+        '[]',
+      ),
+    );
+
+    await waitFor(() => expect(screen.queryByText('Recovered quickly.')).toBeNull());
+    expect(screen.getByText('No events for Kiwi')).toBeTruthy();
+    expect(screen.queryByText('Delete this event?')).toBeNull();
+    await expect(mockedStorage.getItem('@kiwi-tracker/health-events/v1')).resolves.toBe('[]');
+  });
+
+  it('keeps the delete dialog open with an inline error when storage fails', async () => {
+    await mockedStorage.setItem(
+      '@kiwi-tracker/health-events/v1',
+      JSON.stringify([
+        {
+          id: 'event-1',
+          petId: 'kiwi',
+          kind: 'Asthma',
+          note: 'Recovered quickly.',
+          occurredAt: '2026-07-16T09:30:00.000Z',
+        },
+      ]),
+    );
+    const screen = render(<Home />);
+
+    await waitFor(() => expect(screen.getByText('Recovered quickly.')).toBeTruthy());
+    mockedStorage.setItem.mockRejectedValueOnce(new Error('disk full'));
+    fireEvent.press(screen.getByLabelText(/Delete timeline event: Asthma logged/));
+    fireEvent.press(screen.getByText('Delete'));
+
+    await waitFor(() =>
+      expect(
+        screen.getByText('This event could not be deleted. It is still saved. Please try again.'),
+      ).toBeTruthy(),
+    );
+    expect(screen.getByText('Delete this event?')).toBeTruthy();
+    expect(screen.getByText('Recovered quickly.')).toBeTruthy();
+  });
+
   it('blocks the dashboard after a load failure and recovers through retry', async () => {
     mockedStorage.getItem.mockRejectedValueOnce(new Error('storage unavailable'));
     const screen = render(<Home />);

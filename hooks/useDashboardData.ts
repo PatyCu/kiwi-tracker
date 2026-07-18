@@ -13,6 +13,7 @@ export function useDashboardData() {
   const [pets, setPets] = useState<Pet[]>([DEFAULT_PET]);
   const [activePetId, setActivePetId] = useState(DEFAULT_PET.id);
   const [loadStatus, setLoadStatus] = useState<DashboardLoadStatus>('loading');
+  const [deletingHealthEventId, setDeletingHealthEventId] = useState<string | null>(null);
   const [photoMigrationWarningPetNames, setPhotoMigrationWarningPetNames] = useState<string[]>([]);
 
   const applyDashboardData = useCallback((data: Awaited<ReturnType<typeof loadDashboardData>>) => {
@@ -100,6 +101,27 @@ export function useDashboardData() {
     [activePet.id, healthEvents, loadStatus],
   );
 
+  const deleteHealthEvent = useCallback(
+    async (eventId: string): Promise<void> => {
+      if (loadStatus !== 'ready') throw new Error('Dashboard data is not ready.');
+      if (deletingHealthEventId !== null)
+        throw new Error('A health event is already being deleted.');
+      if (!healthEvents.some((event) => event.id === eventId)) {
+        throw new Error('Health event was not found.');
+      }
+
+      const next = healthEvents.filter((event) => event.id !== eventId);
+      setDeletingHealthEventId(eventId);
+      try {
+        await saveHealthEvents(next);
+        setHealthEvents(next);
+      } finally {
+        setDeletingHealthEventId(null);
+      }
+    },
+    [deletingHealthEventId, healthEvents, loadStatus],
+  );
+
   const saveProfile = useCallback(
     async (input: PetProfileInput): Promise<SavePetProfileResult> => {
       if (loadStatus !== 'ready') throw new Error('Dashboard data is not ready.');
@@ -124,6 +146,8 @@ export function useDashboardData() {
     retryLoad: loadData,
     selectPet,
     logHealthEvent,
+    deleteHealthEvent,
+    deletingHealthEventId,
     saveProfile,
   };
 }

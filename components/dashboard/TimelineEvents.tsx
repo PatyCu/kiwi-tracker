@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useMemo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { TimelineEntry } from '@/lib/healthEventPresentation';
 import { Palette } from '@/lib/theme';
@@ -9,9 +9,17 @@ type TimelineEventsProps = {
   entries: TimelineEntry[];
   petName: string;
   colors: Palette;
+  deletingEventId: string | null;
+  onDelete: (entry: TimelineEntry) => void;
 };
 
-export function TimelineEvents({ entries, petName, colors }: TimelineEventsProps) {
+export function TimelineEvents({
+  entries,
+  petName,
+  colors,
+  deletingEventId,
+  onDelete,
+}: TimelineEventsProps) {
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   if (entries.length === 0) {
@@ -30,6 +38,9 @@ export function TimelineEvents({ entries, petName, colors }: TimelineEventsProps
       entry={entry}
       showConnector={index < entries.length - 1}
       styles={styles}
+      deleteColor={colors.muted}
+      deleteDisabled={deletingEventId !== null}
+      onDelete={onDelete}
     />
   ));
 }
@@ -38,9 +49,19 @@ type TimelineEventProps = {
   entry: TimelineEntry;
   showConnector: boolean;
   styles: ReturnType<typeof makeStyles>;
+  deleteColor: string;
+  deleteDisabled: boolean;
+  onDelete: (entry: TimelineEntry) => void;
 };
 
-function TimelineEvent({ entry, showConnector, styles }: TimelineEventProps) {
+function TimelineEvent({
+  entry,
+  showConnector,
+  styles,
+  deleteColor,
+  deleteDisabled,
+  onDelete,
+}: TimelineEventProps) {
   return (
     <View style={styles.event}>
       <View style={styles.rail}>
@@ -50,7 +71,25 @@ function TimelineEvent({ entry, showConnector, styles }: TimelineEventProps) {
         {showConnector && <View style={styles.line} />}
       </View>
       <View style={styles.eventBody}>
-        <Text style={styles.cardTitle}>{entry.title}</Text>
+        <View style={styles.eventTitleRow}>
+          <Text style={styles.cardTitle}>{entry.title}</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Delete timeline event: ${entry.title}, ${entry.meta}`}
+            accessibilityHint="Asks for confirmation before permanently deleting this event."
+            accessibilityState={{ disabled: deleteDisabled }}
+            disabled={deleteDisabled}
+            hitSlop={12}
+            onPress={() => onDelete(entry)}
+            style={({ pressed }) => [
+              styles.deleteButton,
+              pressed && styles.deleteButtonPressed,
+              deleteDisabled && styles.deleteButtonDisabled,
+            ]}
+          >
+            <Ionicons name="trash-outline" size={14} color={deleteColor} />
+          </Pressable>
+        </View>
         <Text style={styles.meta}>{entry.meta}</Text>
         <Text style={styles.note}>{entry.note}</Text>
       </View>
@@ -73,6 +112,21 @@ const makeStyles = (colors: Palette) =>
     },
     line: { width: 1, backgroundColor: colors.line, flex: 1 },
     eventBody: { flex: 1, paddingLeft: 10, paddingBottom: 23 },
+    eventTitleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      alignSelf: 'flex-start',
+    },
+    deleteButton: {
+      width: 24,
+      height: 24,
+      marginLeft: 12,
+      borderRadius: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    deleteButtonPressed: { backgroundColor: colors.surface2 },
+    deleteButtonDisabled: { opacity: 0.45 },
     cardTitle: { fontSize: 15, color: colors.text, fontWeight: '700' },
     meta: { fontSize: 12, color: colors.muted, marginTop: 5 },
     note: { fontSize: 13, color: colors.note, marginTop: 8, lineHeight: 18 },

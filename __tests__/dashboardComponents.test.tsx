@@ -68,8 +68,10 @@ describe('dashboard components', () => {
         entries={[]}
         petName="Kiwi"
         colors={darkColors}
+        deletingEventId={null}
         onLog={jest.fn()}
         onExport={jest.fn()}
+        onDelete={jest.fn()}
       />,
     );
     expect(emptyScreen.getByText('No events for Kiwi')).toBeTruthy();
@@ -77,7 +79,38 @@ describe('dashboard components', () => {
     expect(emptyScreen.getByLabelText('Add diet change to timeline')).toBeTruthy();
     emptyScreen.unmount();
 
+    const entry = {
+      id: 'event-1',
+      icon: 'pulse-outline' as const,
+      title: 'Asthma logged',
+      meta: 'Today · 10:30',
+      note: 'Recovered quickly.',
+      color: darkColors.coral,
+    };
+    const onDelete = jest.fn();
     const timelineScreen = render(
+      <Timeline
+        entries={[entry]}
+        petName="Kiwi"
+        colors={darkColors}
+        deletingEventId={null}
+        onLog={jest.fn()}
+        onExport={jest.fn()}
+        onDelete={onDelete}
+      />,
+    );
+
+    expect(timelineScreen.getByText('Asthma logged')).toBeTruthy();
+    expect(timelineScreen.getByText('Recovered quickly.')).toBeTruthy();
+    fireEvent.press(
+      timelineScreen.getByLabelText('Delete timeline event: Asthma logged, Today · 10:30'),
+    );
+    expect(onDelete).toHaveBeenCalledWith(entry);
+  });
+
+  it('disables timeline deletion while an event is being removed', () => {
+    const onDelete = jest.fn();
+    const screen = render(
       <Timeline
         entries={[
           {
@@ -91,12 +124,18 @@ describe('dashboard components', () => {
         ]}
         petName="Kiwi"
         colors={darkColors}
+        deletingEventId="event-1"
         onLog={jest.fn()}
         onExport={jest.fn()}
+        onDelete={onDelete}
       />,
     );
 
-    expect(timelineScreen.getByText('Asthma logged')).toBeTruthy();
-    expect(timelineScreen.getByText('Recovered quickly.')).toBeTruthy();
+    const deleteButton = screen.getByLabelText(
+      'Delete timeline event: Asthma logged, Today · 10:30',
+    );
+    expect(deleteButton.props.accessibilityState).toEqual({ disabled: true });
+    fireEvent.press(deleteButton);
+    expect(onDelete).not.toHaveBeenCalled();
   });
 });

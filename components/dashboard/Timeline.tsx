@@ -10,11 +10,21 @@ type TimelineProps = {
   entries: TimelineEntry[];
   petName: string;
   colors: Palette;
+  deletingEventId: string | null;
   onLog: () => void;
   onExport: () => void;
+  onDelete: (entry: TimelineEntry) => void;
 };
 
-export function Timeline({ entries, petName, colors, onLog, onExport }: TimelineProps) {
+export function Timeline({
+  entries,
+  petName,
+  colors,
+  deletingEventId,
+  onLog,
+  onExport,
+  onDelete,
+}: TimelineProps) {
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   return (
@@ -27,7 +37,13 @@ export function Timeline({ entries, petName, colors, onLog, onExport }: Timeline
           <Text style={styles.link}>Export for vet</Text>
         </Pressable>
       </View>
-      <TimelineEvents entries={entries} petName={petName} colors={colors} />
+      <TimelineEvents
+        entries={entries}
+        petName={petName}
+        colors={colors}
+        deletingEventId={deletingEventId}
+        onDelete={onDelete}
+      />
     </View>
   );
 }

@@ -15,6 +15,7 @@ import { Appearance, AppearanceModal } from '@/components/dashboard/AppearanceMo
 import { BottomNavigation, DashboardTab } from '@/components/dashboard/BottomNavigation';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { DashboardLoadState } from '@/components/dashboard/DashboardLoadState';
+import { DeleteHealthEventModal } from '@/components/dashboard/DeleteHealthEventModal';
 import { HealthEventModal } from '@/components/dashboard/HealthEventModal';
 import { PetProfileModal } from '@/components/dashboard/PetProfileModal';
 import { PetSelector } from '@/components/dashboard/PetSelector';
@@ -24,7 +25,7 @@ import { UpcomingCare } from '@/components/dashboard/UpcomingCare';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useHealthEventForm } from '@/hooks/useHealthEventForm';
 import { usePetProfileForm } from '@/hooks/usePetProfileForm';
-import { toTimelineEntries } from '@/lib/healthEventPresentation';
+import { TimelineEntry, toTimelineEntries } from '@/lib/healthEventPresentation';
 import { darkColors, lightColors, Palette } from '@/lib/theme';
 
 const Alert = {
@@ -39,6 +40,8 @@ export default function Home() {
   const [appearance, setAppearance] = useState<Appearance>('system');
   const [appearanceModalOpen, setAppearanceModalOpen] = useState(false);
   const [tab, setTab] = useState<DashboardTab>('Today');
+  const [eventPendingDeletion, setEventPendingDeletion] = useState<TimelineEntry | null>(null);
+  const [deleteHealthEventError, setDeleteHealthEventError] = useState<string | null>(null);
   const isDark = appearance === 'dark' || (appearance === 'system' && scheme === 'dark');
   const colors = isDark ? darkColors : lightColors;
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -55,6 +58,8 @@ export default function Home() {
     retryLoad,
     selectPet: persistPetSelection,
     logHealthEvent,
+    deleteHealthEvent,
+    deletingHealthEventId,
     saveProfile,
   } = useDashboardData();
   const healthEventForm = useHealthEventForm({ onSubmit: logHealthEvent });
@@ -116,6 +121,30 @@ export default function Home() {
     Alert.alert('Event not saved', 'Please try again. Your event has not been added.');
   };
 
+  const deleteConfirmedHealthEvent = async () => {
+    if (!eventPendingDeletion) return;
+    setDeleteHealthEventError(null);
+    try {
+      await deleteHealthEvent(eventPendingDeletion.id);
+      setEventPendingDeletion(null);
+    } catch {
+      setDeleteHealthEventError(
+        'This event could not be deleted. It is still saved. Please try again.',
+      );
+    }
+  };
+
+  const requestDeleteHealthEvent = (entry: TimelineEntry) => {
+    setDeleteHealthEventError(null);
+    setEventPendingDeletion(entry);
+  };
+
+  const closeDeleteHealthEventModal = () => {
+    if (deletingHealthEventId !== null) return;
+    setEventPendingDeletion(null);
+    setDeleteHealthEventError(null);
+  };
+
   const requestCloseHealthEvent = useCallback(() => {
     if (healthEventFormIsSaving) return;
     if (!healthEventFormIsDirty) {
@@ -170,7 +199,9 @@ export default function Home() {
             entries={timeline}
             petName={activePet.name}
             colors={colors}
+            deletingEventId={deletingHealthEventId}
             onLog={healthEventForm.open}
+            onDelete={requestDeleteHealthEvent}
             onExport={() => {
               if (Platform.OS === 'web') window.print();
             }}
@@ -183,6 +214,16 @@ export default function Home() {
             setTab(nextTab);
             if (nextTab === 'Pet') petProfileForm.open(activePet);
           }}
+        />
+        <DeleteHealthEventModal
+          visible={eventPendingDeletion !== null}
+          entry={eventPendingDeletion}
+          petName={activePet.name}
+          isDeleting={deletingHealthEventId !== null}
+          error={deleteHealthEventError}
+          colors={colors}
+          onCancel={closeDeleteHealthEventModal}
+          onConfirm={() => void deleteConfirmedHealthEvent()}
         />
         <HealthEventModal
           visible={healthEventForm.visible}
