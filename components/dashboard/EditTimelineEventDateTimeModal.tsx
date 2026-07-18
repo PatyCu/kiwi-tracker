@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useMemo, useRef } from 'react';
-import { Modal, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { DateTimePickerField } from '@/components/forms/DateTimePickerField';
 import { Palette } from '@/lib/theme';
 
 type EditTimelineEventDateTimeModalProps = {
@@ -132,34 +133,30 @@ export function EditTimelineEventDateTimeModal({
           <View style={styles.dateTimeRow}>
             <View style={styles.dateTimeField}>
               <Text style={styles.label}>DATE</Text>
-              <TextInput
+              <DateTimePickerField
                 accessibilityLabel="Updated event date"
+                colors={colors}
+                disabled={isSaving}
+                isInvalid={!dateTimeIsValid}
+                mode="date"
                 value={occurredDate}
-                onChangeText={onOccurredDateChange}
-                placeholder="DD-MM-YYYY"
-                placeholderTextColor={colors.muted}
-                keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'numeric'}
-                maxLength={10}
-                style={[styles.input, !dateTimeIsValid && styles.inputError]}
+                onChange={onOccurredDateChange}
               />
             </View>
             <View style={styles.dateTimeField}>
               <Text style={styles.label}>TIME</Text>
-              <TextInput
+              <DateTimePickerField
                 accessibilityLabel="Updated event time"
+                colors={colors}
+                disabled={isSaving}
+                isInvalid={!dateTimeIsValid}
+                mode="time"
                 value={occurredTime}
-                onChangeText={onOccurredTimeChange}
-                placeholder="HH:MM"
-                placeholderTextColor={colors.muted}
-                keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'numeric'}
-                maxLength={5}
-                style={[styles.input, !dateTimeIsValid && styles.inputError]}
+                onChange={onOccurredTimeChange}
               />
             </View>
           </View>
-          {!dateTimeIsValid && (
-            <Text style={styles.errorText}>Use DD-MM-YYYY and a 24-hour time (HH:MM).</Text>
-          )}
+          {!dateTimeIsValid && <Text style={styles.errorText}>Choose a valid date and time.</Text>}
           <Pressable
             accessibilityRole="button"
             disabled={saveDisabled}
@@ -212,17 +209,6 @@ const makeStyles = (colors: Palette) =>
       marginTop: 24,
       marginBottom: 10,
     },
-    input: {
-      backgroundColor: colors.surface2,
-      borderWidth: 1,
-      borderColor: colors.line,
-      borderRadius: 14,
-      minHeight: 50,
-      padding: 14,
-      color: colors.text,
-      textAlignVertical: 'center',
-    },
-    inputError: { borderColor: colors.coral },
     errorText: { color: colors.coral, fontSize: 12, marginTop: 7 },
     saveButton: {
       backgroundColor: colors.kiwi,

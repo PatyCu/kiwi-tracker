@@ -3,7 +3,6 @@ import { useMemo } from 'react';
 import {
   Image,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -12,6 +11,7 @@ import {
   View,
 } from 'react-native';
 
+import { DateTimePickerField } from '@/components/forms/DateTimePickerField';
 import { Pet } from '@/lib/pets';
 import { Palette } from '@/lib/theme';
 
@@ -110,19 +110,19 @@ export function PetProfileModal({
               style={styles.input}
             />
             <Text style={styles.label}>DATE OF BIRTH</Text>
-            <TextInput
+            <DateTimePickerField
+              accessibilityLabel="Date of birth"
+              allowEmpty
+              colors={colors}
+              disabled={isSaving}
+              isInvalid={!birthDateIsValid}
+              maximumDate={new Date()}
+              mode="date"
               value={birthDate}
-              onChangeText={onBirthDateChange}
-              placeholder="DD-MM-YYYY"
-              placeholderTextColor={colors.muted}
-              keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'numeric'}
-              maxLength={10}
-              style={[styles.input, !birthDateIsValid && styles.inputError]}
+              onChange={onBirthDateChange}
             />
             {!birthDateIsValid && (
-              <Text style={styles.errorText}>
-                Use DD-MM-YYYY and choose today or an earlier date.
-              </Text>
+              <Text style={styles.errorText}>Choose today or an earlier date.</Text>
             )}
             <Pressable
               disabled={saveDisabled}
@@ -184,7 +184,6 @@ const makeStyles = (colors: Palette) =>
       color: colors.text,
       textAlignVertical: 'center',
     },
-    inputError: { borderColor: colors.coral },
     errorText: { color: colors.coral, fontSize: 12, marginTop: 7 },
     choices: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     choice: {

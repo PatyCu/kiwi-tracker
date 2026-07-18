@@ -39,8 +39,12 @@ describe('home screen behavior', () => {
       screen.getByRole('button', { name: 'Switched an item' }).props.accessibilityState,
     ).toMatchObject({ disabled: true });
     expect(screen.queryByText('WHAT DID THIS REPLACE?')).toBeNull();
-    expect(screen.getByLabelText('Diet change date').props.value).toMatch(/^\d{2}-\d{2}-\d{4}$/);
-    expect(screen.getByLabelText('Diet change time').props.value).toMatch(/^\d{2}:\d{2}$/);
+    expect(screen.getByLabelText('Diet change date').props.accessibilityValue.text).toMatch(
+      /^\d{2}-\d{2}-\d{4}$/,
+    );
+    expect(screen.getByLabelText('Diet change time').props.accessibilityValue.text).toMatch(
+      /^\d{2}:\d{2}$/,
+    );
     expect(screen.getByLabelText(Platform.OS === 'ios' ? 'Cancel' : 'Close')).toBeTruthy();
   });
 
@@ -66,14 +70,28 @@ describe('home screen behavior', () => {
     ).toMatchObject({ disabled: false });
   });
 
-  it('validates an impossible birth date in the pet form', async () => {
+  it('selects a birth date from a picker bounded to today', async () => {
+    const testStartedAt = Date.now();
     const screen = render(<Home />);
 
     await waitFor(() => expect(screen.getByText('Your pets')).toBeTruthy());
     fireEvent.press(screen.getByLabelText('Add another pet'));
-    fireEvent.changeText(screen.getByPlaceholderText('DD-MM-YYYY'), '31-02-2025');
+    fireEvent.press(screen.getByLabelText('Date of birth'));
 
-    expect(screen.getByText('Use DD-MM-YYYY and choose today or an earlier date.')).toBeTruthy();
+    const picker = screen.getByTestId('Date of birth-picker');
+    const maximumDate = new Date(picker.props.maximumDate).getTime();
+    expect(maximumDate).toBeGreaterThanOrEqual(testStartedAt);
+    expect(maximumDate).toBeLessThanOrEqual(Date.now());
+    const selectedDate = new Date(2020, 2, 5, 12);
+    fireEvent(
+      picker,
+      'valueChange',
+      { nativeEvent: { timestamp: selectedDate.getTime(), utcOffset: 0 } },
+      selectedDate,
+    );
+    fireEvent.press(screen.getByLabelText('Confirm date selection'));
+
+    expect(screen.getByLabelText('Date of birth').props.accessibilityValue.text).toBe('05-03-2020');
   });
 
   it('confirms before discarding an edited symptom on web', async () => {
@@ -136,9 +154,19 @@ describe('home screen behavior', () => {
     fireEvent.press(screen.getByLabelText(/Edit date and time for Asthma logged/));
 
     expect(screen.getByText('Edit date and time')).toBeTruthy();
-    expect(screen.getByLabelText('Updated event date').props.value).toBe(expectedDisplay.date);
-    expect(screen.getByLabelText('Updated event time').props.value).toBe(expectedDisplay.time);
-    fireEvent.changeText(screen.getByLabelText('Updated event time'), '12:45');
+    expect(screen.getByLabelText('Updated event date').props.accessibilityValue.text).toBe(
+      expectedDisplay.date,
+    );
+    expect(screen.getByLabelText('Updated event time').props.accessibilityValue.text).toBe(
+      expectedDisplay.time,
+    );
+    const selectedTime = new Date(2026, 6, 16, 12, 45);
+    fireEvent(
+      screen.getByTestId('Updated event time-picker'),
+      'valueChange',
+      { nativeEvent: { timestamp: selectedTime.getTime(), utcOffset: 0 } },
+      selectedTime,
+    );
     fireEvent.press(screen.getByText('Save date and time'));
 
     const expectedOccurredAt = toEventTimestamp(expectedDisplay.date, '12:45');
@@ -149,6 +177,56 @@ describe('home screen behavior', () => {
       expect(stored[0].occurredAt).toBe(expectedOccurredAt);
     });
     expect(screen.queryByText('Edit date and time')).toBeNull();
+  });
+
+  it('reorders timeline events after editing an older event to occur most recently', async () => {
+    await mockedStorage.setItem(
+      '@kiwi-tracker/timeline-events/v1',
+      JSON.stringify([
+        {
+          id: 'older-event',
+          petId: 'kiwi',
+          type: 'symptom',
+          symptom: 'Asthma',
+          occurredAt: '2026-07-16T09:30:00.000Z',
+          recordedAt: '2026-07-16T09:31:00.000Z',
+        },
+        {
+          id: 'newer-event',
+          petId: 'kiwi',
+          type: 'symptom',
+          symptom: 'Vomiting',
+          occurredAt: '2026-07-17T09:30:00.000Z',
+          recordedAt: '2026-07-17T09:31:00.000Z',
+        },
+      ]),
+    );
+    const screen = render(<Home />);
+
+    await waitFor(() => expect(screen.getByText('Asthma logged')).toBeTruthy());
+    expect(
+      screen
+        .getAllByText(/^(Vomiting|Asthma) logged$/)
+        .map((eventTitle) => eventTitle.props.children),
+    ).toEqual(['Vomiting logged', 'Asthma logged']);
+
+    fireEvent.press(screen.getByLabelText(/Edit date and time for Asthma logged/));
+    const movedOccurredAt = new Date(2026, 6, 18, 9, 30);
+    fireEvent(
+      screen.getByTestId('Updated event date-picker'),
+      'valueChange',
+      { nativeEvent: { timestamp: movedOccurredAt.getTime(), utcOffset: 0 } },
+      movedOccurredAt,
+    );
+    fireEvent.press(screen.getByText('Save date and time'));
+
+    await waitFor(() =>
+      expect(
+        screen
+          .getAllByText(/^(Vomiting|Asthma) logged$/)
+          .map((eventTitle) => eventTitle.props.children),
+      ).toEqual(['Asthma logged', 'Vomiting logged']),
+    );
   });
 
   it('cancels and confirms timeline deletion through the app dialog', async () => {

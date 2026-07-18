@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 
+import { DateTimePickerField } from '@/components/forms/DateTimePickerField';
 import { DietChangeType } from '@/hooks/useDietChangeForm';
 import { DIET_ITEM_TYPES, DietItemSnapshot, DietItemType } from '@/lib/timelineEvents';
 import { Palette } from '@/lib/theme';
@@ -242,33 +243,31 @@ export function DietChangeModal({
             <View style={styles.dateTimeRow}>
               <View style={styles.dateTimeField}>
                 <Text style={styles.label}>EFFECTIVE DATE</Text>
-                <TextInput
+                <DateTimePickerField
                   accessibilityLabel="Diet change date"
+                  colors={colors}
+                  disabled={isSaving}
+                  isInvalid={!dateTimeIsValid}
+                  mode="date"
                   value={occurredDate}
-                  onChangeText={onOccurredDateChange}
-                  placeholder="DD-MM-YYYY"
-                  placeholderTextColor={colors.muted}
-                  keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'numeric'}
-                  maxLength={10}
-                  style={[styles.input, !dateTimeIsValid && styles.inputError]}
+                  onChange={onOccurredDateChange}
                 />
               </View>
               <View style={styles.dateTimeField}>
                 <Text style={styles.label}>TIME</Text>
-                <TextInput
+                <DateTimePickerField
                   accessibilityLabel="Diet change time"
+                  colors={colors}
+                  disabled={isSaving}
+                  isInvalid={!dateTimeIsValid}
+                  mode="time"
                   value={occurredTime}
-                  onChangeText={onOccurredTimeChange}
-                  placeholder="HH:MM"
-                  placeholderTextColor={colors.muted}
-                  keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'numeric'}
-                  maxLength={5}
-                  style={[styles.input, !dateTimeIsValid && styles.inputError]}
+                  onChange={onOccurredTimeChange}
                 />
               </View>
             </View>
             {!dateTimeIsValid && (
-              <Text style={styles.errorText}>Use DD-MM-YYYY and a 24-hour time (HH:MM).</Text>
+              <Text style={styles.errorText}>Choose a valid date and time.</Text>
             )}
             <Text style={styles.label}>NOTES</Text>
             <TextInput

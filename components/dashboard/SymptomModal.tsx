@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 
+import { DateTimePickerField } from '@/components/forms/DateTimePickerField';
 import { SYMPTOM_KINDS, SymptomKind } from '@/lib/timelineEvents';
 import { Palette } from '@/lib/theme';
 
@@ -163,33 +164,31 @@ export function SymptomModal({
             <View style={styles.dateTimeRow}>
               <View style={styles.dateTimeField}>
                 <Text style={styles.label}>DATE</Text>
-                <TextInput
+                <DateTimePickerField
                   accessibilityLabel="Event date"
+                  colors={colors}
+                  disabled={isSaving}
+                  isInvalid={!dateTimeIsValid}
+                  mode="date"
                   value={occurredDate}
-                  onChangeText={onOccurredDateChange}
-                  placeholder="DD-MM-YYYY"
-                  placeholderTextColor={colors.muted}
-                  keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'numeric'}
-                  maxLength={10}
-                  style={[styles.input, !dateTimeIsValid && styles.inputError]}
+                  onChange={onOccurredDateChange}
                 />
               </View>
               <View style={styles.dateTimeField}>
                 <Text style={styles.label}>TIME</Text>
-                <TextInput
+                <DateTimePickerField
                   accessibilityLabel="Event time"
+                  colors={colors}
+                  disabled={isSaving}
+                  isInvalid={!dateTimeIsValid}
+                  mode="time"
                   value={occurredTime}
-                  onChangeText={onOccurredTimeChange}
-                  placeholder="HH:MM"
-                  placeholderTextColor={colors.muted}
-                  keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'numeric'}
-                  maxLength={5}
-                  style={[styles.input, !dateTimeIsValid && styles.inputError]}
+                  onChange={onOccurredTimeChange}
                 />
               </View>
             </View>
             {!dateTimeIsValid && (
-              <Text style={styles.errorText}>Use DD-MM-YYYY and a 24-hour time (HH:MM).</Text>
+              <Text style={styles.errorText}>Choose a valid date and time.</Text>
             )}
             <Text style={styles.label}>NOTES</Text>
             <TextInput
@@ -285,7 +284,6 @@ const makeStyles = (colors: Palette) =>
       minHeight: 88,
       textAlignVertical: 'top',
     },
-    inputError: { borderColor: colors.coral },
     errorText: { color: colors.coral, fontSize: 12, marginTop: 7 },
     saveButton: {
       backgroundColor: colors.kiwi,
