@@ -32,6 +32,7 @@ import { usePetProfileForm } from '@/hooks/usePetProfileForm';
 import { useSymptomForm } from '@/hooks/useSymptomForm';
 import { useTimelineEventDateTimeForm } from '@/hooks/useTimelineEventDateTimeForm';
 import { TimelineEntry, toTimelineEntries } from '@/lib/timelineEventPresentation';
+import { getPetStatus } from '@/lib/petStatus';
 import { darkColors, lightColors, Palette } from '@/lib/theme';
 
 const Alert = {
@@ -95,6 +96,10 @@ export default function Home() {
   const timeline = useMemo(
     () => toTimelineEntries(timelineEvents, activePetId, colors.coral, colors.kiwi, colors.muted),
     [activePetId, colors.coral, colors.kiwi, colors.muted, timelineEvents],
+  );
+  const petStatus = useMemo(
+    () => getPetStatus(timelineEvents.filter((event) => event.petId === activePetId)),
+    [activePetId, timelineEvents],
   );
 
   useEffect(() => {
@@ -295,12 +300,7 @@ export default function Home() {
             onSelectPet={selectPet}
             onAddPet={() => petProfileForm.open()}
           />
-          <TodaySummary
-            pet={activePet}
-            hasEvents={timeline.length > 0}
-            wide={wide}
-            colors={colors}
-          />
+          <TodaySummary pet={activePet} status={petStatus} wide={wide} colors={colors} />
           <UpcomingCare colors={colors} />
           <Timeline
             entries={timeline}

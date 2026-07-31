@@ -1,10 +1,12 @@
 import { fireEvent, render } from '@testing-library/react-native';
-import { Platform } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 
 import { PetSelector } from '@/components/dashboard/PetSelector';
 import { QuickLog } from '@/components/dashboard/QuickLog';
 import { Timeline } from '@/components/dashboard/Timeline';
+import { TodaySummary } from '@/components/dashboard/TodaySummary';
 import { Pet } from '@/lib/pets';
+import { PetStatusLevel } from '@/lib/petStatus';
 import { darkColors } from '@/lib/theme';
 
 jest.mock('@expo/vector-icons', () => {
@@ -12,7 +14,7 @@ jest.mock('@expo/vector-icons', () => {
   const { Text } = require('react-native');
 
   return {
-    Ionicons: ({ name }: { name: string }) => React.createElement(Text, null, name),
+    Ionicons: ({ name, ...props }: { name: string }) => React.createElement(Text, props, name),
   };
 });
 
@@ -33,6 +35,35 @@ const pets: Pet[] = [
 ];
 
 describe('dashboard components', () => {
+  it.each([
+    [PetStatusLevel.Red, darkColors.coral],
+    [PetStatusLevel.Amber, darkColors.statusAmber],
+    [PetStatusLevel.Green, darkColors.kiwi],
+  ])('uses the %s status color for both the Today indicator and heart', (status, color) => {
+    const screen = render(
+      <TodaySummary
+        pet={pets[0]}
+        status={{ status, headline: 'Headline', description: 'Description' }}
+        wide={false}
+        colors={darkColors}
+      />,
+    );
+
+    expect(
+      StyleSheet.flatten(screen.getByTestId('today-status-indicator').props.style),
+    ).toMatchObject({ borderColor: color });
+    expect(screen.getByTestId('today-status-icon').props).toMatchObject({
+      color,
+      children: 'heart',
+    });
+    expect(StyleSheet.flatten(screen.getByTestId('today-summary-card').props.style)).toMatchObject({
+      borderColor: darkColors.line,
+    });
+    expect(
+      StyleSheet.flatten(screen.getByTestId('today-status-description').props.style),
+    ).toMatchObject({ gap: 6 });
+  });
+
   it('renders individual pet cards and reports selection and creation actions', () => {
     const onSelectPet = jest.fn();
     const onAddPet = jest.fn();
