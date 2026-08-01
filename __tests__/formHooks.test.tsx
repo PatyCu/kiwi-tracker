@@ -1,11 +1,11 @@
 import { act, renderHook } from '@testing-library/react-native';
 import * as ImagePicker from 'expo-image-picker';
 
-import { useDietChangeForm } from '@/hooks/useDietChangeForm';
-import { useOtherEventForm } from '@/hooks/useOtherEventForm';
-import { usePetProfileForm } from '@/hooks/usePetProfileForm';
-import { useSymptomForm } from '@/hooks/useSymptomForm';
-import { useTimelineEventDateTimeForm } from '@/hooks/useTimelineEventDateTimeForm';
+import { useDietChangeForm } from '@/modules/pet-events/forms/useDietChangeForm';
+import { useOtherEventForm } from '@/modules/pet-events/forms/useOtherEventForm';
+import { usePetEventDateTimeForm } from '@/modules/pet-events/forms/usePetEventDateTimeForm';
+import { useSymptomForm } from '@/modules/pet-events/forms/useSymptomForm';
+import { usePetProfileForm } from '@/modules/pets/profile/usePetProfileForm';
 
 jest.mock('expo-image-picker', () => ({
   requestMediaLibraryPermissionsAsync: jest.fn(),
@@ -180,7 +180,7 @@ describe('form hooks', () => {
 
   it('edits and submits a timeline event date and time', async () => {
     const onSubmit = jest.fn().mockResolvedValue(undefined);
-    const { result } = renderHook(() => useTimelineEventDateTimeForm({ onSubmit }));
+    const { result } = renderHook(() => usePetEventDateTimeForm({ onSubmit }));
 
     act(() => {
       result.current.open('event-1', 'Asthma logged', '2026-07-16T09:30:00.000Z');
@@ -204,7 +204,7 @@ describe('form hooks', () => {
 
   it('rejects an invalid timeline event timestamp', async () => {
     const onSubmit = jest.fn().mockResolvedValue(undefined);
-    const { result } = renderHook(() => useTimelineEventDateTimeForm({ onSubmit }));
+    const { result } = renderHook(() => usePetEventDateTimeForm({ onSubmit }));
 
     act(() => {
       result.current.open('event-1', 'Asthma logged', '2026-07-16T09:30:00.000Z');
