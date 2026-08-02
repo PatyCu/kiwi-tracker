@@ -9,7 +9,7 @@ import { formatPetNames } from '@/modules/today/formatPetNames';
 
 const LAST_DAY_MS = 24 * 60 * 60 * 1000;
 
-export type PetAttention = { pet: Pet; status: PetStatus; eventId: string };
+export type PetAttention = { pet: Pet; status: PetStatus };
 export type TodayStatusSummary = {
   indicatorLabel: string;
   kicker: string;
@@ -36,13 +36,12 @@ export function buildTodayViewModel(
     return {
       pet,
       status: evaluation.status,
-      eventId: evaluation.triggeringEventIds[0] ?? '',
     };
   });
   const statusSummary = buildStatusSummary(evaluations);
   const attention = [...evaluations]
-    .filter(({ status, eventId }) => status.status !== PetStatusLevel.Green && eventId !== '')
-    .map(({ pet, status, eventId }) => ({ pet, status, eventId }))
+    .filter(({ status }) => status.status !== PetStatusLevel.Green)
+    .map(({ pet, status }) => ({ pet, status }))
     .sort((left, right) => statusPriority(right.status) - statusPriority(left.status));
   const recentEvents = [...events]
     .filter((event) => Date.parse(event.occurredAt) <= now.getTime())
@@ -56,9 +55,7 @@ export function buildTodayViewModel(
   return { statusSummary, attention, recentEvents, updatesInLastDay };
 }
 
-function buildStatusSummary(
-  evaluations: { pet: Pet; status: PetStatus; eventId: string }[],
-): TodayStatusSummary {
+function buildStatusSummary(evaluations: { pet: Pet; status: PetStatus }[]): TodayStatusSummary {
   const highestPriorityEvaluation = evaluations.reduce((highest, current) =>
     statusPriority(current.status) > statusPriority(highest.status) ? current : highest,
   );

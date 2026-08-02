@@ -35,6 +35,7 @@
 ## Navigation and product scope
 
 - Global tabs cover cross-pet views: Today, Pets, Timeline, and Settings.
+- The Pets tab keeps its selected pet explicit in the `petId` route parameter.
 - Pet routes use `petId`; event routes also use `recordId`.
 - Today is a cross-pet overview; pet pages provide drill-down.
 - The green, amber, and red status rules and copy have one source of truth.

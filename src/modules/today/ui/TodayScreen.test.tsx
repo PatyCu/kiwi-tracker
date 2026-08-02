@@ -179,8 +179,8 @@ describe('Today screen', () => {
     const radarItem = screen.getByLabelText(/Kiwi: Diarrhea was logged today/);
     fireEvent.press(radarItem);
     expect(jest.requireMock('expo-router').router.push).toHaveBeenCalledWith({
-      pathname: '/pets/[petId]/records/[recordId]',
-      params: { petId: 'kiwi', recordId: 'symptom-1' },
+      pathname: '/pets',
+      params: { petId: 'kiwi' },
     });
     expect(
       StyleSheet.flatten(screen.getByTestId('today-status-indicator').props.style),

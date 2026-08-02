@@ -62,10 +62,10 @@ export function TodayScreen() {
           summary={viewModel.statusSummary}
           attention={viewModel.attention}
           colors={colors}
-          onOpenRadarItem={({ pet, eventId }) =>
+          onOpenPet={(pet) =>
             router.push({
-              pathname: '/pets/[petId]/records/[recordId]',
-              params: { petId: pet.id, recordId: eventId },
+              pathname: '/pets',
+              params: { petId: pet.id },
             })
           }
         />

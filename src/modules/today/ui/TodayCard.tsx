@@ -15,12 +15,12 @@ type TodayCardProps = {
   summary: TodayStatusSummary;
   attention: readonly PetAttention[];
   colors: Palette;
-  onOpenRadarItem: (item: PetAttention) => void;
+  onOpenPet: (pet: Pet) => void;
 };
 
 const MAX_VISIBLE_AVATARS = 4;
 
-export function TodayCard({ pets, summary, attention, colors, onOpenRadarItem }: TodayCardProps) {
+export function TodayCard({ pets, summary, attention, colors, onOpenPet }: TodayCardProps) {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const allClear = summary.status.status === PetStatusLevel.Green;
 
@@ -52,7 +52,7 @@ export function TodayCard({ pets, summary, attention, colors, onOpenRadarItem }:
               colors={colors}
               showDivider={index > 0}
               styles={styles}
-              onPress={() => onOpenRadarItem(item)}
+              onPress={() => onOpenPet(item.pet)}
             />
           ))
         )}
@@ -113,6 +113,7 @@ function RadarItem({
   return (
     <Pressable
       accessibilityLabel={`${item.pet.name}: ${descriptionLines.join(' ')}`}
+      accessibilityHint={`Opens ${item.pet.name} in Pets.`}
       accessibilityRole="button"
       onPress={onPress}
       style={[styles.radarRow, showDivider && styles.radarDivider]}

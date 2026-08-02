@@ -44,7 +44,7 @@ describe('buildTodayViewModel', () => {
       description: '- Luna: Diarrhea was logged today.',
     });
     expect(result.attention).toHaveLength(2);
-    expect(result.attention[0]).toMatchObject({ pet: { id: 'luna' }, eventId: 'symptom-1' });
-    expect(result.attention[1]).toMatchObject({ pet: { id: 'kiwi' }, eventId: 'diet-change-1' });
+    expect(result.attention[0]).toMatchObject({ pet: { id: 'luna' } });
+    expect(result.attention[1]).toMatchObject({ pet: { id: 'kiwi' } });
   });
 });
