@@ -8,7 +8,7 @@ import { PetSelector } from '@/modules/pets/ui/PetSelector';
 import { LoadError } from '@/shared/ui/LoadState';
 import { PlaceholderCard } from '@/shared/ui/PlaceholderCard';
 import { Screen } from '@/shared/ui/Screen';
-import { ScreenHeader } from '@/shared/ui/ScreenHeader';
+import { SectionHeader } from '@/shared/ui/SectionHeader';
 
 export function PetsScreen() {
   const { petId } = useLocalSearchParams<{ petId?: string }>();
@@ -28,12 +28,7 @@ export function PetsScreen() {
   if (!selectedPet) {
     return (
       <Screen>
-        <ScreenHeader
-          showLogo
-          title="Pets"
-          subtitle="Manage each pet’s care and history."
-          action={{ accessibilityLabel: 'Add pet', icon: 'add', onPress: addPet }}
-        />
+        <SectionHeader compact title="Your pets" actionLabel="Add pet" onAction={addPet} />
         <PlaceholderCard
           title="No pets yet"
           description="Add a pet to start tracking their care."
@@ -45,7 +40,6 @@ export function PetsScreen() {
 
   return (
     <Screen>
-      <ScreenHeader showLogo title="Pets" subtitle="Manage each pet’s care and history." />
       <PetSelector
         pets={pets}
         selectedPetId={selectedPet.id}

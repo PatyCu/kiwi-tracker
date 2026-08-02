@@ -65,6 +65,9 @@ describe('Today screen', () => {
     expect(screen.getByText('Kiwi is in the green.')).toBeTruthy();
     expect(screen.getByText('No calendar events yet')).toBeTruthy();
     expect(screen.getByText('No overdue items')).toBeTruthy();
+    expect(screen.getByText('Add event')).toBeTruthy();
+    expect(screen.queryByText('Recent updates')).toBeNull();
+    expect(screen.queryByLabelText('Quick log')).toBeNull();
   });
 
   it('renders one aggregate semaphore card for multiple persisted pets', async () => {
@@ -105,15 +108,11 @@ describe('Today screen', () => {
   it('quick-logs a diet change for an explicit pet and updates Today', async () => {
     const screen = render(<TodayScreen />, { wrapper: Providers });
     await waitFor(() => expect(screen.getByText('Today with Kiwi')).toBeTruthy());
-    fireEvent.press(screen.getByLabelText('Quick log'));
-    const dietChangeActions = screen.getAllByText('Diet change');
-    fireEvent.press(dietChangeActions[dietChangeActions.length - 1]);
+    fireEvent.press(screen.getByLabelText('Add diet change to timeline'));
     fireEvent.changeText(screen.getByLabelText('Diet product name'), 'Greenies Dental chew');
     fireEvent.press(screen.getByText('Save diet change'));
 
-    await waitFor(() =>
-      expect(screen.getByLabelText(/Kiwi: Added Greenies Dental chew/)).toBeTruthy(),
-    );
+    await waitFor(() => expect(screen.getByText('Something to keep an eye on.')).toBeTruthy());
     await expect(storage.getItem('@kiwi-tracker/timeline-events/v1')).resolves.toContain(
       'diet-change',
     );

@@ -5,8 +5,7 @@ import { StyleSheet, View } from 'react-native';
 import { usePetEventForms } from '@/modules/pet-events/state/PetEventFormsProvider';
 import { usePetEvents } from '@/modules/pet-events/state/PetEventsProvider';
 import { toTimelineEntries } from '@/modules/pet-events/timeline/toTimelineEntries';
-import { QuickLogCard } from '@/modules/pet-events/ui/QuickLogCard';
-import { Timeline } from '@/modules/pet-events/ui/Timeline';
+import { PetActivityCard } from '@/modules/pet-events/ui/PetActivityCard';
 import { getPetStatus } from '@/modules/pet-status/calculatePetStatus';
 import { PetStatusCard } from '@/modules/pet-status/ui/PetStatusCard';
 import { Pet } from '@/modules/pets/model/Pet';
@@ -35,7 +34,7 @@ export function PetOverview({ pet, onEditPet }: PetOverviewProps) {
     colors.kiwi,
     colors.muted,
     now,
-  ).slice(0, 3);
+  );
 
   return (
     <>
@@ -50,19 +49,15 @@ export function PetOverview({ pet, onEditPet }: PetOverviewProps) {
         title="No calendar events yet"
         description="Upcoming care will appear here when calendar events are implemented."
       />
-      <SectionHeader title="Add event" />
-      <QuickLogCard
-        colors={colors}
-        onLogSymptom={() => forms.openSymptom(pet.id)}
-        onLogDietChange={() => forms.openDietChange(pet.id)}
-        onLogOther={() => forms.openOtherEvent(pet.id)}
-      />
-      <Timeline
+      <PetActivityCard
         entries={entries}
         petName={pet.name}
         colors={colors}
         deletingEventId={deletingEventId}
         updatingEventId={updatingEventId}
+        onLogSymptom={() => forms.openSymptom(pet.id)}
+        onLogDietChange={() => forms.openDietChange(pet.id)}
+        onLogOther={() => forms.openOtherEvent(pet.id)}
         onDelete={(entry) => forms.requestDeleteEvent(entry, pet.name)}
         onEditDateTime={forms.editEventDateTime}
         onOpen={(entry) =>

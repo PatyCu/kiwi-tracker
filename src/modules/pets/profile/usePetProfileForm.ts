@@ -19,8 +19,8 @@ type UsePetProfileFormInput = {
   onSubmit: (input: PetProfileInput) => Promise<SavePetProfileResult>;
 };
 
-export type PhotoPickResult = 'selected' | 'cancelled' | 'permission-denied' | 'failed';
-export type PetProfileSubmitResult =
+type PhotoPickResult = 'selected' | 'cancelled' | 'permission-denied' | 'failed';
+type PetProfileSubmitResult =
   { status: 'saved'; result: SavePetProfileResult } | { status: 'failed' | 'invalid' };
 
 export function usePetProfileForm({ onSubmit }: UsePetProfileFormInput) {

@@ -5,7 +5,7 @@ import { isPetEvent } from '@/modules/pet-events/model/validatePetEvent';
 
 const STORAGE_KEY = '@kiwi-tracker/timeline-events/v1';
 
-export type PetEventStorageErrorCode = 'READ_FAILED' | 'INVALID_DATA' | 'WRITE_FAILED';
+type PetEventStorageErrorCode = 'READ_FAILED' | 'INVALID_DATA' | 'WRITE_FAILED';
 
 export class PetEventStorageError extends Error {
   readonly code: PetEventStorageErrorCode;

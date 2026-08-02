@@ -16,10 +16,9 @@ export type TodayStatusSummary = {
   status: PetStatus;
 };
 
-export type TodayViewModel = {
+type TodayViewModel = {
   statusSummary: TodayStatusSummary;
   attention: PetAttention[];
-  recentEvents: PetEvent[];
   updatesInLastDay: number;
 };
 
@@ -43,16 +42,12 @@ export function buildTodayViewModel(
     .filter(({ status }) => status.status !== PetStatusLevel.Green)
     .map(({ pet, status }) => ({ pet, status }))
     .sort((left, right) => statusPriority(right.status) - statusPriority(left.status));
-  const recentEvents = [...events]
-    .filter((event) => Date.parse(event.occurredAt) <= now.getTime())
-    .sort((left, right) => Date.parse(right.occurredAt) - Date.parse(left.occurredAt))
-    .slice(0, 5);
   const threshold = now.getTime() - LAST_DAY_MS;
   const updatesInLastDay = events.filter(
     (event) => Date.parse(event.recordedAt) >= threshold,
   ).length;
 
-  return { statusSummary, attention, recentEvents, updatesInLastDay };
+  return { statusSummary, attention, updatesInLastDay };
 }
 
 function buildStatusSummary(evaluations: { pet: Pet; status: PetStatus }[]): TodayStatusSummary {

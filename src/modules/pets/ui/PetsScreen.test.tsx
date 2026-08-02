@@ -81,6 +81,9 @@ describe('Pets screen', () => {
     });
     expect(screen.getByText('Overview')).toBeTruthy();
     expect(screen.getByText('Edit pet')).toBeTruthy();
+    const activityCard = screen.getByTestId('pet-activity-card');
+    expect(activityCard.findByProps({ children: 'Add event' })).toBeTruthy();
+    expect(activityCard.findByProps({ children: 'Recent timeline' })).toBeTruthy();
     expect(screen.queryByLabelText('View Luna')).toBeNull();
   });
 
@@ -94,5 +97,30 @@ describe('Pets screen', () => {
       petId: 'kiwi',
     });
     expect(jest.requireMock('expo-router').router.push).not.toHaveBeenCalled();
+  });
+
+  it('shows all recorded events for the selected pet in its recent timeline', async () => {
+    const recordedAt = new Date().toISOString();
+    await storage.setItem(
+      '@kiwi-tracker/timeline-events/v1',
+      JSON.stringify(
+        ['First', 'Second', 'Third', 'Fourth'].map((title, index) => ({
+          id: `event-${index}`,
+          petId: 'luna',
+          type: 'other',
+          title,
+          occurredAt: new Date(Date.now() - index * 60_000).toISOString(),
+          recordedAt,
+        })),
+      ),
+    );
+
+    const screen = render(<PetsScreen />, { wrapper: Providers });
+
+    await waitFor(() => expect(screen.getByText('Today with Luna')).toBeTruthy());
+    expect(screen.getByText('First')).toBeTruthy();
+    expect(screen.getByText('Second')).toBeTruthy();
+    expect(screen.getByText('Third')).toBeTruthy();
+    expect(screen.getByText('Fourth')).toBeTruthy();
   });
 });

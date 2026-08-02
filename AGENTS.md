@@ -34,6 +34,7 @@
 ## Workflow
 
 - Inspect the relevant code and configuration before making changes.
+- After refactors, remove obsolete files, exports, imports, and empty directories.
 - Use trunk-based development by default. When asked to commit and push without an explicit branch request, commit the scoped changes directly to `main` and push `main` upstream; create a separate branch only when explicitly requested.
 - Before asking a developer to repeat setup or authentication, verify whether the failure is caused by sandbox, keychain, network, or permission restrictions in the agent's execution environment.
 - For GitHub publishing, attempt the HTTPS push outside the sandbox with `GIT_TERMINAL_PROMPT=0` first so keychain prompts cannot hang it. Do not add a preflight authentication check to the successful path.

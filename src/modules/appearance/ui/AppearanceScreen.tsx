@@ -5,7 +5,6 @@ import { Appearance } from '@/shared/theme/Appearance';
 import { useAppearance } from '@/shared/theme/AppearanceProvider';
 import { Palette } from '@/shared/theme/palette';
 import { Screen } from '@/shared/ui/Screen';
-import { ScreenHeader } from '@/shared/ui/ScreenHeader';
 
 const options: Appearance[] = ['system', 'light', 'dark'];
 
@@ -14,7 +13,6 @@ export function AppearanceScreen() {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
     <Screen>
-      <ScreenHeader showLogo title="Settings" subtitle="App preferences for this device." />
       <Text style={styles.sectionTitle}>Appearance</Text>
       <View style={styles.card}>
         {options.map((option, index) => (

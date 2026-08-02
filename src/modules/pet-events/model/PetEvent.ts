@@ -49,7 +49,7 @@ export type DietChangeEvent = PetEventBase & {
   change: DietChange;
 };
 
-export type OtherEvent = PetEventBase & {
+type OtherEvent = PetEventBase & {
   type: 'other';
   title: string;
 };

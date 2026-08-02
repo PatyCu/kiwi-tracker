@@ -18,7 +18,7 @@ export function SectionHeader({ title, actionLabel, onAction, compact }: Section
     <View style={[styles.header, compact && styles.compactHeader]}>
       <Text style={styles.title}>{title}</Text>
       {actionLabel && onAction && (
-        <Pressable accessibilityRole="button" onPress={onAction}>
+        <Pressable accessibilityLabel={actionLabel} accessibilityRole="button" onPress={onAction}>
           <Text style={styles.action}>{actionLabel}</Text>
         </Pressable>
       )}

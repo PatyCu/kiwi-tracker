@@ -1,11 +1,7 @@
 import { fireEvent, render } from '@testing-library/react-native';
-import { Platform, StyleSheet } from 'react-native';
+import { Platform } from 'react-native';
 
-import { QuickLog } from '@/modules/pet-events/ui/QuickLog';
-import { Timeline } from '@/modules/pet-events/ui/Timeline';
-import { Pet } from '@/modules/pets/model/Pet';
-import { PetStatusLevel } from '@/modules/pet-status/calculatePetStatus';
-import { PetStatusCard } from '@/modules/pet-status/ui/PetStatusCard';
+import { TimelineEvents } from '@/modules/pet-events/ui/TimelineEvents';
 import { darkColors } from '@/shared/theme/palette';
 
 jest.mock('@expo/vector-icons', () => {
@@ -17,90 +13,10 @@ jest.mock('@expo/vector-icons', () => {
   };
 });
 
-const pets: Pet[] = [
-  {
-    id: 'kiwi',
-    name: 'Kiwi',
-    species: 'Cat',
-    createdAt: '2025-01-01T00:00:00.000Z',
-  },
-  {
-    id: 'miso',
-    name: 'Miso',
-    species: 'Dog',
-    breed: 'Beagle',
-    createdAt: '2025-01-02T00:00:00.000Z',
-  },
-];
-
-describe('shared product UI', () => {
-  it.each([
-    [PetStatusLevel.Red, darkColors.coral],
-    [PetStatusLevel.Amber, darkColors.statusAmber],
-    [PetStatusLevel.Green, darkColors.kiwi],
-  ])('uses the %s status color for both the Today indicator and heart', (status, color) => {
-    const screen = render(
-      <PetStatusCard
-        pet={pets[0]}
-        status={{ status, headline: 'Headline', description: 'Description' }}
-        wide={false}
-        colors={darkColors}
-      />,
-    );
-
-    expect(
-      StyleSheet.flatten(screen.getByTestId('today-status-indicator').props.style),
-    ).toMatchObject({ borderColor: color });
-    expect(screen.getByTestId('today-status-icon').props).toMatchObject({
-      color,
-      children: 'heart',
-    });
-    expect(StyleSheet.flatten(screen.getByTestId('today-summary-card').props.style)).toMatchObject({
-      borderColor: darkColors.line,
-    });
-    expect(
-      StyleSheet.flatten(screen.getByTestId('today-status-description').props.style),
-    ).toMatchObject({ gap: 6 });
-  });
-
-  it('routes symptom and diet quick-log actions to their own flows', () => {
-    const onLogSymptom = jest.fn();
-    const onLogDietChange = jest.fn();
-    const onLogOther = jest.fn();
-    const screen = render(
-      <QuickLog
-        colors={darkColors}
-        onLogSymptom={onLogSymptom}
-        onLogDietChange={onLogDietChange}
-        onLogOther={onLogOther}
-      />,
-    );
-
-    fireEvent.press(screen.getByText('Symptom'));
-    fireEvent.press(screen.getByText('Diet change'));
-    fireEvent.press(screen.getByText('Other'));
-
-    expect(onLogSymptom).toHaveBeenCalledTimes(1);
-    expect(onLogDietChange).toHaveBeenCalledTimes(1);
-    expect(onLogOther).toHaveBeenCalledTimes(1);
-    expect(screen.getAllByRole('button').map((button) => button.props.accessibilityLabel)).toEqual([
-      'Add diet change to timeline',
-      'Add environment to timeline',
-      'Add symptom to timeline',
-      'Add treatment to timeline',
-      'Add other to timeline',
-    ]);
-    expect(screen.getByLabelText('Add environment to timeline').props.accessibilityState).toEqual({
-      disabled: true,
-    });
-    expect(screen.getByLabelText('Add treatment to timeline').props.accessibilityState).toEqual({
-      disabled: true,
-    });
-  });
-
+describe('TimelineEvents', () => {
   it('renders the timeline empty state and persisted entries', () => {
     const emptyScreen = render(
-      <Timeline
+      <TimelineEvents
         entries={[]}
         petName="Kiwi"
         colors={darkColors}
@@ -127,7 +43,7 @@ describe('shared product UI', () => {
     const onDelete = jest.fn();
     const onEditDateTime = jest.fn();
     const timelineScreen = render(
-      <Timeline
+      <TimelineEvents
         entries={[entry]}
         petName="Kiwi"
         colors={darkColors}
@@ -155,7 +71,7 @@ describe('shared product UI', () => {
   it('disables timeline deletion while an event is being removed', () => {
     const onDelete = jest.fn();
     const screen = render(
-      <Timeline
+      <TimelineEvents
         entries={[
           {
             id: 'event-1',
@@ -191,7 +107,7 @@ describe('shared product UI', () => {
 
     try {
       const screen = render(
-        <Timeline
+        <TimelineEvents
           entries={[
             {
               id: 'event-1',

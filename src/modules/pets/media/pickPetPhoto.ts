@@ -2,7 +2,7 @@ import * as ImagePicker from 'expo-image-picker';
 
 import { SelectedPetPhoto } from '@/modules/pets/media/petImageStore';
 
-export type PetPhotoPickResult =
+type PetPhotoPickResult =
   | { status: 'selected'; photo: SelectedPetPhoto }
   | { status: 'cancelled' | 'permission-denied' | 'failed' };
 

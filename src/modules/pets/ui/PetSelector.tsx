@@ -5,6 +5,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Pet } from '@/modules/pets/model/Pet';
 import { PetSelectorCard } from '@/modules/pets/ui/PetSelectorCard';
 import { Palette } from '@/shared/theme/palette';
+import { SectionHeader } from '@/shared/ui/SectionHeader';
 
 type PetSelectorProps = {
   pets: readonly Pet[];
@@ -26,7 +27,7 @@ export function PetSelector({
   return (
     <View>
       <View style={styles.header}>
-        <Text style={styles.title}>Your pets</Text>
+        <SectionHeader compact title="Your pets" />
         <Text style={styles.help}>Choose the profile you want to manage.</Text>
       </View>
       <ScrollView
@@ -66,7 +67,6 @@ export function PetSelector({
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
     header: { marginBottom: 10 },
-    title: { color: colors.text, fontSize: 19, fontWeight: '700' },
     help: { color: colors.muted, fontSize: 12, marginTop: 3 },
     list: { gap: 10, paddingBottom: 24 },
     addCard: {

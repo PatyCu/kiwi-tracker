@@ -12,8 +12,7 @@ type StoredPetState = PetState & {
   version: typeof PET_STATE_VERSION;
 };
 
-export type PetStorageErrorCode =
-  'READ_FAILED' | 'INVALID_DATA' | 'MIGRATION_FAILED' | 'WRITE_FAILED';
+type PetStorageErrorCode = 'READ_FAILED' | 'INVALID_DATA' | 'MIGRATION_FAILED' | 'WRITE_FAILED';
 
 export class PetStorageError extends Error {
   readonly code: PetStorageErrorCode;

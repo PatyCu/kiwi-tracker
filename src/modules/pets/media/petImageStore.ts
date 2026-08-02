@@ -10,7 +10,7 @@ export type SelectedPetPhoto = {
   mimeType?: string | null;
 };
 
-export class PetImageError extends Error {
+class PetImageError extends Error {
   readonly cause: unknown;
 
   constructor(message: string, cause?: unknown) {

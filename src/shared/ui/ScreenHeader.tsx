@@ -4,7 +4,6 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useAppearance } from '@/shared/theme/AppearanceProvider';
 import { Palette } from '@/shared/theme/palette';
-import { BrandLogo } from '@/shared/ui/BrandLogo';
 
 type HeaderAction = {
   accessibilityLabel: string;
@@ -16,11 +15,10 @@ type ScreenHeaderProps = {
   title: string;
   subtitle?: string;
   action?: HeaderAction;
-  showLogo?: boolean;
   onBack?: () => void;
 };
 
-export function ScreenHeader({ title, subtitle, action, showLogo, onBack }: ScreenHeaderProps) {
+export function ScreenHeader({ title, subtitle, action, onBack }: ScreenHeaderProps) {
   const { colors } = useAppearance();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
@@ -35,7 +33,6 @@ export function ScreenHeader({ title, subtitle, action, showLogo, onBack }: Scre
           <Ionicons name="chevron-back" size={24} color={colors.text} />
         </Pressable>
       )}
-      {showLogo && <BrandLogo />}
       <View style={styles.copy}>
         <Text style={styles.title}>{title}</Text>
         {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}

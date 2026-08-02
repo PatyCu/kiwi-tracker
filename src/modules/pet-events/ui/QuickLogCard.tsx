@@ -6,6 +6,7 @@ import { Palette } from '@/shared/theme/palette';
 
 type QuickLogCardProps = {
   colors: Palette;
+  variant?: 'standalone' | 'embedded';
   onLogSymptom: () => void;
   onLogDietChange: () => void;
   onLogOther: () => void;
@@ -13,6 +14,7 @@ type QuickLogCardProps = {
 
 export function QuickLogCard({
   colors,
+  variant = 'standalone',
   onLogSymptom,
   onLogDietChange,
   onLogOther,
@@ -20,7 +22,7 @@ export function QuickLogCard({
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   return (
-    <View style={styles.card}>
+    <View style={variant === 'standalone' && styles.card}>
       <QuickLog
         colors={colors}
         onLogSymptom={onLogSymptom}

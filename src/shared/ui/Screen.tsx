@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAppearance } from '@/shared/theme/AppearanceProvider';
 import { Palette } from '@/shared/theme/palette';
+import { DESKTOP_NAV_BREAKPOINT } from '@/shared/ui/breakpoints';
 
 type ScreenProps = {
   children: ReactNode;
@@ -13,15 +14,20 @@ type ScreenProps = {
 export function Screen({ children, scroll = true }: ScreenProps) {
   const { colors } = useAppearance();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const wide = useWindowDimensions().width > 780;
+  const width = useWindowDimensions().width;
+  const wide = width > 780;
+  const desktopNavigation = width >= DESKTOP_NAV_BREAKPOINT;
   const content = <View style={[styles.content, wide && styles.wideContent]}>{children}</View>;
 
   return (
-    <SafeAreaView edges={['top']} style={styles.safeArea}>
+    <SafeAreaView edges={desktopNavigation ? ['top', 'right'] : []} style={styles.safeArea}>
       {scroll ? (
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[
+            styles.scrollContent,
+            desktopNavigation && styles.desktopScrollContent,
+          ]}
         >
           {content}
         </ScrollView>
@@ -36,6 +42,7 @@ const makeStyles = (colors: Palette) =>
   StyleSheet.create({
     safeArea: { flex: 1, backgroundColor: colors.bg },
     scrollContent: { flexGrow: 1, paddingBottom: 110 },
+    desktopScrollContent: { paddingBottom: 40 },
     content: { width: '100%', paddingHorizontal: 20, paddingTop: 18 },
     wideContent: { maxWidth: 920, alignSelf: 'center' },
   });

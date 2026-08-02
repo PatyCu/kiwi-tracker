@@ -21,7 +21,7 @@ export type PetStatus = {
   description: string;
 };
 
-export type PetStatusEvaluation = {
+type PetStatusEvaluation = {
   status: PetStatus;
   triggeringEventIds: string[];
 };

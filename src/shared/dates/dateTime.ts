@@ -11,7 +11,7 @@ export function formatEventTime(iso: string, now = new Date()): string {
   return `${day} · ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
 }
 
-export type DisplayedEventDateTime = {
+type DisplayedEventDateTime = {
   date: string;
   time: string;
 };

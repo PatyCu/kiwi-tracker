@@ -11,7 +11,6 @@ import { usePets } from '@/modules/pets/state/PetsProvider';
 import { Palette } from '@/shared/theme/palette';
 import { LoadError } from '@/shared/ui/LoadState';
 import { Screen } from '@/shared/ui/Screen';
-import { ScreenHeader } from '@/shared/ui/ScreenHeader';
 
 export function GlobalTimelineScreen() {
   const { colors } = useAppearance();
@@ -37,7 +36,6 @@ export function GlobalTimelineScreen() {
     );
   return (
     <Screen>
-      <ScreenHeader showLogo title="Timeline" subtitle="All recorded activity across your pets." />
       <View style={styles.card}>
         <TimelineEvents
           entries={entries}

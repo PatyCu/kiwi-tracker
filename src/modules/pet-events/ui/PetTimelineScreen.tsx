@@ -1,17 +1,13 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { View } from 'react-native';
-
 import { useAppearance } from '@/shared/theme/AppearanceProvider';
 import { usePetEventForms } from '@/modules/pet-events/state/PetEventFormsProvider';
 import { usePetEvents } from '@/modules/pet-events/state/PetEventsProvider';
 import { toTimelineEntries } from '@/modules/pet-events/timeline/toTimelineEntries';
-import { Timeline } from '@/modules/pet-events/ui/Timeline';
-import { QuickLogCard } from '@/modules/pet-events/ui/QuickLogCard';
+import { PetActivityCard } from '@/modules/pet-events/ui/PetActivityCard';
 import { usePets } from '@/modules/pets/state/PetsProvider';
 import { PlaceholderCard } from '@/shared/ui/PlaceholderCard';
 import { Screen } from '@/shared/ui/Screen';
 import { ScreenHeader } from '@/shared/ui/ScreenHeader';
-import { SectionHeader } from '@/shared/ui/SectionHeader';
 
 export function PetTimelineScreen() {
   const { petId } = useLocalSearchParams<{ petId: string }>();
@@ -45,21 +41,15 @@ export function PetTimelineScreen() {
         subtitle="Complete recorded history."
         onBack={() => router.back()}
       />
-      <View style={{ gap: 12 }}>
-        <SectionHeader compact title="Add event" />
-        <QuickLogCard
-          colors={colors}
-          onLogSymptom={() => forms.openSymptom(pet.id)}
-          onLogDietChange={() => forms.openDietChange(pet.id)}
-          onLogOther={() => forms.openOtherEvent(pet.id)}
-        />
-      </View>
-      <Timeline
+      <PetActivityCard
         entries={entries}
         petName={pet.name}
         colors={colors}
         deletingEventId={deletingEventId}
         updatingEventId={updatingEventId}
+        onLogSymptom={() => forms.openSymptom(pet.id)}
+        onLogDietChange={() => forms.openDietChange(pet.id)}
+        onLogOther={() => forms.openOtherEvent(pet.id)}
         onDelete={(entry) => forms.requestDeleteEvent(entry, pet.name)}
         onEditDateTime={forms.editEventDateTime}
         onOpen={(entry) =>
