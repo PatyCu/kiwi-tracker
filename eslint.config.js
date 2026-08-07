@@ -8,7 +8,7 @@ module.exports = defineConfig([
   },
   expoConfig,
   {
-    files: ['__tests__/**/*.{ts,tsx}'],
+    files: ['__tests__/**/*.{ts,tsx}', 'src/**/*.test.{ts,tsx}'],
     rules: {
       '@typescript-eslint/no-require-imports': 'off',
     },

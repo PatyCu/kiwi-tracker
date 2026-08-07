@@ -1,6 +1,6 @@
 module.exports = {
   preset: 'jest-expo',
   moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/$1',
+    '^@/(.*)$': '<rootDir>/src/$1',
   },
 };
