@@ -9,7 +9,7 @@ import { formatPetNames } from '@/modules/today/formatPetNames';
 
 const LAST_DAY_MS = 24 * 60 * 60 * 1000;
 
-export type PetAttention = { pet: Pet; status: PetStatus };
+export type PetInsight = { pet: Pet; status: PetStatus };
 export type TodayStatusSummary = {
   indicatorLabel: string;
   kicker: string;
@@ -18,7 +18,8 @@ export type TodayStatusSummary = {
 
 type TodayViewModel = {
   statusSummary: TodayStatusSummary;
-  attention: PetAttention[];
+  insights: PetInsight[];
+  attention: PetInsight[];
   updatesInLastDay: number;
 };
 
@@ -38,16 +39,16 @@ export function buildTodayViewModel(
     };
   });
   const statusSummary = buildStatusSummary(evaluations);
-  const attention = [...evaluations]
-    .filter(({ status }) => status.status !== PetStatusLevel.Green)
-    .map(({ pet, status }) => ({ pet, status }))
-    .sort((left, right) => statusPriority(right.status) - statusPriority(left.status));
+  const insights = [...evaluations].sort(
+    (left, right) => statusPriority(right.status) - statusPriority(left.status),
+  );
+  const attention = insights.filter(({ status }) => status.status !== PetStatusLevel.Green);
   const threshold = now.getTime() - LAST_DAY_MS;
   const updatesInLastDay = events.filter(
     (event) => Date.parse(event.recordedAt) >= threshold,
   ).length;
 
-  return { statusSummary, attention, updatesInLastDay };
+  return { statusSummary, insights, attention, updatesInLastDay };
 }
 
 function buildStatusSummary(evaluations: { pet: Pet; status: PetStatus }[]): TodayStatusSummary {

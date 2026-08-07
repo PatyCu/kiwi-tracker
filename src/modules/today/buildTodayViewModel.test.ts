@@ -47,4 +47,20 @@ describe('buildTodayViewModel', () => {
     expect(result.attention[0]).toMatchObject({ pet: { id: 'luna' } });
     expect(result.attention[1]).toMatchObject({ pet: { id: 'kiwi' } });
   });
+
+  it('includes every pet in insights and orders alerts before all-clear pets', () => {
+    const allPets: Pet[] = [
+      { id: 'milo', name: 'Milo', species: 'Cat', createdAt: '2026-01-03T00:00:00.000Z' },
+      ...pets,
+    ];
+
+    const result = buildTodayViewModel(allPets, events, now);
+
+    expect(result.insights.map(({ pet, status }) => [pet.id, status.status])).toEqual([
+      ['luna', PetStatusLevel.Red],
+      ['kiwi', PetStatusLevel.Amber],
+      ['milo', PetStatusLevel.Green],
+    ]);
+    expect(result.attention.map(({ pet }) => pet.id)).toEqual(['luna', 'kiwi']);
+  });
 });

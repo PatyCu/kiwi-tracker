@@ -32,9 +32,8 @@ export function TodayScreen() {
     <Screen>
       <View style={styles.contentStack}>
         <TodayCard
-          pets={pets}
           summary={viewModel.statusSummary}
-          attention={viewModel.attention}
+          insights={viewModel.insights}
           colors={colors}
           onOpenPet={(pet) =>
             router.push({

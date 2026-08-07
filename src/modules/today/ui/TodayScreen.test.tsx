@@ -62,7 +62,7 @@ describe('Today screen', () => {
       children: 'heart',
     });
     expect(screen.getByLabelText('Kiwi avatar')).toBeTruthy();
-    expect(screen.getByText('Kiwi is in the green.')).toBeTruthy();
+    expect(screen.getByText('All good, nothing to see here.')).toBeTruthy();
     expect(screen.getByText('No calendar events yet')).toBeTruthy();
     expect(screen.getByText('No overdue items')).toBeTruthy();
     expect(screen.getByText('Add event')).toBeTruthy();
@@ -100,7 +100,7 @@ describe('Today screen', () => {
     expect(screen.getAllByTestId('today-summary-card')).toHaveLength(1);
     expect(screen.getAllByLabelText('Kiwi avatar').length).toBeGreaterThan(0);
     expect(screen.getAllByLabelText('Luna avatar').length).toBeGreaterThan(0);
-    expect(screen.getByText('Kiwi and Luna are all in the green.')).toBeTruthy();
+    expect(screen.getAllByText('All good, nothing to see here.')).toHaveLength(2);
     expect(screen.queryByText('Today with Kiwi')).toBeNull();
     expect(screen.queryByText('Today with Luna')).toBeNull();
   });
@@ -184,5 +184,50 @@ describe('Today screen', () => {
     expect(
       StyleSheet.flatten(screen.getByTestId('today-status-indicator').props.style),
     ).toMatchObject({ borderColor: lightColors.coral });
+  });
+
+  it('shows alert entries before pets with nothing to report', async () => {
+    const now = new Date();
+    await storage.setItem(
+      '@kiwi-tracker/pet-state/v2',
+      JSON.stringify({
+        version: 2,
+        activePetId: 'kiwi',
+        pets: [
+          {
+            id: 'kiwi',
+            name: 'Kiwi',
+            species: 'Cat',
+            createdAt: '2025-01-01T00:00:00.000Z',
+          },
+          {
+            id: 'luna',
+            name: 'Luna',
+            species: 'Dog',
+            createdAt: '2025-01-02T00:00:00.000Z',
+          },
+        ],
+      }),
+    );
+    await storage.setItem(
+      '@kiwi-tracker/timeline-events/v1',
+      JSON.stringify([
+        {
+          id: 'symptom-1',
+          petId: 'luna',
+          type: 'symptom',
+          symptom: 'Diarrhea',
+          occurredAt: now.toISOString(),
+          recordedAt: now.toISOString(),
+        },
+      ]),
+    );
+
+    const screen = render(<TodayScreen />, { wrapper: Providers });
+
+    await waitFor(() => expect(screen.getByText('Something needs your attention.')).toBeTruthy());
+    const insightNames = screen.getAllByText(/^(Kiwi|Luna)$/).map((node) => node.props.children);
+    expect(insightNames).toEqual(['Luna', 'Kiwi']);
+    expect(screen.getByLabelText('Kiwi: All good, nothing to see here.')).toBeTruthy();
   });
 });

@@ -6,21 +6,17 @@ import { Pet } from '@/modules/pets/model/Pet';
 import { PetAvatar } from '@/modules/pets/ui/PetAvatar';
 import { PetStatusLevel } from '@/modules/pet-status/calculatePetStatus';
 import { PetStatusIndicator } from '@/modules/pet-status/ui/PetStatusIndicator';
-import { PetAttention, TodayStatusSummary } from '@/modules/today/buildTodayViewModel';
-import { formatPetNames } from '@/modules/today/formatPetNames';
+import { PetInsight, TodayStatusSummary } from '@/modules/today/buildTodayViewModel';
 import { Palette } from '@/shared/theme/palette';
 
 type TodayCardProps = {
-  pets: readonly Pet[];
   summary: TodayStatusSummary;
-  attention: readonly PetAttention[];
+  insights: readonly PetInsight[];
   colors: Palette;
   onOpenPet: (pet: Pet) => void;
 };
 
-const MAX_VISIBLE_AVATARS = 4;
-
-export function TodayCard({ pets, summary, attention, colors, onOpenPet }: TodayCardProps) {
+export function TodayCard({ summary, insights, colors, onOpenPet }: TodayCardProps) {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const allClear = summary.status.status === PetStatusLevel.Green;
 
@@ -42,73 +38,38 @@ export function TodayCard({ pets, summary, attention, colors, onOpenPet }: Today
       </View>
 
       <View style={styles.radarArea}>
-        {allClear ? (
-          <AllClearPets pets={pets} styles={styles} />
-        ) : (
-          attention.map((item, index) => (
-            <RadarItem
-              key={item.pet.id}
-              item={item}
-              colors={colors}
-              showDivider={index > 0}
-              styles={styles}
-              onPress={() => onOpenPet(item.pet)}
-            />
-          ))
-        )}
-      </View>
-    </View>
-  );
-}
-
-function AllClearPets({
-  pets,
-  styles,
-}: {
-  pets: readonly Pet[];
-  styles: ReturnType<typeof makeStyles>;
-}) {
-  const visiblePets = pets.slice(0, MAX_VISIBLE_AVATARS);
-  const remainingCount = pets.length - visiblePets.length;
-  const names = formatPetNames(pets.map((pet) => pet.name));
-  const message =
-    pets.length === 1 ? `${names} is in the green.` : `${names} are all in the green.`;
-
-  return (
-    <View accessibilityLabel={message} style={styles.allClearRow}>
-      <View style={styles.avatarStack}>
-        {visiblePets.map((pet, index) => (
-          <View key={pet.id} style={[styles.avatarFrame, index > 0 && styles.overlappingAvatar]}>
-            <PetAvatar pet={pet} size={44} />
-          </View>
+        {insights.map((item, index) => (
+          <InsightItem
+            key={item.pet.id}
+            item={item}
+            colors={colors}
+            showDivider={index > 0}
+            styles={styles}
+            onPress={() => onOpenPet(item.pet)}
+          />
         ))}
-        {remainingCount > 0 && (
-          <View style={[styles.morePets, styles.overlappingAvatar]}>
-            <Text style={styles.morePetsText}>+{remainingCount}</Text>
-          </View>
-        )}
       </View>
-      <Text style={[styles.body, styles.calmText]}>{message}</Text>
     </View>
   );
 }
 
-function RadarItem({
+function InsightItem({
   item,
   colors,
   showDivider,
   styles,
   onPress,
 }: {
-  item: PetAttention;
+  item: PetInsight;
   colors: Palette;
   showDivider: boolean;
   styles: ReturnType<typeof makeStyles>;
   onPress: () => void;
 }) {
-  const descriptionLines = item.status.description
-    .split('\n')
-    .map((line) => line.replace(/^- /, ''));
+  const descriptionLines =
+    item.status.status === PetStatusLevel.Green
+      ? ['All good, nothing to see here.']
+      : item.status.description.split('\n').map((line) => line.replace(/^- /, ''));
 
   return (
     <Pressable
@@ -155,33 +116,12 @@ const makeStyles = (colors: Palette) =>
     title: { fontSize: 27, color: colors.text, fontWeight: '700', marginTop: 8 },
     body: { fontSize: 14, color: colors.muted, lineHeight: 20, marginTop: 8 },
     radarArea: { marginTop: 18, paddingTop: 18, borderTopWidth: 1, borderTopColor: colors.line },
-    allClearRow: {
-      minHeight: 48,
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 14,
-      paddingLeft: 41,
-    },
-    calmText: { flexShrink: 1, marginTop: 0 },
-    avatarStack: { flexDirection: 'row', alignItems: 'center' },
     avatarFrame: {
       borderWidth: 2,
       borderColor: colors.surface,
       borderRadius: 25,
       backgroundColor: colors.surface,
     },
-    overlappingAvatar: { marginLeft: -10 },
-    morePets: {
-      width: 44,
-      height: 44,
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderWidth: 2,
-      borderColor: colors.surface,
-      borderRadius: 22,
-      backgroundColor: colors.surface2,
-    },
-    morePetsText: { color: colors.text, fontSize: 12, fontWeight: '800' },
     radarRow: {
       minHeight: 72,
       flexDirection: 'row',
