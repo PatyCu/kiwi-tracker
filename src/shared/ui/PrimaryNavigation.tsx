@@ -73,7 +73,7 @@ function NavigationItem({ item, sidebar, styles }: NavigationItemProps) {
       style={({ pressed }) => [
         sidebar ? styles.sidebarItem : styles.bottomItem,
         emphasized && styles.sidebarItemEmphasized,
-        focused && styles.focusedItem,
+        sidebar && focused && styles.focusedItem,
         pressed && styles.pressedItem,
       ]}
     >

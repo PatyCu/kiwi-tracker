@@ -1,4 +1,5 @@
 import { fireEvent, render } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
 
 import { useAppearance } from '@/shared/theme/AppearanceProvider';
 import { darkColors } from '@/shared/theme/palette';
@@ -66,5 +67,17 @@ describe('responsive primary navigation', () => {
     expect(screen.getByRole('tab', { name: 'Today', selected: true })).toBeTruthy();
     expect(screen.getByRole('tab', { name: 'Pets', selected: false })).toBeTruthy();
     expect(screen.queryByText('Kiwi Tracker')).toBeNull();
+  });
+
+  it('does not show the desktop focus border after focusing a mobile tab', () => {
+    const screen = render(<PrimaryNavigation items={makeItems()} variant="bottom" />);
+    const petsTab = screen.getByRole('tab', { name: 'Pets' });
+
+    fireEvent(petsTab, 'focus');
+
+    expect(StyleSheet.flatten(petsTab.props.style)).not.toMatchObject({
+      borderColor: darkColors.kiwi,
+      borderWidth: 2,
+    });
   });
 });
