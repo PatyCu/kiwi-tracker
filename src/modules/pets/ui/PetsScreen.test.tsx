@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import { ReactNode } from 'react';
+import { StyleSheet } from 'react-native';
 
 import { PetEventFormsProvider } from '@/modules/pet-events/state/PetEventFormsProvider';
 import { PetEventsProvider } from '@/modules/pet-events/state/PetEventsProvider';
@@ -8,6 +9,7 @@ import { PetProfileFormsProvider } from '@/modules/pets/state/PetProfileFormsPro
 import { PetsProvider } from '@/modules/pets/state/PetsProvider';
 import { PetsScreen } from '@/modules/pets/ui/PetsScreen';
 import { AppearanceProvider } from '@/shared/theme/AppearanceProvider';
+import { lightColors } from '@/shared/theme/palette';
 
 let mockPetId: string | undefined;
 
@@ -59,6 +61,7 @@ describe('Pets screen', () => {
             id: 'kiwi',
             name: 'Kiwi',
             species: 'Cat',
+            breed: 'Siamese',
             createdAt: '2025-01-01T00:00:00.000Z',
           },
           {
@@ -80,7 +83,12 @@ describe('Pets screen', () => {
       selected: true,
     });
     expect(screen.getByText('Overview')).toBeTruthy();
-    expect(screen.getByText('Edit pet')).toBeTruthy();
+    expect(screen.queryByText('Edit pet')).toBeNull();
+    expect(screen.getAllByText('Edit')).toHaveLength(2);
+    expect(screen.getByLabelText('Kiwi avatar')).toBeTruthy();
+    expect(screen.getByLabelText('Luna avatar')).toBeTruthy();
+    expect(screen.queryByText('Siamese')).toBeNull();
+    expect(screen.queryByText('Dog')).toBeNull();
     const activityCard = screen.getByTestId('pet-activity-card');
     expect(activityCard.findByProps({ children: 'Add event' })).toBeTruthy();
     expect(activityCard.findByProps({ children: 'Recent timeline' })).toBeTruthy();
@@ -97,6 +105,45 @@ describe('Pets screen', () => {
       petId: 'kiwi',
     });
     expect(jest.requireMock('expo-router').router.push).not.toHaveBeenCalled();
+  });
+
+  it('opens the existing profile modal from the pet selector card', async () => {
+    const screen = render(<PetsScreen />, { wrapper: Providers });
+    await waitFor(() => expect(screen.getByText('Today with Luna')).toBeTruthy());
+
+    fireEvent.press(screen.getByLabelText('Edit profile for Kiwi'));
+
+    expect(screen.getByTestId('pet-profile-modal')).toBeTruthy();
+    expect(screen.getByText('Edit pet')).toBeTruthy();
+    expect(screen.getByDisplayValue('Kiwi')).toBeTruthy();
+    expect(jest.requireMock('expo-router').router.setParams).not.toHaveBeenCalled();
+    expect(jest.requireMock('expo-router').router.push).not.toHaveBeenCalled();
+  });
+
+  it('uses secondary underlined copy and reveals the pencil on hover', async () => {
+    const screen = render(<PetsScreen />, { wrapper: Providers });
+    await waitFor(() => expect(screen.getByText('Today with Luna')).toBeTruthy());
+    const editProfile = screen.getByLabelText('Edit profile for Kiwi');
+    const editProfileTextStyle = StyleSheet.flatten(
+      screen.getByTestId('pet-edit-profile-text-kiwi').props.style,
+    );
+
+    expect(editProfileTextStyle).toEqual(
+      expect.objectContaining({
+        color: lightColors.muted,
+        fontSize: 10,
+        textDecorationLine: 'underline',
+      }),
+    );
+    expect(editProfileTextStyle.fontWeight).toBeUndefined();
+    expect(screen.getByTestId('pet-edit-profile-icon-kiwi').props.style).toEqual(
+      expect.arrayContaining([expect.objectContaining({ opacity: 0 })]),
+    );
+    fireEvent(editProfile, 'hoverIn');
+
+    expect(screen.getByTestId('pet-edit-profile-icon-kiwi').props.style).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ opacity: 0 })]),
+    );
   });
 
   it('shows all recorded events for the selected pet in its recent timeline', async () => {

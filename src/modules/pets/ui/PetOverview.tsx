@@ -16,10 +16,9 @@ import { SectionHeader } from '@/shared/ui/SectionHeader';
 
 type PetOverviewProps = {
   pet: Pet;
-  onEditPet?: () => void;
 };
 
-export function PetOverview({ pet, onEditPet }: PetOverviewProps) {
+export function PetOverview({ pet }: PetOverviewProps) {
   const { colors } = useAppearance();
   const styles = useMemo(() => StyleSheet.create({ summary: { gap: 12 } }), []);
   const { events, deletingEventId, updatingEventId } = usePetEvents();
@@ -39,9 +38,7 @@ export function PetOverview({ pet, onEditPet }: PetOverviewProps) {
   return (
     <>
       <View style={styles.summary}>
-        {onEditPet && (
-          <SectionHeader compact title="Overview" actionLabel="Edit pet" onAction={onEditPet} />
-        )}
+        <SectionHeader compact title="Overview" />
         <PetStatusCard pet={pet} status={status} wide={false} colors={colors} />
       </View>
       <SectionHeader title="Up next" />

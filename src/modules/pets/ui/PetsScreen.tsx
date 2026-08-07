@@ -45,9 +45,10 @@ export function PetsScreen() {
         selectedPetId={selectedPet.id}
         colors={colors}
         onSelectPet={(selectedPetId) => router.setParams({ petId: selectedPetId })}
+        onEditPet={editPet}
         onAddPet={addPet}
       />
-      <PetOverview pet={selectedPet} onEditPet={() => editPet(selectedPet)} />
+      <PetOverview pet={selectedPet} />
     </Screen>
   );
 }

@@ -12,6 +12,7 @@ type PetSelectorProps = {
   selectedPetId: string;
   colors: Palette;
   onSelectPet: (petId: string) => void;
+  onEditPet: (pet: Pet) => void;
   onAddPet: () => void;
 };
 
@@ -20,6 +21,7 @@ export function PetSelector({
   selectedPetId,
   colors,
   onSelectPet,
+  onEditPet,
   onAddPet,
 }: PetSelectorProps) {
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -43,6 +45,7 @@ export function PetSelector({
             selected={pet.id === selectedPetId}
             colors={colors}
             onPress={() => onSelectPet(pet.id)}
+            onEditProfile={() => onEditPet(pet)}
           />
         ))}
         <Pressable
