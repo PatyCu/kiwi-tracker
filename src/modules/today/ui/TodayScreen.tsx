@@ -6,7 +6,6 @@ import { usePetEvents } from '@/modules/pet-events/state/PetEventsProvider';
 import { usePets } from '@/modules/pets/state/PetsProvider';
 import { buildTodayViewModel } from '@/modules/today/buildTodayViewModel';
 import { TodayCard } from '@/modules/today/ui/TodayCard';
-import { TodayMetrics } from '@/modules/today/ui/TodayMetrics';
 import { TodayQuickLogCard } from '@/modules/today/ui/TodayQuickLogCard';
 import { LoadError } from '@/shared/ui/LoadState';
 import { PlaceholderCard } from '@/shared/ui/PlaceholderCard';
@@ -42,7 +41,6 @@ export function TodayScreen() {
             })
           }
         />
-        <TodayMetrics attention={viewModel.attention.length} updates={viewModel.updatesInLastDay} />
         <View style={styles.section}>
           <SectionHeader compact title="Upcoming (next 7 days)" />
           <PlaceholderCard

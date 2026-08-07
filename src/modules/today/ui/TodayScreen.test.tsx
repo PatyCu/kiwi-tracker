@@ -66,6 +66,12 @@ describe('Today screen', () => {
     expect(screen.getByText('No calendar events yet')).toBeTruthy();
     expect(screen.getByText('No overdue items')).toBeTruthy();
     expect(screen.getByText('Add event')).toBeTruthy();
+    expect(screen.queryByText('Needs attention')).toBeNull();
+    expect(screen.queryByText('Upcoming')).toBeNull();
+    expect(screen.getAllByText('Overdue')).toHaveLength(1);
+    expect(screen.queryByText('Updates')).toBeNull();
+    expect(screen.queryByText('Not available yet')).toBeNull();
+    expect(screen.queryByText('Last 24 hours')).toBeNull();
     expect(screen.queryByText('Recent updates')).toBeNull();
     expect(screen.queryByLabelText('Quick log')).toBeNull();
   });
