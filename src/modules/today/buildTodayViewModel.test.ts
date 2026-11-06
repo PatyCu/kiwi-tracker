@@ -43,9 +43,6 @@ describe('buildTodayViewModel', () => {
       headline: 'Something needs your attention.',
       description: '- Luna: Diarrhea was logged today.',
     });
-    expect(result.attention).toHaveLength(2);
-    expect(result.attention[0]).toMatchObject({ pet: { id: 'luna' } });
-    expect(result.attention[1]).toMatchObject({ pet: { id: 'kiwi' } });
   });
 
   it('includes every pet in insights and orders alerts before all-clear pets', () => {
@@ -61,6 +58,5 @@ describe('buildTodayViewModel', () => {
       ['kiwi', PetStatusLevel.Amber],
       ['milo', PetStatusLevel.Green],
     ]);
-    expect(result.attention.map(({ pet }) => pet.id)).toEqual(['luna', 'kiwi']);
   });
 });

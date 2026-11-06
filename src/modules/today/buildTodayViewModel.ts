@@ -7,8 +7,6 @@ import {
 } from '@/modules/pet-status/calculatePetStatus';
 import { formatPetNames } from '@/modules/today/formatPetNames';
 
-const LAST_DAY_MS = 24 * 60 * 60 * 1000;
-
 export type PetInsight = { pet: Pet; status: PetStatus };
 export type TodayStatusSummary = {
   indicatorLabel: string;
@@ -19,8 +17,6 @@ export type TodayStatusSummary = {
 type TodayViewModel = {
   statusSummary: TodayStatusSummary;
   insights: PetInsight[];
-  attention: PetInsight[];
-  updatesInLastDay: number;
 };
 
 export function buildTodayViewModel(
@@ -42,13 +38,7 @@ export function buildTodayViewModel(
   const insights = [...evaluations].sort(
     (left, right) => statusPriority(right.status) - statusPriority(left.status),
   );
-  const attention = insights.filter(({ status }) => status.status !== PetStatusLevel.Green);
-  const threshold = now.getTime() - LAST_DAY_MS;
-  const updatesInLastDay = events.filter(
-    (event) => Date.parse(event.recordedAt) >= threshold,
-  ).length;
-
-  return { statusSummary, insights, attention, updatesInLastDay };
+  return { statusSummary, insights };
 }
 
 function buildStatusSummary(evaluations: { pet: Pet; status: PetStatus }[]): TodayStatusSummary {
