@@ -71,6 +71,17 @@ The page source isn't in this repo. To change the page, read the artifact with t
 4. Write every change in one `ArtifactData` `batch`. Pin each existing document with its `if_version`. Set `meta/sync` `commit` to `git rev-parse --short HEAD` and `syncedAt` to the current ISO time.
 5. Tell the developer in a short list what changed (rows added, status changes, rows removed, bugs fixed) and give the tracker link.
 
+## Picking the next item
+
+The order the page shows rows in is the priority order. Open bugs come first. After that, the next item is the first unfinished row in the earliest phase (MVP, Premium v1, Premium v2), where rows are sorted by:
+
+1. `priority` (P0 before P1 before P2)
+2. `status` in page order: `in-progress`, `partial`, `missing`
+3. `areaOrder`
+4. `order`
+
+Don't suggest Unplanned rows unless the developer asks. When the developer names a different item, do that one.
+
 ## Starting work on a feature
 
 When you start building a feature, set its row to `"in-progress"`. When the work is finished, the sync sets it to `"done"`, or back to `"partial"` if only part of it landed.
