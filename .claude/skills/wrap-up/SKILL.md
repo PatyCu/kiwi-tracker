@@ -40,7 +40,9 @@ Check the branch with `git branch --show-current`.
 
 ## 5. Clean up
 
-- **On `main`:** confirm `git status` is clean and `main` is level with `origin/main`. Done.
+Files left out of the commit in step 1 because they don't belong to this task aren't a failure. List them and ask the developer whether to commit them separately, gitignore them or leave them. Anything else left in `git status` is.
+
+- **On `main`:** confirm `git status` is clean, apart from those left-out files, and `main` is level with `origin/main`. Done.
 - **On a branch, PR not merged yet:** stop here. Give the developer the PR link and tell them to say "wrap up" again once it's merged.
 - **On a branch, PR merged** (check with `gh pr view --json state,mergedAt`):
   1. Confirm `git status` is clean. If it isn't, stop and show what's left.
