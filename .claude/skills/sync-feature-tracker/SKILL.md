@@ -15,7 +15,7 @@ Its records live in the artifact's database. Update them with the `ArtifactData`
 
 - Collection `features`, one document per feature:
   `{ area, areaOrder, order, status, phase, priority?, name, note? }`
-  - `status`, in the order the page lists rows within each phase:
+  - `status`, in sort order within each phase (the page folds `done` rows into a collapsible "N done" group at the top of the phase):
     - `"done"`: Done.
     - `"in-progress"`: In progress. Work on it has started and isn't finished.
     - `"partial"`: Ready for development. A placeholder or a partial version is already in the app.
