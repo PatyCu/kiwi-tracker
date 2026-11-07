@@ -16,6 +16,8 @@ Expo, React Native, TypeScript and Expo Router, with strict TypeScript and the
 - `src/app` — Expo Router routes and layouts only.
 - `src/modules` — product capabilities, grouped by domain.
 - `src/shared` — cross-module UI, theme, dates and platform adapters.
+- `supabase` — backend schema and local stack configuration. The app does not
+  use it yet; see [docs/supabase.md](docs/supabase.md).
 
 Dependency direction is `app → modules → shared`. See
 [docs/architecture.md](docs/architecture.md) for the full principles.
