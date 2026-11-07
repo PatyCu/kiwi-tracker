@@ -49,6 +49,7 @@
 - Each Markdown document has a single, cohesive purpose; keep content within it and link across documents rather than inlining. Documentation is part of a feature's Definition of Done: document a capability when it is done, not while it is planned or in progress. The README is the contributor entry point — the current state and how to collaborate today (overview, setup, develop, validate, and pointers to deeper docs), not future or in-progress work.
 - The feature tracker artifact is the only roadmap and bug list; do not use GitHub Issues or GitHub Projects. Follow `.claude/skills/sync-feature-tracker/SKILL.md` to update it.
 - Sync the feature tracker before committing whenever a change alters what the app shows or can do (features, bug fixes, placeholders).
+- Update the schema artifact (https://claude.ai/artifact/6RcgQyFvySTzAjBnq8NFuk) before committing whenever a migration changes the Supabase schema. The migrations stay the source of truth; read the artifact with the `Artifact` tool and republish it to the same URL.
 - Treat bugs as P0: log a bug in the tracker when it is found, and fix open bugs before starting new feature work unless the developer decides otherwise.
 - Fixing bugs related to the current change is part of finishing it; log only unrelated bugs for later.
 - When the developer says "wrap up", follow `.claude/skills/wrap-up/SKILL.md`.
