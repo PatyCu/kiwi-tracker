@@ -87,7 +87,7 @@ values
 
 -- Pets and events ---------------------------------------------------------------
 
-insert into public.pets (id, household_id, name, species, breed, birth_date, created_by)
+insert into public.pets (id, household_id, name, species, breed, birth_date)
 values
   (
     'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
@@ -95,8 +95,7 @@ values
     'Kiwi',
     'Cat',
     'European Shorthair',
-    '2021-04-12',
-    '11111111-1111-4111-8111-111111111111'
+    '2021-04-12'
   ),
   (
     'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
@@ -104,17 +103,15 @@ values
     'Biscuit',
     'Dog',
     null,
-    null,
-    '22222222-2222-4222-8222-222222222222'
+    null
   );
 
-insert into public.pet_events (household_id, pet_id, type, occurred_at, symptom, note, created_by)
+insert into public.pet_events (household_id, pet_id, type, occurred_at, symptom, note)
 values (
   'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
   'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
   'symptom',
   now() - interval '1 day',
   'Hairball',
-  'After breakfast.',
-  '11111111-1111-4111-8111-111111111111'
+  'After breakfast.'
 );
