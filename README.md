@@ -1,8 +1,8 @@
 # Kiwi Tracker
 
 A mobile-first pet care and health tracker for iOS and web. Log symptoms, diet
-changes and other events per pet, and see an at-a-glance health status across a
-household.
+changes and other events per pet, and see an at-a-glance health status across
+all your pets.
 
 > Status: prototype (local-first).
 

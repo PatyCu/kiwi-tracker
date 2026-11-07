@@ -1,7 +1,7 @@
 # Supabase backend
 
-Kiwi Tracker has a [Supabase](https://supabase.com) backend schema in which a
-household shares its pets, events and pet photos. The app does not connect to it
+Kiwi Tracker has a [Supabase](https://supabase.com) backend schema in which
+each person keeps their own pets, events and pet photos. The app does not connect to it
 yet; it still stores data on the device. You only need this setup to work on the
 database.
 
@@ -11,17 +11,20 @@ develop against a local Supabase stack. The shared cloud project
 
 ## Data model
 
-| Table / bucket      | Holds                                                              |
-| ------------------- | ------------------------------------------------------------------ |
-| `households`        | A group of people sharing pets.                                    |
-| `household_members` | Links a Supabase Auth user to a household. One household per user. |
-| `pets`              | A household's pets.                                                |
-| `pet_events`        | Symptoms, diet changes and other events for a pet.                 |
-| `pet-photos`        | Private storage bucket, files under `<household_id>/<pet_id>/`.    |
+| Table / bucket | Holds                                                    |
+| -------------- | -------------------------------------------------------- |
+| `pets`         | Pets, each owned by one Supabase Auth user (`owner_id`). |
+| `pet_events`   | Symptoms, diet changes and other events for a pet.       |
+| `pet-photos`   | Private storage bucket, files under `<pet_id>/<file>`.   |
 
-Members can read their household and its members, and can read, add, edit and
-delete its pets, events and photos. The app cannot create households or change
-memberships. Signed-out users have no access.
+Each person can read their own pets, and read, add, edit and delete those pets'
+events and photos. Only the owner can add, edit or delete a pet, and a pet can't
+be moved to another owner. Signed-out users have no access.
+
+Pet rules check `owner_id` directly. Event and photo rules go through
+`private.accessible_pet_ids()`, which today returns the pets the signed-in user
+owns. Sharing a pet with other people later changes those rules and that
+function, not the stored rows or photo paths.
 
 ## Schema conventions
 
@@ -32,28 +35,20 @@ memberships. Signed-out users have no access.
   leaves it out.
 - Add a column only when the app uses it. `pet_events.created_at` records when
   an event was logged, as opposed to `occurred_at`, when it happened.
-- Every table has row-level security enabled, with access limited to members of
-  the row's household (`private.is_household_member`).
+- Every table has row-level security enabled, with access limited to the
+  signed-in user's pets: `owner_id` on `pets`, `private.accessible_pet_ids()`
+  everywhere else.
 - After a migration reaches the shared project, check **Advisors → Security
   Advisor** in the dashboard for new warnings.
 
-## Membership
+## Accounts
 
-Only a maintainer manages memberships, from the shared project's dashboard:
+Anyone can sign up with their email; there are no invitations or memberships to
+manage. A new account starts with no pets.
 
-1. In **Authentication → Users**, invite the person by email.
-2. In **SQL Editor**, create a household if needed and add the user to it:
-
-   ```sql
-   insert into public.households (name) values ('Our pets') returning id;
-
-   insert into public.household_members (user_id, household_id, display_name)
-   values ('<user id from Authentication → Users>', '<household id>', '<name>');
-   ```
-
-Locally, `supabase/seed.sql` creates two households with one member each, so you
-can check access from both sides. The accounts and their password are listed at
-the top of that file.
+Locally, `supabase/seed.sql` creates two accounts with one pet each, so you can
+check access from both sides. The accounts and their password are listed at the
+top of that file.
 
 ## Local development
 
@@ -108,8 +103,10 @@ Stop with `supabase stop` and `colima stop`.
 
 ### Apply to the shared project
 
-A maintainer applies reviewed migrations from `main`. `supabase login` opens a
-browser to sign in; linking then uses that login.
+Migrations are applied from `main` once they're pushed. An agent's wrap-up
+([`.claude/skills/wrap-up/SKILL.md`](../.claude/skills/wrap-up/SKILL.md)) does
+this automatically; to do it by hand, a maintainer runs the commands below.
+`supabase login` opens a browser to sign in; linking then uses that login.
 
 ```bash
 supabase login

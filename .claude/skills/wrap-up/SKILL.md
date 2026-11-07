@@ -1,6 +1,6 @@
 ---
 name: wrap-up
-description: Finish the current piece of work, from final checks to a clean worktree. Validates, syncs the feature tracker, commits, then pushes to main or opens a PR, and cleans up the branch. Use when the developer says "wrap up", "wrap it up" or "let's wrap up".
+description: Finish the current piece of work, from final checks to a clean worktree. Validates, syncs the feature tracker, commits, pushes to main or opens a PR, applies new Supabase migrations to the shared project, and cleans up the branch. Use when the developer says "wrap up", "wrap it up" or "let's wrap up".
 ---
 
 # Wrap up
@@ -32,7 +32,16 @@ Check the branch with `git branch --show-current`.
 - **On `main`:** push `main` following the GitHub publishing rules in `AGENTS.md`.
 - **On another branch:** push the branch the same way, then open a PR against `main` with `gh pr create`. Give it a short summary of what changed and how it was validated. Don't merge it yourself; the developer reviews and merges.
 
-## 5. Clean up
+## 5. Apply migrations to the shared project
+
+Only when the published work adds files under `supabase/migrations/`, and only from `main`: right after pushing `main` in step 4, or, for a PR, once it's merged and pulled in step 6.
+
+1. Run `supabase db push --remote --dry-run`. It must list exactly this work's new migrations. If it lists anything else, or nothing, stop and show the developer.
+2. Run `supabase db push --remote`. If the CLI asks for a login or database password, stop and ask the developer to run it.
+3. Check the security advisor (the Supabase MCP `get_advisors` tool, or **Advisors → Security Advisor** in the dashboard). Report new warnings.
+4. If the schema artifact says a migration isn't on the shared project yet, update it to say it's live.
+
+## 6. Clean up
 
 Files left out of the commit in step 1 because they don't belong to this task aren't a failure. List them and ask the developer whether to commit them separately, gitignore them or leave them. Anything else left in `git status` is.
 
@@ -40,10 +49,10 @@ Files left out of the commit in step 1 because they don't belong to this task ar
 - **On a branch, PR not merged yet:** stop here. Give the developer the PR link and tell them to say "wrap up" again once it's merged.
 - **On a branch, PR merged** (check with `gh pr view --json state,mergedAt`):
   1. Confirm `git status` is clean. If it isn't, stop and show what's left.
-  2. `git switch main` and `git pull --ff-only`.
+  2. `git switch main` and `git pull --ff-only`, then step 5 if the PR added migrations.
   3. Delete the local branch with `git branch -d <branch>`. If git refuses because the PR was squash-merged, confirm the PR is merged and then use `-D`.
   4. If the session runs in a worktree the app created, don't delete its branch or worktree by hand; the app cleans them up when the session is archived.
 
-## 6. Report
+## 7. Report
 
-Finish with a short summary: the commit hash and message, where it went (pushed to `main`, or the PR link), tracker changes, and anything left out or still open.
+Finish with a short summary: the commit hash and message, where it went (pushed to `main`, or the PR link), migrations applied to the shared project, tracker changes, and anything left out or still open.
