@@ -15,7 +15,11 @@ Its records live in the artifact's database. Update them with the `ArtifactData`
 
 - Collection `features`, one document per feature:
   `{ area, areaOrder, order, status, phase, priority?, name, note? }`
-  - `status`: `"done"`, `"partial"` (shown as "In progress": partly built, or a placeholder in the app) or `"missing"`.
+  - `status`, in the order the page lists rows within each phase:
+    - `"done"`: Done.
+    - `"in-progress"`: In progress. Work on it has started and isn't finished.
+    - `"partial"`: Ready for development. A placeholder or a partial version is already in the app.
+    - `"missing"`: To-do. Nothing in the app yet.
   - `phase`: `"MVP"`, `"Premium v1"`, `"Premium v2"` or `"Unplanned"`.
   - `priority`: `"P0"`, `"P1"` or `"P2"`; left out for Unplanned rows.
   - Areas and their `areaOrder`: Pets 1, Event logging 2, Timeline 3, Health status 4, Care and scheduling 5, Insights and sharing 6, App and platform 7, Accounts and sharing 8. Add a new area with the next number only when no existing area fits.
@@ -26,6 +30,25 @@ Its records live in the artifact's database. Update them with the `ArtifactData`
   - `fixedIn` is the short commit hash of the fix.
   - Document ids are kebab-case with a `bug-` prefix.
 - Document `meta/sync`: `{ commit, syncedAt, nextUpTitle, nextUpBody }`.
+
+## Page colors
+
+Colors on the page carry meaning. Keep them consistent when changing the page or adding a new status, label or record type.
+
+| Color            | Meaning                    | Used for                         |
+| ---------------- | -------------------------- | -------------------------------- |
+| Green            | Finished, healthy          | Done; "No open bugs"             |
+| Dark solid (ink) | Active work                | In progress                      |
+| Blue             | Neutral, ready to pick up  | Ready for development; "Next up" |
+| Purple           | Neutral, not started       | To-do                            |
+| Red              | Critical, needs action now | Open bugs only                   |
+| Orange-yellow    | Urgent or a warning        | Reserved; not used yet           |
+
+- Red and orange-yellow are only for bugs and urgent or critical items. Never use them for normal roadmap statuses.
+- When something urgent is added later (for example an "urgent" priority, a blocker or a regression), use red if it needs action now and orange-yellow if it is a warning or needs attention soon.
+- Any other new state gets a color that isn't in this table, and a new row here.
+
+The page source isn't in this repo. To change the page, read the artifact with the `Artifact` tool (`action: "read"`), edit that version, and republish it to the same URL.
 
 ## Who owns which fields
 
@@ -47,6 +70,10 @@ Its records live in the artifact's database. Update them with the `ArtifactData`
    - A bug fixed in this work gets `status: "fixed"`, `fixedAt` and `fixedIn`.
 4. Write every change in one `ArtifactData` `batch`. Pin each existing document with its `if_version`. Set `meta/sync` `commit` to `git rev-parse --short HEAD` and `syncedAt` to the current ISO time.
 5. Tell the developer in a short list what changed (rows added, status changes, rows removed, bugs fixed) and give the tracker link.
+
+## Starting work on a feature
+
+When you start building a feature, set its row to `"in-progress"`. When the work is finished, the sync sets it to `"done"`, or back to `"partial"` if only part of it landed.
 
 ## Logging a bug
 
