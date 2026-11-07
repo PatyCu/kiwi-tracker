@@ -245,6 +245,12 @@ otp_expiry = 3600
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
 
+# The app signs in with a 6-digit code, so the sign-in email has to show {{ .Token }}.
+# New accounts get this email too, because email confirmations are off.
+[auth.email.template.magic_link]
+subject = "Your Kiwi Tracker sign-in code"
+content_path = "./supabase/templates/magic_link.html"
+
 # Uncomment to customize email template
 # [auth.email.template.invite]
 # subject = "You have been invited"

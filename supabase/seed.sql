@@ -4,7 +4,8 @@
 -- Two accounts with one pet each, so per-pet access can be checked both ways:
 -- each person sees their own pet and not the other's.
 --
--- Sign in locally with either account (password: kiwi-local-dev):
+-- Sign in locally with either account using an email code from Mailpit
+-- (http://127.0.0.1:54324). The password, kiwi-local-dev, is for API checks only:
 --   alex@kiwi.test — owns Kiwi
 --   sam@kiwi.test  — owns Biscuit
 
