@@ -107,15 +107,16 @@ Stop with `supabase stop` and `colima stop`.
 
 ### Apply to the shared project
 
-A maintainer applies reviewed migrations from `main`. Linking asks for the
-database password, and `supabase login` opens a browser.
+A maintainer applies reviewed migrations from `main`. `supabase login` opens a
+browser to sign in; linking then uses that login.
 
 ```bash
 supabase login
 supabase link --project-ref gxljpicuptmmdwxmclwk
-supabase db push --dry-run
-supabase db push
+supabase db push --remote --dry-run
+supabase db push --remote
 ```
 
-`--dry-run` lists the migrations the push would apply. Never pass
-`--include-seed`: the seed is local test data. Then check the Security Advisor.
+Without `--remote`, `db push` targets the local database. `--dry-run` lists the
+migrations the push would apply. Never pass `--include-seed`: the seed is local
+test data. Then check the Security Advisor.
