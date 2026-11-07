@@ -63,10 +63,10 @@ export function PetEventDetailScreen() {
         <View style={styles.actions}>
           <Pressable
             accessibilityRole="button"
-            onPress={() => forms.editEventDateTime(entry)}
+            onPress={() => forms.editEvent(entry.id)}
             style={styles.secondaryButton}
           >
-            <Text style={styles.secondaryText}>Edit date and time</Text>
+            <Text style={styles.secondaryText}>Edit event</Text>
           </Pressable>
           <Pressable
             accessibilityRole="button"

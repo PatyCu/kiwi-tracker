@@ -22,6 +22,7 @@ type PetEventFormsContextValue = {
   openDietChange: (petId?: string) => void;
   openOtherEvent: (petId?: string) => void;
   editEventDateTime: (entry: TimelineEntry) => void;
+  editEvent: (eventId: string) => void;
   requestDeleteEvent: (entry: TimelineEntry, petName: string) => void;
 };
 
@@ -38,6 +39,7 @@ export function PetEventFormsProvider({ children }: { children: ReactNode }) {
     deleteEvent,
     deletingEventId,
     updateEventOccurredAt,
+    updateEvent,
     updatingEventId,
   } = usePetEvents();
   const [targetPetId, setTargetPetId] = useState<string | null>(null);
@@ -55,6 +57,7 @@ export function PetEventFormsProvider({ children }: { children: ReactNode }) {
       if (!targetPetId) throw new Error('A pet is required.');
       await logSymptom(targetPetId, symptom, note, occurredAt);
     },
+    onUpdate: updateEvent,
   });
   const dietForm = useDietChangeForm({
     currentDiet,
@@ -62,12 +65,14 @@ export function PetEventFormsProvider({ children }: { children: ReactNode }) {
       if (!targetPetId) throw new Error('A pet is required.');
       await logDietChange(targetPetId, input, note, occurredAt);
     },
+    onUpdate: updateEvent,
   });
   const otherForm = useOtherEventForm({
     onSubmit: async (title, note, occurredAt) => {
       if (!targetPetId) throw new Error('A pet is required.');
       await logOtherEvent(targetPetId, title, note, occurredAt);
     },
+    onUpdate: updateEvent,
   });
   const dateTimeForm = usePetEventDateTimeForm({ onSubmit: updateEventOccurredAt });
 
@@ -100,6 +105,19 @@ export function PetEventFormsProvider({ children }: { children: ReactNode }) {
       otherForm.open();
     },
     [otherForm, prepareTargetPet],
+  );
+
+  const editEvent = useCallback(
+    (eventId: string) => {
+      const event = events.find((item) => item.id === eventId);
+      if (!event) return;
+      setTargetPetId(event.petId);
+      setShowPetField(false);
+      if (event.type === 'symptom') symptomForm.openForEdit(event);
+      else if (event.type === 'diet-change') dietForm.openForEdit(event);
+      else otherForm.openForEdit(event);
+    },
+    [dietForm, events, otherForm, symptomForm],
   );
 
   const petField = showPetField && targetPetId && (
@@ -135,13 +153,14 @@ export function PetEventFormsProvider({ children }: { children: ReactNode }) {
       openDietChange,
       openOtherEvent,
       editEventDateTime: (entry) => dateTimeForm.open(entry.id, entry.title, entry.occurredAt),
+      editEvent,
       requestDeleteEvent: (entry, petName) => {
         setDeleteError(null);
         setDeletionPetName(petName);
         setEventPendingDeletion(entry);
       },
     }),
-    [dateTimeForm, openDietChange, openOtherEvent, openSymptom],
+    [dateTimeForm, editEvent, openDietChange, openOtherEvent, openSymptom],
   );
 
   return (
@@ -182,12 +201,14 @@ export function PetEventFormsProvider({ children }: { children: ReactNode }) {
       />
       <SymptomModal
         visible={symptomForm.visible}
+        isEditing={symptomForm.isEditing}
+        isDirty={symptomForm.isDirty}
         symptom={symptomForm.symptom}
         note={symptomForm.note}
         occurredDate={symptomForm.occurredDate}
         occurredTime={symptomForm.occurredTime}
         dateTimeIsValid={symptomForm.dateTimeIsValid}
-        isSaving={symptomForm.isSaving}
+        isSaving={symptomForm.isSaving || updatingEventId !== null}
         colors={colors}
         petField={petField}
         onSymptomChange={symptomForm.setSymptom}
@@ -197,11 +218,11 @@ export function PetEventFormsProvider({ children }: { children: ReactNode }) {
         onSave={() =>
           void symptomForm
             .submit()
-            .then((saved) => !saved && showMessage('Symptom not saved', 'Please try again.'))
+            .then((saved) => !saved && showSaveFailure(symptomForm.isEditing, 'Symptom'))
         }
         onClose={() =>
           confirmDiscard(
-            'Discard this symptom?',
+            symptomForm.isEditing ? 'Discard your changes?' : 'Discard this symptom?',
             symptomForm.isDirty,
             symptomForm.isSaving,
             symptomForm.close,
@@ -210,6 +231,8 @@ export function PetEventFormsProvider({ children }: { children: ReactNode }) {
       />
       <DietChangeModal
         visible={dietForm.visible}
+        editedChange={dietForm.editedChange}
+        isDirty={dietForm.isDirty}
         changeType={dietForm.changeType}
         selectedItemId={dietForm.selectedItemId}
         currentDiet={currentDiet}
@@ -220,7 +243,7 @@ export function PetEventFormsProvider({ children }: { children: ReactNode }) {
         occurredTime={dietForm.occurredTime}
         dateTimeIsValid={dietForm.dateTimeIsValid}
         itemIsValid={dietForm.itemIsValid}
-        isSaving={dietForm.isSaving}
+        isSaving={dietForm.isSaving || updatingEventId !== null}
         colors={colors}
         petField={petField}
         onChangeTypeChange={dietForm.setChangeType}
@@ -233,11 +256,11 @@ export function PetEventFormsProvider({ children }: { children: ReactNode }) {
         onSave={() =>
           void dietForm
             .submit()
-            .then((saved) => !saved && showMessage('Diet change not saved', 'Please try again.'))
+            .then((saved) => !saved && showSaveFailure(dietForm.isEditing, 'Diet change'))
         }
         onClose={() =>
           confirmDiscard(
-            'Discard this diet change?',
+            dietForm.isEditing ? 'Discard your changes?' : 'Discard this diet change?',
             dietForm.isDirty,
             dietForm.isSaving,
             dietForm.close,
@@ -246,13 +269,15 @@ export function PetEventFormsProvider({ children }: { children: ReactNode }) {
       />
       <OtherEventModal
         visible={otherForm.visible}
+        isEditing={otherForm.isEditing}
+        isDirty={otherForm.isDirty}
         title={otherForm.title}
         note={otherForm.note}
         occurredDate={otherForm.occurredDate}
         occurredTime={otherForm.occurredTime}
         titleIsValid={otherForm.titleIsValid}
         dateTimeIsValid={otherForm.dateTimeIsValid}
-        isSaving={otherForm.isSaving}
+        isSaving={otherForm.isSaving || updatingEventId !== null}
         colors={colors}
         petField={petField}
         onTitleChange={otherForm.setTitle}
@@ -262,11 +287,11 @@ export function PetEventFormsProvider({ children }: { children: ReactNode }) {
         onSave={() =>
           void otherForm
             .submit()
-            .then((saved) => !saved && showMessage('Event not saved', 'Please try again.'))
+            .then((saved) => !saved && showSaveFailure(otherForm.isEditing, 'Event'))
         }
         onClose={() =>
           confirmDiscard(
-            'Discard this event?',
+            otherForm.isEditing ? 'Discard your changes?' : 'Discard this event?',
             otherForm.isDirty,
             otherForm.isSaving,
             otherForm.close,
@@ -275,6 +300,17 @@ export function PetEventFormsProvider({ children }: { children: ReactNode }) {
       />
     </PetEventFormsContext.Provider>
   );
+}
+
+function showSaveFailure(isEditing: boolean, subject: string): void {
+  if (isEditing) {
+    showMessage(
+      'Changes not saved',
+      'The event still has its earlier details. Your edits are still in the form; please try again.',
+    );
+  } else {
+    showMessage(`${subject} not saved`, 'Please try again.');
+  }
 }
 
 export function usePetEventForms(): PetEventFormsContextValue {

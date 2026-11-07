@@ -9,8 +9,14 @@ import {
 } from 'react';
 
 import { addDietItemIds } from '@/modules/pet-events/application/addDietItemIds';
+import { applyPetEventEdit } from '@/modules/pet-events/application/applyPetEventEdit';
 import { createPetEventId } from '@/modules/pet-events/application/createPetEventId';
-import { DietChangeInput, PetEvent, SymptomKind } from '@/modules/pet-events/model/PetEvent';
+import {
+  DietChangeInput,
+  PetEvent,
+  PetEventEdit,
+  SymptomKind,
+} from '@/modules/pet-events/model/PetEvent';
 import { loadPetEvents, savePetEvents } from '@/modules/pet-events/persistence/petEventStore';
 import { LoadStatus } from '@/shared/state/LoadStatus';
 
@@ -35,6 +41,7 @@ type PetEventsContextValue = {
   logOtherEvent: (petId: string, title: string, note: string, occurredAt: string) => Promise<void>;
   deleteEvent: (eventId: string) => Promise<void>;
   updateEventOccurredAt: (eventId: string, occurredAt: string) => Promise<void>;
+  updateEvent: (eventId: string, edit: PetEventEdit) => Promise<void>;
 };
 
 const PetEventsContext = createContext<PetEventsContextValue | null>(null);
@@ -169,6 +176,21 @@ export function PetEventsProvider({ children }: { children: ReactNode }) {
     [assertReady, events, persist, updatingEventId],
   );
 
+  const updateEvent = useCallback(
+    async (eventId: string, edit: PetEventEdit) => {
+      assertReady();
+      if (updatingEventId) throw new Error('A pet event is already being updated.');
+      const next = applyPetEventEdit(events, eventId, edit);
+      setUpdatingEventId(eventId);
+      try {
+        await persist(next);
+      } finally {
+        setUpdatingEventId(null);
+      }
+    },
+    [assertReady, events, persist, updatingEventId],
+  );
+
   const value = useMemo<PetEventsContextValue>(
     () => ({
       events,
@@ -181,6 +203,7 @@ export function PetEventsProvider({ children }: { children: ReactNode }) {
       logOtherEvent,
       deleteEvent,
       updateEventOccurredAt,
+      updateEvent,
     }),
     [
       deleteEvent,
@@ -191,6 +214,7 @@ export function PetEventsProvider({ children }: { children: ReactNode }) {
       logDietChange,
       logOtherEvent,
       logSymptom,
+      updateEvent,
       updateEventOccurredAt,
       updatingEventId,
     ],

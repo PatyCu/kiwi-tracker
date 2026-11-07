@@ -17,11 +17,13 @@ import { Palette } from '@/shared/theme/palette';
 
 type SymptomModalProps = {
   visible: boolean;
+  isEditing?: boolean;
   symptom: SymptomKind;
   note: string;
   occurredDate: string;
   occurredTime: string;
   dateTimeIsValid: boolean;
+  isDirty?: boolean;
   isSaving: boolean;
   colors: Palette;
   petField?: ReactNode;
@@ -35,11 +37,13 @@ type SymptomModalProps = {
 
 export function SymptomModal({
   visible,
+  isEditing = false,
   symptom,
   note,
   occurredDate,
   occurredTime,
   dateTimeIsValid,
+  isDirty = false,
   isSaving,
   colors,
   petField,
@@ -51,7 +55,7 @@ export function SymptomModal({
   onClose,
 }: SymptomModalProps) {
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const saveDisabled = isSaving || !dateTimeIsValid;
+  const saveDisabled = isSaving || !dateTimeIsValid || (isEditing && !isDirty);
   const isIos = Platform.OS === 'ios';
   const onCloseRef = useRef(onClose);
 
@@ -130,7 +134,9 @@ export function SymptomModal({
                 <Text style={styles.cancelText}>Cancel</Text>
               </Pressable>
             )}
-            <Text style={[styles.title, isIos && styles.iosTitle]}>Log a symptom</Text>
+            <Text style={[styles.title, isIos && styles.iosTitle]}>
+              {isEditing ? 'Edit symptom' : 'Log a symptom'}
+            </Text>
             {isIos ? (
               <View style={styles.headerSpacer} />
             ) : (
@@ -152,6 +158,8 @@ export function SymptomModal({
             <View style={styles.choices}>
               {SYMPTOM_KINDS.map((option) => (
                 <Pressable
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: symptom === option }}
                   key={option}
                   onPress={() => onSymptomChange(option)}
                   style={[styles.choice, symptom === option && styles.selectedChoice]}
@@ -197,17 +205,21 @@ export function SymptomModal({
             <TextInput
               value={note}
               onChangeText={onNoteChange}
+              accessibilityLabel="Symptom notes"
               placeholder="Add useful context for your vet…"
               placeholderTextColor={colors.muted}
               multiline
               style={[styles.input, styles.notesInput]}
             />
             <Pressable
+              accessibilityRole="button"
               disabled={saveDisabled}
               style={[styles.saveButton, saveDisabled && styles.disabled]}
               onPress={onSave}
             >
-              <Text style={styles.saveText}>{isSaving ? 'Saving…' : 'Save event'}</Text>
+              <Text style={styles.saveText}>
+                {isSaving ? 'Saving…' : isEditing ? 'Save changes' : 'Save event'}
+              </Text>
             </Pressable>
           </ScrollView>
         </Pressable>

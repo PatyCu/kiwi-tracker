@@ -84,8 +84,9 @@ function InsightItem({
       </View>
       <View style={styles.radarCopy}>
         <Text style={styles.petName}>{item.pet.name}</Text>
-        {descriptionLines.map((line) => (
-          <Text key={line} style={styles.radarDescription}>
+        {descriptionLines.map((line, index) => (
+          // Lines can repeat (two matching events on one day), so the index keeps keys unique.
+          <Text key={`${index}-${line}`} style={styles.radarDescription}>
             {line}
           </Text>
         ))}

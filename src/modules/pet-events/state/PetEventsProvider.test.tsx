@@ -130,4 +130,35 @@ describe('PetEventsProvider', () => {
     });
     expect(result.current.events[0].occurredAt).toBe('2026-07-17T10:45:00.000Z');
   });
+
+  it('persists event edits and keeps the saved event when persistence fails', async () => {
+    const { result } = renderHook(() => usePetEvents(), { wrapper });
+    await waitFor(() => expect(result.current.loadStatus).toBe('ready'));
+    await act(async () => {
+      await result.current.logSymptom('kiwi', 'Asthma', 'Keep.', '2026-07-16T09:30:00.000Z');
+    });
+    const event = result.current.events[0];
+    const edit = {
+      type: 'symptom' as const,
+      symptom: 'Hairball' as const,
+      note: 'Corrected.',
+      occurredAt: event.occurredAt,
+    };
+
+    await act(async () => result.current.updateEvent(event.id, edit));
+    expect(result.current.events[0]).toMatchObject({ symptom: 'Hairball', note: 'Corrected.' });
+    expect(JSON.parse((await mockedStorage.getItem(storageKey)) ?? '[]')[0]).toMatchObject({
+      symptom: 'Hairball',
+    });
+
+    const saved = result.current.events[0];
+    mockedStorage.setItem.mockRejectedValueOnce(new Error('disk full'));
+    await act(async () => {
+      await expect(
+        result.current.updateEvent(event.id, { ...edit, symptom: 'Nausea' }),
+      ).rejects.toBeInstanceOf(PetEventStorageError);
+    });
+    expect(result.current.events[0]).toEqual(saved);
+    expect(result.current.updatingEventId).toBeNull();
+  });
 });

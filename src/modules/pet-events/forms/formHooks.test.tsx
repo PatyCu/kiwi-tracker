@@ -31,8 +31,10 @@ describe('form hooks', () => {
       'Recovered quickly.',
       new Date(2026, 6, 16, 9, 30).toISOString(),
     );
+    expect(result.current.visible).toBe(false);
+    act(() => result.current.open());
     expect(result.current).toMatchObject({
-      visible: false,
+      visible: true,
       symptom: 'Vomiting',
       note: '',
       isDirty: false,
@@ -65,7 +67,7 @@ describe('form hooks', () => {
     jest.useRealTimers();
   });
 
-  it('discards an unfinished symptom when the form closes', () => {
+  it('discards an unfinished symptom when the form closes and reopens', () => {
     const { result } = renderHook(() =>
       useSymptomForm({ onSubmit: jest.fn().mockResolvedValue(undefined) }),
     );
@@ -78,9 +80,11 @@ describe('form hooks', () => {
     expect(result.current.isDirty).toBe(true);
 
     act(() => result.current.close());
+    expect(result.current.visible).toBe(false);
+    act(() => result.current.open());
 
     expect(result.current).toMatchObject({
-      visible: false,
+      visible: true,
       symptom: 'Vomiting',
       note: '',
       isDirty: false,
@@ -113,8 +117,9 @@ describe('form hooks', () => {
       '',
       new Date(2026, 6, 16, 9, 30).toISOString(),
     );
+    expect(result.current.visible).toBe(false);
+    act(() => result.current.open());
     expect(result.current).toMatchObject({
-      visible: false,
       changeType: 'add',
       productName: '',
       foodType: 'dry-food',
@@ -165,7 +170,9 @@ describe('form hooks', () => {
       'Near the radiator.',
       new Date(2026, 6, 16, 9, 30).toISOString(),
     );
-    expect(result.current).toMatchObject({ visible: false, title: '', note: '', isDirty: false });
+    expect(result.current.visible).toBe(false);
+    act(() => result.current.open());
+    expect(result.current).toMatchObject({ title: '', note: '', isDirty: false });
     jest.useRealTimers();
   });
 
@@ -207,5 +214,135 @@ describe('form hooks', () => {
       expect(await result.current.submit()).toBe(false);
     });
     expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it('opens a saved symptom for editing and submits only the changes', async () => {
+    const onSubmit = jest.fn().mockResolvedValue(undefined);
+    const onUpdate = jest.fn().mockResolvedValue(undefined);
+    const { result } = renderHook(() => useSymptomForm({ onSubmit, onUpdate }));
+    const occurredAt = new Date(2026, 6, 16, 9, 30).toISOString();
+
+    act(() =>
+      result.current.openForEdit({
+        id: 'symptom-1',
+        petId: 'kiwi',
+        type: 'symptom',
+        symptom: 'Asthma',
+        note: 'Recovered quickly.',
+        occurredAt,
+        recordedAt: occurredAt,
+      }),
+    );
+
+    expect(result.current).toMatchObject({
+      visible: true,
+      isEditing: true,
+      symptom: 'Asthma',
+      note: 'Recovered quickly.',
+      occurredDate: '16-07-2026',
+      occurredTime: '09:30',
+      isDirty: false,
+    });
+    await act(async () => {
+      expect(await result.current.submit()).toBe(false);
+    });
+
+    act(() => result.current.setSymptom('Hairball'));
+    await act(async () => {
+      expect(await result.current.submit()).toBe(true);
+    });
+
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(onUpdate).toHaveBeenCalledWith('symptom-1', {
+      type: 'symptom',
+      symptom: 'Hairball',
+      note: 'Recovered quickly.',
+      occurredAt,
+    });
+    expect(result.current.visible).toBe(false);
+    act(() => result.current.open());
+    expect(result.current).toMatchObject({ isEditing: false, symptom: 'Vomiting', note: '' });
+  });
+
+  it('keeps edits in the form when saving them fails', async () => {
+    const onUpdate = jest.fn().mockRejectedValue(new Error('disk full'));
+    const { result } = renderHook(() => useOtherEventForm({ onSubmit: jest.fn(), onUpdate }));
+    const occurredAt = new Date(2026, 6, 16, 9, 30).toISOString();
+
+    act(() => {
+      result.current.openForEdit({
+        id: 'other-1',
+        petId: 'kiwi',
+        type: 'other',
+        title: 'Moved house',
+        occurredAt,
+        recordedAt: occurredAt,
+      });
+      result.current.setTitle('Moved flat');
+    });
+    await act(async () => {
+      expect(await result.current.submit()).toBe(false);
+    });
+
+    expect(result.current).toMatchObject({ visible: true, isEditing: true, title: 'Moved flat' });
+  });
+
+  it('edits the item a diet change introduced but not what it replaced', async () => {
+    const onUpdate = jest.fn().mockResolvedValue(undefined);
+    const { result } = renderHook(() =>
+      useDietChangeForm({ currentDiet: [], onSubmit: jest.fn(), onUpdate }),
+    );
+    const occurredAt = new Date(2026, 6, 16, 9, 30).toISOString();
+    const change = {
+      type: 'replace' as const,
+      previousItem: { id: 'old', productName: 'Old kibble', foodType: 'dry-food' as const },
+      nextItem: { id: 'new', productName: 'New kibbel', foodType: 'dry-food' as const },
+    };
+
+    act(() =>
+      result.current.openForEdit({
+        id: 'diet-1',
+        petId: 'kiwi',
+        type: 'diet-change',
+        change,
+        occurredAt,
+        recordedAt: occurredAt,
+      }),
+    );
+    expect(result.current).toMatchObject({
+      isEditing: true,
+      editedChange: change,
+      changeType: 'replace',
+      productName: 'New kibbel',
+      itemIsValid: true,
+      isDirty: false,
+    });
+
+    act(() => result.current.setProductName('New kibble '));
+    await act(async () => {
+      expect(await result.current.submit()).toBe(true);
+    });
+
+    expect(onUpdate).toHaveBeenCalledWith('diet-1', {
+      type: 'diet-change',
+      item: { productName: 'New kibble', foodType: 'dry-food' },
+      note: '',
+      occurredAt,
+    });
+  });
+
+  it('ignores a second save while the sheet is closing', async () => {
+    const onSubmit = jest.fn().mockResolvedValue(undefined);
+    const { result } = renderHook(() => useSymptomForm({ onSubmit }));
+
+    act(() => result.current.open());
+    await act(async () => {
+      expect(await result.current.submit()).toBe(true);
+    });
+    await act(async () => {
+      expect(await result.current.submit()).toBe(false);
+    });
+
+    expect(onSubmit).toHaveBeenCalledTimes(1);
   });
 });

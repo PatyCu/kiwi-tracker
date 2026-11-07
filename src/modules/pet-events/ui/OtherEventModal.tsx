@@ -16,12 +16,14 @@ import { Palette } from '@/shared/theme/palette';
 
 type OtherEventModalProps = {
   visible: boolean;
+  isEditing?: boolean;
   title: string;
   note: string;
   occurredDate: string;
   occurredTime: string;
   titleIsValid: boolean;
   dateTimeIsValid: boolean;
+  isDirty?: boolean;
   isSaving: boolean;
   colors: Palette;
   petField?: ReactNode;
@@ -35,12 +37,14 @@ type OtherEventModalProps = {
 
 export function OtherEventModal({
   visible,
+  isEditing = false,
   title,
   note,
   occurredDate,
   occurredTime,
   titleIsValid,
   dateTimeIsValid,
+  isDirty = false,
   isSaving,
   colors,
   petField,
@@ -52,7 +56,7 @@ export function OtherEventModal({
   onClose,
 }: OtherEventModalProps) {
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const saveDisabled = isSaving || !titleIsValid || !dateTimeIsValid;
+  const saveDisabled = isSaving || !titleIsValid || !dateTimeIsValid || (isEditing && !isDirty);
   const isIos = Platform.OS === 'ios';
   const onCloseRef = useRef(onClose);
 
@@ -133,7 +137,9 @@ export function OtherEventModal({
                 <Text style={styles.cancelText}>Cancel</Text>
               </Pressable>
             )}
-            <Text style={[styles.title, isIos && styles.iosTitle]}>Log another event</Text>
+            <Text style={[styles.title, isIos && styles.iosTitle]}>
+              {isEditing ? 'Edit event' : 'Log another event'}
+            </Text>
             {isIos ? (
               <View style={styles.headerSpacer} />
             ) : (
@@ -207,7 +213,9 @@ export function OtherEventModal({
               style={[styles.saveButton, saveDisabled && styles.disabled]}
               onPress={onSave}
             >
-              <Text style={styles.saveText}>{isSaving ? 'Saving…' : 'Save event'}</Text>
+              <Text style={styles.saveText}>
+                {isSaving ? 'Saving…' : isEditing ? 'Save changes' : 'Save event'}
+              </Text>
             </Pressable>
           </ScrollView>
         </Pressable>

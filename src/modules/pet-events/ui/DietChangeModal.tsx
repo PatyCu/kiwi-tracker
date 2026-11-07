@@ -14,6 +14,7 @@ import {
 import { DietChangeType } from '@/modules/pet-events/forms/useDietChangeForm';
 import {
   DIET_ITEM_TYPES,
+  DietChange,
   DietItemSnapshot,
   DietItemType,
 } from '@/modules/pet-events/model/PetEvent';
@@ -38,6 +39,7 @@ const foodTypeLabels: Record<DietItemType, string> = {
 
 type DietChangeModalProps = {
   visible: boolean;
+  editedChange?: DietChange | null;
   changeType: DietChangeType;
   selectedItemId: string | null;
   currentDiet: DietItemSnapshot[];
@@ -48,6 +50,7 @@ type DietChangeModalProps = {
   occurredTime: string;
   dateTimeIsValid: boolean;
   itemIsValid: boolean;
+  isDirty?: boolean;
   isSaving: boolean;
   colors: Palette;
   petField?: ReactNode;
@@ -64,6 +67,7 @@ type DietChangeModalProps = {
 
 export function DietChangeModal({
   visible,
+  editedChange = null,
   changeType,
   selectedItemId,
   currentDiet,
@@ -74,6 +78,7 @@ export function DietChangeModal({
   occurredTime,
   dateTimeIsValid,
   itemIsValid,
+  isDirty = false,
   isSaving,
   colors,
   petField,
@@ -89,7 +94,8 @@ export function DietChangeModal({
 }: DietChangeModalProps) {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [foodTypeDropdownOpen, setFoodTypeDropdownOpen] = useState(false);
-  const saveDisabled = isSaving || !dateTimeIsValid || !itemIsValid;
+  const isEditing = editedChange !== null;
+  const saveDisabled = isSaving || !dateTimeIsValid || !itemIsValid || (isEditing && !isDirty);
   const isIos = Platform.OS === 'ios';
 
   const close = () => {
@@ -118,7 +124,9 @@ export function DietChangeModal({
                 <Text style={styles.cancelText}>Cancel</Text>
               </Pressable>
             )}
-            <Text style={[styles.title, isIos && styles.iosTitle]}>Log a diet change</Text>
+            <Text style={[styles.title, isIos && styles.iosTitle]}>
+              {isEditing ? 'Edit diet change' : 'Log a diet change'}
+            </Text>
             {isIos ? (
               <View style={styles.headerSpacer} />
             ) : (
@@ -136,26 +144,32 @@ export function DietChangeModal({
           <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
             {petField}
             <Text style={styles.helper}>
-              This change stays in the current diet until another change is logged.
+              {isEditing
+                ? 'Correcting an item also updates it everywhere else in the diet history.'
+                : 'This change stays in the current diet until another change is logged.'}
             </Text>
             <Text style={styles.label}>WHAT CHANGED?</Text>
-            <View style={styles.choices}>
-              {changeTypes.map((option) => (
-                <Choice
-                  disabled={option === 'replace' && currentDiet.length === 0}
-                  key={option}
-                  label={changeTypeLabels[option]}
-                  selected={changeType === option}
-                  styles={styles}
-                  onPress={() => {
-                    setFoodTypeDropdownOpen(false);
-                    onChangeTypeChange(option);
-                  }}
-                />
-              ))}
-            </View>
+            {editedChange ? (
+              <Text style={styles.fixedChange}>{describeFixedChange(editedChange)}</Text>
+            ) : (
+              <View style={styles.choices}>
+                {changeTypes.map((option) => (
+                  <Choice
+                    disabled={option === 'replace' && currentDiet.length === 0}
+                    key={option}
+                    label={changeTypeLabels[option]}
+                    selected={changeType === option}
+                    styles={styles}
+                    onPress={() => {
+                      setFoodTypeDropdownOpen(false);
+                      onChangeTypeChange(option);
+                    }}
+                  />
+                ))}
+              </View>
+            )}
 
-            {(changeType === 'replace' || changeType === 'remove') && (
+            {!isEditing && (changeType === 'replace' || changeType === 'remove') && (
               <>
                 <Text style={styles.label}>
                   {changeType === 'replace' ? 'WHAT DID THIS REPLACE?' : 'WHAT DID YOU STOP?'}
@@ -292,7 +306,9 @@ export function DietChangeModal({
               style={[styles.saveButton, saveDisabled && styles.disabled]}
               onPress={save}
             >
-              <Text style={styles.saveText}>{isSaving ? 'Saving…' : 'Save diet change'}</Text>
+              <Text style={styles.saveText}>
+                {isSaving ? 'Saving…' : isEditing ? 'Save changes' : 'Save diet change'}
+              </Text>
             </Pressable>
           </ScrollView>
         </Pressable>
@@ -325,6 +341,14 @@ function Choice({ label, selected, disabled = false, styles, onPress }: ChoicePr
 
 function formatDietItem(item: DietItemSnapshot): string {
   return item.productName;
+}
+
+function describeFixedChange(change: DietChange): string {
+  if (change.type === 'add') return changeTypeLabels.add;
+  if (change.type === 'replace') {
+    return `${changeTypeLabels.replace}, replacing ${formatDietItem(change.previousItem)}`;
+  }
+  return `${changeTypeLabels.remove}: ${formatDietItem(change.item)}`;
 }
 
 const makeStyles = (colors: Palette) =>
@@ -377,6 +401,7 @@ const makeStyles = (colors: Palette) =>
     choiceText: { color: colors.text, fontSize: 13 },
     selectedChoiceText: { color: colors.kiwi, fontWeight: '700' },
     emptyDiet: { color: colors.muted, fontSize: 13 },
+    fixedChange: { color: colors.text, fontSize: 14 },
     dateTimeRow: { flexDirection: 'row', gap: 12 },
     dateTimeField: { flex: 1 },
     input: {

@@ -236,4 +236,41 @@ describe('Today screen', () => {
     expect(insightNames).toEqual(['Luna', 'Kiwi']);
     expect(screen.getByLabelText('Kiwi: All good, nothing to see here.')).toBeTruthy();
   });
+
+  it('lists repeated status reasons without duplicate React keys', async () => {
+    const occurredAt = new Date().toISOString();
+    const item = { id: 'item-1', productName: 'Royal Canin', foodType: 'dry-food' };
+    await storage.setItem(
+      '@kiwi-tracker/timeline-events/v1',
+      JSON.stringify([
+        {
+          id: 'diet-add',
+          petId: 'kiwi',
+          type: 'diet-change',
+          change: { type: 'add', item },
+          occurredAt,
+          recordedAt: occurredAt,
+        },
+        {
+          id: 'diet-remove',
+          petId: 'kiwi',
+          type: 'diet-change',
+          change: { type: 'remove', item },
+          occurredAt,
+          recordedAt: occurredAt,
+        },
+      ]),
+    );
+    const consoleError = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    const screen = render(<TodayScreen />, { wrapper: Providers });
+
+    await waitFor(() =>
+      expect(
+        screen.getAllByText('Diet changed today. Keep an eye out for new symptoms.'),
+      ).toHaveLength(2),
+    );
+    expect(consoleError.mock.calls.flat().join(' ')).not.toContain('same key');
+    consoleError.mockRestore();
+  });
 });

@@ -49,9 +49,25 @@ export type DietChangeEvent = PetEventBase & {
   change: DietChange;
 };
 
-type OtherEvent = PetEventBase & {
+export type OtherEvent = PetEventBase & {
   type: 'other';
   title: string;
 };
 
 export type PetEvent = SymptomEvent | DietChangeEvent | OtherEvent;
+
+type PetEventEditBase = {
+  occurredAt: string;
+  note: string;
+};
+
+/**
+ * The fields a person can correct after logging an event. The pet and the kind of event
+ * stay fixed. For diet changes only the item that was introduced (added or switched to)
+ * can be corrected; which item was replaced or stopped stays fixed so the diet history
+ * keeps its links.
+ */
+export type PetEventEdit =
+  | (PetEventEditBase & { type: 'symptom'; symptom: SymptomKind })
+  | (PetEventEditBase & { type: 'diet-change'; item?: DietItemInput })
+  | (PetEventEditBase & { type: 'other'; title: string });
