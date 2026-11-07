@@ -29,20 +29,20 @@ Its records live in the artifact's database. Update them with the `ArtifactData`
   - `status`: `"open"` or `"fixed"`. Open bugs are always P0.
   - `fixedIn` is the short commit hash of the fix.
   - Document ids are kebab-case with a `bug-` prefix.
-- Document `meta/sync`: `{ commit, syncedAt, nextUpTitle, nextUpBody }`.
+- Document `meta/sync`: `{ commit, syncedAt }`.
 
 ## Page colors
 
 Colors on the page carry meaning. Keep them consistent when changing the page or adding a new status, label or record type.
 
-| Color            | Meaning                    | Used for                         |
-| ---------------- | -------------------------- | -------------------------------- |
-| Green            | Finished, healthy          | Done; "No open bugs"             |
-| Dark solid (ink) | Active work                | In progress                      |
-| Blue             | Neutral, ready to pick up  | Ready for development; "Next up" |
-| Purple           | Neutral, not started       | To-do                            |
-| Red              | Critical, needs action now | Open bugs only                   |
-| Orange-yellow    | Urgent or a warning        | Reserved; not used yet           |
+| Color            | Meaning                    | Used for               |
+| ---------------- | -------------------------- | ---------------------- |
+| Green            | Finished, healthy          | Done; "No open bugs"   |
+| Dark solid (ink) | Active work                | In progress            |
+| Blue             | Neutral, ready to pick up  | Ready for development  |
+| Purple           | Neutral, not started       | To-do                  |
+| Red              | Critical, needs action now | Open bugs only         |
+| Orange-yellow    | Urgent or a warning        | Reserved; not used yet |
 
 - Red and orange-yellow are only for bugs and urgent or critical items. Never use them for normal roadmap statuses.
 - When something urgent is added later (for example an "urgent" priority, a blocker or a regression), use red if it needs action now and orange-yellow if it is a warning or needs attention soon.
@@ -53,7 +53,7 @@ The page source isn't in this repo. To change the page, read the artifact with t
 ## Who owns which fields
 
 - **From the code** (the sync updates these): feature `status` and `note`, and bug `status`, `fixedAt` and `fixedIn`.
-- **Set by the developer** (never changed by the sync unless the developer asks): `phase`, `priority`, and `nextUpTitle` / `nextUpBody`.
+- **Set by the developer** (never changed by the sync unless the developer asks): `phase` and `priority`.
 
 ## Steps
 
