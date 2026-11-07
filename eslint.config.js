@@ -4,7 +4,7 @@ const prettierConfig = require('eslint-config-prettier/flat');
 
 module.exports = defineConfig([
   {
-    ignores: ['.expo/**', 'coverage/**', 'dist/**', 'node_modules/**'],
+    ignores: ['.claude/**', '.expo/**', 'coverage/**', 'dist/**', 'node_modules/**'],
   },
   expoConfig,
   {
