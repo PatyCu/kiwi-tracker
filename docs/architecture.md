@@ -31,6 +31,7 @@
 - Persisted schemas and storage keys remain backward-compatible.
 - Storage modules expose typed inputs, outputs, and failures.
 - Storage failures must not silently discard user data.
+- Only persistence modules use the Supabase client (`src/shared/supabase`); lint enforces this.
 
 ## Navigation and product scope
 

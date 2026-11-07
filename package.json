@@ -16,12 +16,14 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "jest --runInBand",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "db:types": "supabase gen types typescript --schema public > src/shared/supabase/database.types.ts && prettier --write src/shared/supabase/database.types.ts"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/datetimepicker": "^9.1.0",
+    "@supabase/supabase-js": "^2.119.0",
     "expo": "^57.0.6",
     "expo-asset": "~57.0.5",
     "expo-constants": "~57.0.5",

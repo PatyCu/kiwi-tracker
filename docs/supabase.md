@@ -1,9 +1,8 @@
 # Supabase backend
 
 Kiwi Tracker has a [Supabase](https://supabase.com) backend schema in which
-each person keeps their own pets, events and pet photos. The app does not connect to it
-yet; it still stores data on the device. You only need this setup to work on the
-database.
+each person keeps their own pets, events and pet photos. The app has a Supabase
+client, but no screen uses it yet; data is still stored on the device.
 
 The schema lives in `supabase/migrations/` and is the source of truth. You
 develop against a local Supabase stack. The shared cloud project
@@ -81,6 +80,30 @@ migrations and the seed, then prints the local URLs and keys. Studio runs at
 
 Stop with `supabase stop` and `colima stop`.
 
+### Connect the app
+
+The app reads its Supabase connection from two Expo public env vars:
+
+| Variable                               | Value                                  |
+| -------------------------------------- | -------------------------------------- |
+| `EXPO_PUBLIC_SUPABASE_URL`             | API URL from `supabase status`         |
+| `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Publishable key from `supabase status` |
+
+`.env.example` holds the local stack's values. Copy it once and restart Expo:
+
+```bash
+cp .env.example .env.local
+```
+
+`.env.local` is git-ignored. Point it at the shared project only to test against
+it on purpose, and never put a secret key in it: `EXPO_PUBLIC_*` values are
+bundled into the app. If a variable is missing or invalid, the first Supabase
+call throws an error that names it.
+
+Only persistence modules (`src/modules/*/persistence`) may use the client in
+`src/shared/supabase/supabaseClient.ts`; lint rejects imports from anywhere
+else. The signed-in session is kept in AsyncStorage (localStorage on web).
+
 ### Change the schema
 
 1. Create a migration file:
@@ -96,10 +119,20 @@ Stop with `supabase stop` and `colima stop`.
    supabase db reset
    ```
 
-4. Check the change: `supabase db lint` for schema errors, and Studio or the
+4. Regenerate the app's database types from the local schema, and fix any
+   type errors the change causes:
+
+   ```bash
+   npm run db:types
+   ```
+
+   This writes `src/shared/supabase/database.types.ts`. Rerun it after every
+   migration.
+
+5. Check the change: `supabase db lint` for schema errors, and Studio or the
    seeded accounts for access rules. Update `supabase/seed.sql` if the new
    schema needs local data.
-5. Commit the migration and get it reviewed.
+6. Commit the migration with the regenerated types and get it reviewed.
 
 ### Apply to the shared project
 

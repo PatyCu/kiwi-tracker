@@ -13,5 +13,29 @@ module.exports = defineConfig([
       '@typescript-eslint/no-require-imports': 'off',
     },
   },
+  {
+    // Supabase sits behind the persistence boundary; see docs/architecture.md.
+    files: ['src/**/*.{ts,tsx}'],
+    ignores: ['src/shared/supabase/**', 'src/modules/*/persistence/**'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@supabase/supabase-js',
+              message: 'Use Supabase only from a persistence module.',
+            },
+          ],
+          patterns: [
+            {
+              group: ['@/shared/supabase/supabaseClient'],
+              message: 'Use Supabase only from a persistence module.',
+            },
+          ],
+        },
+      ],
+    },
+  },
   prettierConfig,
 ]);

@@ -16,8 +16,9 @@ Expo, React Native, TypeScript and Expo Router, with strict TypeScript and the
 - `src/app` — Expo Router routes and layouts only.
 - `src/modules` — product capabilities, grouped by domain.
 - `src/shared` — cross-module UI, theme, dates and platform adapters.
-- `supabase` — backend schema and local stack configuration. The app does not
-  use it yet; see [docs/supabase.md](docs/supabase.md).
+- `supabase` — backend schema and local stack configuration. The app has a
+  Supabase client but doesn't store data there yet; see
+  [docs/supabase.md](docs/supabase.md).
 
 Dependency direction is `app → modules → shared`. See
 [docs/architecture.md](docs/architecture.md) for the full principles.
@@ -34,7 +35,12 @@ git clone https://github.com/PatyCu/kiwi-tracker.git
 cd kiwi-tracker
 nvm use
 npm ci
+cp .env.example .env.local
 ```
+
+`.env.local` points the app at the local Supabase stack. See
+[Connect the app](docs/supabase.md#connect-the-app) to run that stack and for
+the variables it sets.
 
 ## Develop
 
