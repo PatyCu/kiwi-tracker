@@ -46,6 +46,7 @@
 - Treat console errors and warnings as part of the current task: investigate and resolve them before finishing. Do not knowingly leave warnings to accumulate; if a warning cannot be fixed safely within scope, explain the cause and required follow-up.
 - When phased delivery is requested, keep a visible checklist and complete implementation, automated validation, manual verification, and commit in that order for each phase.
 - Keep developer documentation concise and current, covering prerequisites, installation, development, and validation. Add troubleshooting guidance only for recurring issues.
+- After finishing a user-facing feature, or a change that adds, removes or replaces a placeholder, sync the feature tracker before committing: follow `.claude/skills/sync-feature-tracker/SKILL.md`. Skip it for refactors, tooling and fixes that don't change what the app can do. If the tracker can't be updated from your environment, tell the developer which rows are out of date.
 
 ## Data and UX
 
