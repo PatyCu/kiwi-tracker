@@ -19,13 +19,7 @@ Stop and report to the developer whenever a step fails. Don't skip ahead.
 
 ## 2. Sync the feature tracker
 
-Follow `.claude/skills/sync-feature-tracker/SKILL.md` when the work:
-
-- finished, started or partly landed a feature,
-- added, removed or replaced a placeholder, or
-- fixed a bug, or found unrelated bugs along the way (log those as `open`).
-
-Skip it for refactors and tooling that don't change what the app can do. If the tracker can't be updated, say which records are out of date and carry on.
+When `AGENTS.md` calls for a tracker sync, follow `.claude/skills/sync-feature-tracker/SKILL.md`. This step is the exception to stopping on failure: if the tracker can't be updated, say which records are out of date and carry on.
 
 ## 3. Commit
 

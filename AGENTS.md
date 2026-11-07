@@ -48,7 +48,7 @@
 - Keep developer documentation concise and current, covering prerequisites, installation, development, and validation. Add troubleshooting guidance only for recurring issues.
 - Each Markdown document has a single, cohesive purpose; keep content within it and link across documents rather than inlining. Documentation is part of a feature's Definition of Done: document a capability when it is done, not while it is planned or in progress. The README is the contributor entry point — the current state and how to collaborate today (overview, setup, develop, validate, and pointers to deeper docs), not future or in-progress work.
 - The feature tracker artifact is the only roadmap and bug list; do not use GitHub Issues or GitHub Projects. Follow `.claude/skills/sync-feature-tracker/SKILL.md` to update it.
-- After finishing a user-facing feature or fixing a bug, or after a change that adds, removes or replaces a placeholder, sync the feature tracker before committing. Skip it for refactors and tooling that don't change what the app can do. If the tracker can't be updated from your environment, tell the developer which records are out of date.
+- Sync the feature tracker before committing whenever a change alters what the app shows or can do (features, bug fixes, placeholders).
 - Treat bugs as P0: log a bug in the tracker when it is found, and fix open bugs before starting new feature work unless the developer decides otherwise.
 - Fixing bugs related to the current change is part of finishing it; log only unrelated bugs for later.
 - When the developer says "wrap up", follow `.claude/skills/wrap-up/SKILL.md`.

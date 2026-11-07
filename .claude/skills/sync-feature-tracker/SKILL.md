@@ -1,6 +1,6 @@
 ---
 name: sync-feature-tracker
-description: Sync the Kiwi Tracker roadmap artifact (features by phase, plus bugs) with the current code. Use after finishing a feature or fixing a bug, before committing, when a bug is found, or when asked to "sync the feature tracker".
+description: Sync the Kiwi Tracker roadmap artifact (features by phase, plus bugs) with the current code. Use when AGENTS.md calls for a tracker sync or a bug to be logged, or when asked to "sync the feature tracker".
 ---
 
 # Sync the feature tracker
