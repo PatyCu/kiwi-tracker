@@ -1,8 +1,8 @@
 # Supabase backend
 
 Kiwi Tracker has a [Supabase](https://supabase.com) backend schema in which
-each person keeps their own pets, events and pet photos. The app uses Supabase
-Auth to sign in, but pets and events are still stored on the device.
+each person keeps their own pets, events and pet photos. The app has a Supabase
+client, but no screen uses it yet; data is still stored on the device.
 
 The schema lives in `supabase/migrations/` and is the source of truth. You
 develop against a local Supabase stack. The shared cloud project
@@ -45,14 +45,9 @@ function, not the stored rows or photo paths.
 Anyone can sign up with their email; there are no invitations or memberships to
 manage. A new account starts with no pets.
 
-The app signs in with a 6-digit code sent by email: the same code creates the
-account when the email is new. The session is kept on the device until the user
-signs out from Settings. Asking for a new code makes earlier codes stop working,
-and Supabase reports a wrong code and an expired one the same way, so the app
-shows one message for both.
-
 Locally, `supabase/seed.sql` creates two accounts with one pet each, so you can
-check access from both sides. The accounts are listed at the top of that file.
+check access from both sides. The accounts and their password are listed at the
+top of that file.
 
 ## Local development
 
@@ -104,22 +99,6 @@ cp .env.example .env.local
 it on purpose, and never put a secret key in it: `EXPO_PUBLIC_*` values are
 bundled into the app. If a variable is missing or invalid, the first Supabase
 call throws an error that names it.
-
-### Sign in locally
-
-The local stack doesn't send real email. Every email lands in Mailpit at
-<http://127.0.0.1:54324>.
-
-1. In the app, enter any email (a seeded one or a new one) and choose
-   **Send code**.
-2. Open Mailpit, open the newest "Your Kiwi Tracker sign-in code" email, and
-   enter its 6-digit code in the app.
-
-The email comes from `supabase/templates/magic_link.html`, set in
-`supabase/config.toml`. After changing either, restart the stack with
-`supabase stop` and `supabase start`.
-
-### Use the client
 
 Only persistence modules (`src/modules/*/persistence`) may use the client in
 `src/shared/supabase/supabaseClient.ts`; lint rejects imports from anywhere

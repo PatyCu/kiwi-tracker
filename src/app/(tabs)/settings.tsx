@@ -1,5 +1,5 @@
-import { SettingsScreen } from '@/modules/settings/ui/SettingsScreen';
+import { AppearanceScreen } from '@/modules/appearance/ui/AppearanceScreen';
 
 export default function SettingsRoute() {
-  return <SettingsScreen />;
+  return <AppearanceScreen />;
 }

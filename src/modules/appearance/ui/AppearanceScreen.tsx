@@ -4,14 +4,15 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Appearance } from '@/shared/theme/Appearance';
 import { useAppearance } from '@/shared/theme/AppearanceProvider';
 import { Palette } from '@/shared/theme/palette';
+import { Screen } from '@/shared/ui/Screen';
 
 const options: Appearance[] = ['system', 'light', 'dark'];
 
-export function AppearanceSection() {
+export function AppearanceScreen() {
   const { appearance, colors, setAppearance } = useAppearance();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
-    <View>
+    <Screen>
       <Text style={styles.sectionTitle}>Appearance</Text>
       <View style={styles.card}>
         {options.map((option, index) => (
@@ -27,7 +28,7 @@ export function AppearanceSection() {
           </Pressable>
         ))}
       </View>
-    </View>
+    </Screen>
   );
 }
 

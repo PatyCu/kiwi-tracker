@@ -32,7 +32,7 @@ function createSupabaseClient(): KiwiSupabaseClient {
       storage: AsyncStorage,
       persistSession: true,
       autoRefreshToken: true,
-      // Sign-in uses email codes, so there are no auth redirects to read from the URL.
+      // The app has no auth redirects, so there is no session to read from the URL.
       detectSessionInUrl: false,
     },
   });

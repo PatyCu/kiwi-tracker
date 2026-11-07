@@ -9,16 +9,15 @@ all your pets.
 ## Tech stack
 
 Expo, React Native, TypeScript and Expo Router, with strict TypeScript and the
-`@/` import alias. People sign in with an email code through Supabase Auth; pets
-and events are still stored on the device, not per account.
+`@/` import alias. Data is stored on the device.
 
 ## Project structure
 
 - `src/app` — Expo Router routes and layouts only.
 - `src/modules` — product capabilities, grouped by domain.
 - `src/shared` — cross-module UI, theme, dates and platform adapters.
-- `supabase` — backend schema and local stack configuration. The app signs in
-  with Supabase but doesn't store data there yet; see
+- `supabase` — backend schema and local stack configuration. The app has a
+  Supabase client but doesn't store data there yet; see
   [docs/supabase.md](docs/supabase.md).
 
 Dependency direction is `app → modules → shared`. See
@@ -50,9 +49,7 @@ npm start
 ```
 
 From the Expo terminal, press `w` to open the web app or `i` to open the iOS
-Simulator. The app opens at sign-in; see
-[Sign in locally](docs/supabase.md#sign-in-locally) to get a code from the local
-stack.
+Simulator.
 
 ## Validate
 
