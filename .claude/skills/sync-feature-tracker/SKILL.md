@@ -14,7 +14,9 @@ Its records live in the artifact's database. Update them with the `ArtifactData`
 ## Data shape
 
 - Collection `features`, one document per feature:
-  `{ area, areaOrder, order, status, phase, priority?, name, note? }`
+  `{ area, areaOrder, order, status, phase, priority?, name, note?, tasks? }`
+  - `note`: one or two sentences on what the feature is. Not a place for the work plan.
+  - `tasks`: the breakdown, as `[{ name, done }]` in delivery order. Give every feature that needs more than one piece of work a task list, and tick tasks off as they land. The page shows it as a checklist.
   - `status`, in sort order within each phase (the page folds `done` rows into a collapsible "N done" group at the top of the phase):
     - `"done"`: Done.
     - `"in-progress"`: In progress. Work on it has started and isn't finished.
@@ -52,7 +54,7 @@ The page source isn't in this repo. To change the page, read the artifact with t
 
 ## Who owns which fields
 
-- **From the code** (the sync updates these): feature `status` and `note`, and bug `status`, `fixedAt` and `fixedIn`.
+- **From the code** (the sync updates these): feature `status`, `note` and each task's `done`, and bug `status`, `fixedAt` and `fixedIn`.
 - **Set by the developer** (never changed by the sync unless the developer asks): `phase` and `priority`.
 
 ## Steps
@@ -64,7 +66,7 @@ The page source isn't in this repo. To change the page, read the artifact with t
    - Remaining placeholders: `PlaceholderScreen`, `PlaceholderCard`, and "Coming soon" text
    - `git log` since the commit in `meta/sync`
 3. Compare the code with the records:
-   - A feature that changed state gets a new `status`, and its `note` updated if needed.
+   - A feature that changed state gets a new `status`, its finished tasks ticked, and its `note` updated if needed.
    - A new capability that matches no row gets a new row with `phase: "Unplanned"`. Ask the developer which phase and priority it belongs to.
    - Never delete a row just because you didn't find its code. Delete it only when the feature was deliberately dropped, and say so.
    - A bug fixed in this work gets `status: "fixed"`, `fixedAt` and `fixedIn`.
