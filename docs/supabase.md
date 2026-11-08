@@ -63,9 +63,10 @@ a household yet" instead of opening. In **Table Editor**, insert a row in
 `household_members` with the account's user ID, the household's ID and a
 `display_name`, the name the app shows for them instead of their email.
 
-Locally, `supabase/seed.sql` creates two accounts in separate households with
-one pet each, so you can check access from both sides. The accounts and their password are listed at the
-top of that file.
+Locally, `supabase/seed.sql` mirrors the shared project: two accounts share a
+household and a third has its own, each household with one pet, so you can check
+what members share and what outsiders can't see. The accounts and their password
+are listed at the top of that file.
 
 ## Local development
 

@@ -1,15 +1,16 @@
 -- Local development data, loaded by `supabase db reset` after the migrations.
 -- Never run this against the shared project.
 --
--- Two accounts in separate households with one pet each, so household access
--- can be checked both ways: each person sees their household's pet and not the
--- other's.
+-- Shaped like the shared project: two accounts share one household, and a
+-- third account in its own household checks that outsiders see nothing. Each
+-- household has one pet, so access can be checked both ways.
 --
--- Sign in locally with either account:
+-- Sign in locally with any of these accounts:
 --
---   Email           Password        Name  Household (alias, id)                              Sees
---   alex@kiwi.test  kiwi-local-dev  Alex  Alex's home  aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa  Kiwi (cat, one hairball event)
---   sam@kiwi.test   kiwi-local-dev  Sam   Sam's home   bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb  Biscuit (dog, no events)
+--   Email             Password        Name    Household (alias, id)                              Sees
+--   alex@kiwi.test    kiwi-local-dev  Alex    Alex's home  aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa  Kiwi (cat, one hairball event)
+--   jordan@kiwi.test  kiwi-local-dev  Jordan  Alex's home  aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa  Kiwi (cat, one hairball event)
+--   sam@kiwi.test     kiwi-local-dev  Sam     Sam's home   bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb  Biscuit (dog, no events)
 
 -- Auth users ------------------------------------------------------------------
 
@@ -50,7 +51,8 @@ select
 from (
   values
     ('11111111-1111-4111-8111-111111111111'::uuid, 'alex@kiwi.test'),
-    ('22222222-2222-4222-8222-222222222222'::uuid, 'sam@kiwi.test')
+    ('22222222-2222-4222-8222-222222222222'::uuid, 'sam@kiwi.test'),
+    ('33333333-3333-4333-8333-333333333333'::uuid, 'jordan@kiwi.test')
 ) as seed (id, email);
 
 -- Email sign-in needs a matching identity per user.
@@ -74,7 +76,7 @@ select
   now(),
   now()
 from auth.users as users
-where users.email in ('alex@kiwi.test', 'sam@kiwi.test');
+where users.email in ('alex@kiwi.test', 'sam@kiwi.test', 'jordan@kiwi.test');
 
 -- Households --------------------------------------------------------------------
 
@@ -86,7 +88,8 @@ values
 insert into public.household_members (user_id, household_id, display_name)
 values
   ('11111111-1111-4111-8111-111111111111', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'Alex'),
-  ('22222222-2222-4222-8222-222222222222', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'Sam');
+  ('22222222-2222-4222-8222-222222222222', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'Sam'),
+  ('33333333-3333-4333-8333-333333333333', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'Jordan');
 
 -- Pets and events ---------------------------------------------------------------
 
