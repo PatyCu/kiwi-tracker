@@ -42,6 +42,8 @@
 - Use `npm`, which is the package manager established by `package-lock.json`; do not add another lockfile.
 - Ask for confirmation before adding a new production dependency.
 - After code changes, run `npm run typecheck` and the relevant Expo check or build. Validate each affected platform when behavior or configuration is cross-platform.
+- Validate changes on the local Supabase stack, never by experimenting on the shared project; the developer checks the shared project manually after each wrap-up.
+- Keep `supabase/seed.sql` able to exercise what the shared project has, such as a household with several members and an account outside it.
 - Run lint and tests when corresponding project scripts exist. If a relevant check is unavailable, state that clearly instead of claiming it passed.
 - Treat console errors and warnings as part of the current task: investigate and resolve them before finishing. Do not knowingly leave warnings to accumulate; if a warning cannot be fixed safely within scope, explain the cause and required follow-up.
 - When phased delivery is requested, keep a visible checklist and complete implementation, automated validation, manual verification, and commit in that order for each phase.

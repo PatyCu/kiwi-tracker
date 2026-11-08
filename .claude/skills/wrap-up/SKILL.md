@@ -55,4 +55,4 @@ Files left out of the commit in step 1 because they don't belong to this task ar
 
 ## 7. Report
 
-Finish with a short summary: the commit hash and message, where it went (pushed to `main`, or the PR link), migrations applied to the shared project, tracker changes, and anything left out or still open.
+Finish with a short summary: the commit hash and message, where it went (pushed to `main`, or the PR link), migrations applied to the shared project, tracker changes, anything left out or still open, and a short list of what the developer should check in the shared project, or that there's nothing new to check there.
