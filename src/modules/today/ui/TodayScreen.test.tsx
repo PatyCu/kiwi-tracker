@@ -8,6 +8,7 @@ import { PetEventFormsProvider } from '@/modules/pet-events/state/PetEventFormsP
 import { PetEventsProvider } from '@/modules/pet-events/state/PetEventsProvider';
 import { PetProfileFormsProvider } from '@/modules/pets/state/PetProfileFormsProvider';
 import { PetsProvider } from '@/modules/pets/state/PetsProvider';
+import { useHouseholdAlias } from '@/modules/households/state/useHouseholdAlias';
 import { TodayScreen } from '@/modules/today/ui/TodayScreen';
 import { lightColors } from '@/shared/theme/palette';
 
@@ -21,6 +22,10 @@ jest.mock('@expo/vector-icons', () => {
 
 jest.mock('expo-router', () => ({
   router: { push: jest.fn(), back: jest.fn() },
+}));
+
+jest.mock('@/modules/households/state/useHouseholdAlias', () => ({
+  useHouseholdAlias: jest.fn(() => null),
 }));
 
 jest.mock('@react-native-async-storage/async-storage', () =>
@@ -47,6 +52,7 @@ describe('Today screen', () => {
   beforeEach(() => {
     storage.clear();
     jest.clearAllMocks();
+    jest.mocked(useHouseholdAlias).mockReturnValue(null);
   });
 
   it('shows the original semaphore card with truthful care placeholders', async () => {
@@ -74,6 +80,15 @@ describe('Today screen', () => {
     expect(screen.queryByText('Last 24 hours')).toBeNull();
     expect(screen.queryByText('Recent updates')).toBeNull();
     expect(screen.queryByLabelText('Quick log')).toBeNull();
+  });
+
+  it('names the household in the summary card once its alias loads', async () => {
+    jest.mocked(useHouseholdAlias).mockReturnValue('The Burrow');
+
+    const screen = render(<TodayScreen />, { wrapper: Providers });
+
+    await waitFor(() => expect(screen.getByText('Today in The Burrow')).toBeTruthy());
+    expect(screen.queryByText('Today with Kiwi')).toBeNull();
   });
 
   it('renders one aggregate semaphore card for multiple persisted pets', async () => {

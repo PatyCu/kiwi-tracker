@@ -23,6 +23,8 @@ export function buildTodayViewModel(
   pets: readonly Pet[],
   events: readonly PetEvent[],
   now: Date,
+  /** Labels the summary; without one it names the pets instead. */
+  householdAlias: string | null,
 ): TodayViewModel {
   const evaluations = pets.map((pet) => {
     const evaluation = evaluatePetStatus(
@@ -34,25 +36,30 @@ export function buildTodayViewModel(
       status: evaluation.status,
     };
   });
-  const statusSummary = buildStatusSummary(evaluations);
+  const statusSummary = buildStatusSummary(evaluations, householdAlias);
   const insights = [...evaluations].sort(
     (left, right) => statusPriority(right.status) - statusPriority(left.status),
   );
   return { statusSummary, insights };
 }
 
-function buildStatusSummary(evaluations: { pet: Pet; status: PetStatus }[]): TodayStatusSummary {
+function buildStatusSummary(
+  evaluations: { pet: Pet; status: PetStatus }[],
+  householdAlias: string | null,
+): TodayStatusSummary {
   const highestPriorityEvaluation = evaluations.reduce((highest, current) =>
     statusPriority(current.status) > statusPriority(highest.status) ? current : highest,
   );
   const highestPriorityStatus = highestPriorityEvaluation.status;
   const isSinglePet = evaluations.length === 1;
-  const names = formatPetNames(evaluations.map(({ pet }) => pet.name));
+  const kicker = householdAlias
+    ? `Today in ${householdAlias}`
+    : `Today with ${formatPetNames(evaluations.map(({ pet }) => pet.name))}`;
 
   if (isSinglePet) {
     return {
       indicatorLabel: evaluations[0].pet.species,
-      kicker: `Today with ${names}`,
+      kicker,
       status: highestPriorityStatus,
     };
   }
@@ -73,7 +80,7 @@ function buildStatusSummary(evaluations: { pet: Pet; status: PetStatus }[]): Tod
 
   return {
     indicatorLabel: 'Pets',
-    kicker: `Today with ${names}`,
+    kicker,
     status: { ...highestPriorityStatus, description },
   };
 }

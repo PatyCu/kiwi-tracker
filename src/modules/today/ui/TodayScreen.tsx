@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
 import { useAppearance } from '@/shared/theme/AppearanceProvider';
+import { useHouseholdAlias } from '@/modules/households/state/useHouseholdAlias';
 import { usePetEvents } from '@/modules/pet-events/state/PetEventsProvider';
 import { usePets } from '@/modules/pets/state/PetsProvider';
 import { buildTodayViewModel } from '@/modules/today/buildTodayViewModel';
@@ -16,8 +17,9 @@ export function TodayScreen() {
   const { colors } = useAppearance();
   const { pets, loadStatus: petsStatus, retryLoad: retryPets } = usePets();
   const { events, loadStatus: eventsStatus, retryLoad: retryEvents } = usePetEvents();
+  const householdAlias = useHouseholdAlias();
   const now = new Date();
-  const viewModel = buildTodayViewModel(pets, events, now);
+  const viewModel = buildTodayViewModel(pets, events, now, householdAlias);
 
   if (petsStatus === 'error' || eventsStatus === 'error') {
     return (

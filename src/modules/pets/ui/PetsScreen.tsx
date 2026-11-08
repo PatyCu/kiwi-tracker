@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 
 import { useAppearance } from '@/shared/theme/AppearanceProvider';
+import { useHouseholdAlias } from '@/modules/households/state/useHouseholdAlias';
 import { usePets } from '@/modules/pets/state/PetsProvider';
 import { usePetProfileForms } from '@/modules/pets/state/PetProfileFormsProvider';
 import { PetOverview } from '@/modules/pets/ui/PetOverview';
@@ -15,6 +16,9 @@ export function PetsScreen() {
   const { colors } = useAppearance();
   const { pets, loadStatus, retryLoad } = usePets();
   const { addPet, editPet } = usePetProfileForms();
+  const householdAlias = useHouseholdAlias();
+  // Until the alias loads, or when the user has no household yet.
+  const title = householdAlias ? `Pets in ${householdAlias}` : 'Your pets';
   const selectedPet = pets.find((pet) => pet.id === petId) ?? pets[0];
 
   if (loadStatus === 'error') {
@@ -28,7 +32,7 @@ export function PetsScreen() {
   if (!selectedPet) {
     return (
       <Screen>
-        <SectionHeader compact title="Your pets" actionLabel="Add pet" onAction={addPet} />
+        <SectionHeader compact title={title} actionLabel="Add pet" onAction={addPet} />
         <PlaceholderCard
           title="No pets yet"
           description="Add a pet to start tracking their care."
@@ -41,6 +45,7 @@ export function PetsScreen() {
   return (
     <Screen>
       <PetSelector
+        title={title}
         pets={pets}
         selectedPetId={selectedPet.id}
         colors={colors}

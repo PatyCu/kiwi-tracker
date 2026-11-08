@@ -7,6 +7,7 @@ import { PetEventFormsProvider } from '@/modules/pet-events/state/PetEventFormsP
 import { PetEventsProvider } from '@/modules/pet-events/state/PetEventsProvider';
 import { PetProfileFormsProvider } from '@/modules/pets/state/PetProfileFormsProvider';
 import { PetsProvider } from '@/modules/pets/state/PetsProvider';
+import { useHouseholdAlias } from '@/modules/households/state/useHouseholdAlias';
 import { PetsScreen } from '@/modules/pets/ui/PetsScreen';
 import { AppearanceProvider } from '@/shared/theme/AppearanceProvider';
 import { lightColors } from '@/shared/theme/palette';
@@ -24,6 +25,10 @@ jest.mock('@expo/vector-icons', () => {
 jest.mock('expo-router', () => ({
   router: { push: jest.fn(), back: jest.fn(), setParams: jest.fn() },
   useLocalSearchParams: () => ({ petId: mockPetId }),
+}));
+
+jest.mock('@/modules/households/state/useHouseholdAlias', () => ({
+  useHouseholdAlias: jest.fn(() => null),
 }));
 
 jest.mock('@react-native-async-storage/async-storage', () =>
@@ -50,6 +55,7 @@ describe('Pets screen', () => {
   beforeEach(async () => {
     await storage.clear();
     jest.clearAllMocks();
+    jest.mocked(useHouseholdAlias).mockReturnValue(null);
     mockPetId = 'luna';
     await storage.setItem(
       '@kiwi-tracker/pet-state/v2',
@@ -79,6 +85,7 @@ describe('Pets screen', () => {
     const screen = render(<PetsScreen />, { wrapper: Providers });
 
     await waitFor(() => expect(screen.getByText('Today with Luna')).toBeTruthy());
+    expect(screen.getByText('Your pets')).toBeTruthy();
     expect(screen.getByLabelText('Luna, selected pet').props.accessibilityState).toEqual({
       selected: true,
     });
@@ -93,6 +100,15 @@ describe('Pets screen', () => {
     expect(activityCard.findByProps({ children: 'Add event' })).toBeTruthy();
     expect(activityCard.findByProps({ children: 'Recent timeline' })).toBeTruthy();
     expect(screen.queryByLabelText('View Luna')).toBeNull();
+  });
+
+  it('names the household in the header once its alias loads', async () => {
+    jest.mocked(useHouseholdAlias).mockReturnValue('The Burrow');
+
+    const screen = render(<PetsScreen />, { wrapper: Providers });
+
+    await waitFor(() => expect(screen.getByText('Pets in The Burrow')).toBeTruthy());
+    expect(screen.queryByText('Your pets')).toBeNull();
   });
 
   it('changes the explicit pet selection without pushing another screen', async () => {

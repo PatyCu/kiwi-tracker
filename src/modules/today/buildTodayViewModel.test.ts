@@ -32,7 +32,7 @@ const events: PetEvent[] = [
 
 describe('buildTodayViewModel', () => {
   it('builds one aggregate semaphore summary using the highest pet status', () => {
-    const result = buildTodayViewModel(pets, events, now);
+    const result = buildTodayViewModel(pets, events, now, null);
 
     expect(result.statusSummary).toMatchObject({
       indicatorLabel: 'Pets',
@@ -45,13 +45,22 @@ describe('buildTodayViewModel', () => {
     });
   });
 
+  it.each([
+    ['several pets', pets],
+    ['one pet', pets.slice(0, 1)],
+  ])('names the household instead of the pets when it has an alias, with %s', (_label, shown) => {
+    const result = buildTodayViewModel(shown, events, now, 'The Burrow');
+
+    expect(result.statusSummary.kicker).toBe('Today in The Burrow');
+  });
+
   it('includes every pet in insights and orders alerts before all-clear pets', () => {
     const allPets: Pet[] = [
       { id: 'milo', name: 'Milo', species: 'Cat', createdAt: '2026-01-03T00:00:00.000Z' },
       ...pets,
     ];
 
-    const result = buildTodayViewModel(allPets, events, now);
+    const result = buildTodayViewModel(allPets, events, now, null);
 
     expect(result.insights.map(({ pet, status }) => [pet.id, status.status])).toEqual([
       ['luna', PetStatusLevel.Red],

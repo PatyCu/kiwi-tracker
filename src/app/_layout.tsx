@@ -6,6 +6,8 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppearanceProvider, useAppearance } from '@/shared/theme/AppearanceProvider';
 import { SessionProvider, useSession } from '@/modules/auth/state/SessionProvider';
 import { SignInUnavailableScreen } from '@/modules/auth/ui/SignInUnavailableScreen';
+import { HouseholdProvider, useHousehold } from '@/modules/households/state/HouseholdProvider';
+import { NoHouseholdScreen } from '@/modules/households/ui/NoHouseholdScreen';
 import { PetEventFormsProvider } from '@/modules/pet-events/state/PetEventFormsProvider';
 import { PetEventsProvider } from '@/modules/pet-events/state/PetEventsProvider';
 import { PetProfileFormsProvider } from '@/modules/pets/state/PetProfileFormsProvider';
@@ -16,15 +18,17 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <AppearanceProvider>
         <SessionProvider>
-          <PetsProvider>
-            <PetEventsProvider>
-              <PetProfileFormsProvider>
-                <PetEventFormsProvider>
-                  <RootStack />
-                </PetEventFormsProvider>
-              </PetProfileFormsProvider>
-            </PetEventsProvider>
-          </PetsProvider>
+          <HouseholdProvider>
+            <PetsProvider>
+              <PetEventsProvider>
+                <PetProfileFormsProvider>
+                  <PetEventFormsProvider>
+                    <RootStack />
+                  </PetEventFormsProvider>
+                </PetProfileFormsProvider>
+              </PetEventsProvider>
+            </PetsProvider>
+          </HouseholdProvider>
         </SessionProvider>
       </AppearanceProvider>
     </SafeAreaProvider>
@@ -34,6 +38,7 @@ export default function RootLayout() {
 function RootStack() {
   const { colors, isDark } = useAppearance();
   const { session } = useSession();
+  const { household } = useHousehold();
   const signedIn = session.status === 'signed-in';
 
   let content;
@@ -42,6 +47,10 @@ function RootStack() {
     content = <View style={{ flex: 1, backgroundColor: colors.bg }} />;
   } else if (session.status === 'unavailable') {
     content = <SignInUnavailableScreen message={session.message} />;
+  } else if (signedIn && household.status === 'missing') {
+    // Every account should belong to a household; while loading or after a
+    // network error the app opens and labels fall back to pet names.
+    content = <NoHouseholdScreen />;
   } else {
     content = (
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}>

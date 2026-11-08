@@ -1,8 +1,9 @@
 # Supabase backend
 
 Kiwi Tracker has a [Supabase](https://supabase.com) backend schema in which
-each person keeps their own pets, events and pet photos. The app uses Supabase
-Auth to sign in, but pets and events are still stored on the device.
+each household shares its pets, events and pet photos. The app uses Supabase
+Auth to sign in and shows the signed-in user's household alias on Today, Pets
+and Settings, but pets and events are still stored on the device.
 
 The schema lives in `supabase/migrations/` and is the source of truth. You
 develop against a local Supabase stack. The shared cloud project
@@ -10,19 +11,23 @@ develop against a local Supabase stack. The shared cloud project
 
 ## Data model
 
-| Table / bucket | Holds                                                    |
-| -------------- | -------------------------------------------------------- |
-| `pets`         | Pets, each owned by one Supabase Auth user (`owner_id`). |
-| `pet_events`   | Symptoms, diet changes and other events for a pet.       |
-| `pet-photos`   | Private storage bucket, files under `<pet_id>/<file>`.   |
+| Table / bucket      | Holds                                                          |
+| ------------------- | -------------------------------------------------------------- |
+| `households`        | Households, each with an `alias` the app shows.                |
+| `household_members` | Which household each Supabase Auth user belongs to (one each). |
+| `pets`              | Pets, each in one household (`household_id`).                  |
+| `pet_events`        | Symptoms, diet changes and other events for a pet.             |
+| `pet-photos`        | Private storage bucket, files under `<pet_id>/<file>`.         |
 
-Each person can read their own pets, and read, add, edit and delete those pets'
-events and photos. Only the owner can add, edit or delete a pet, and a pet can't
-be moved to another owner. Signed-out users have no access.
+Every member of a household can read, add, edit and delete its pets, and those
+pets' events and photos. A pet can't be moved to a household the user isn't in.
+People outside the household see none of it, and signed-out users have no
+access. Members can read their household and their own membership, but only
+the dashboard can create households or change memberships.
 
-Pet rules check `owner_id` directly. Event and photo rules go through
-`private.accessible_pet_ids()`, which today returns the pets the signed-in user
-owns. Sharing a pet with other people later changes those rules and that
+Pet rules check `household_id` with `private.is_household_member()`. Event and
+photo rules go through `private.accessible_pet_ids()`, which returns the pets in
+the signed-in user's household, so changing who can reach a pet changes that
 function, not the stored rows or photo paths.
 
 ## Schema conventions
@@ -35,8 +40,8 @@ function, not the stored rows or photo paths.
 - Add a column only when the app uses it. `pet_events.created_at` records when
   an event was logged, as opposed to `occurred_at`, when it happened.
 - Every table has row-level security enabled, with access limited to the
-  signed-in user's pets: `owner_id` on `pets`, `private.accessible_pet_ids()`
-  everywhere else.
+  signed-in user's household: `private.is_household_member()` on `pets`,
+  `private.accessible_pet_ids()` for events and photos.
 - After a migration reaches the shared project, check **Advisors → Security
   Advisor** in the dashboard for new warnings.
 
@@ -50,10 +55,14 @@ users to sign up** turned off on the shared project).
 
 To add an account on the shared project, open **Authentication → Users → Add
 user → Create new user**, enter the email and a password, and keep **Auto
-Confirm User** ticked. A new account starts with no pets.
+Confirm User** ticked. Then add the account to a household right away: every
+account must have one, and until it does the app shows "This account isn't in
+a household yet" instead of opening. In **Table Editor**, insert a row in
+`households` with an `alias` if the household is new, then a row in
+`household_members` with the account's user ID and the household's ID.
 
-Locally, `supabase/seed.sql` creates two accounts with one pet each, so you can
-check access from both sides. The accounts and their password are listed at the
+Locally, `supabase/seed.sql` creates two accounts in separate households with
+one pet each, so you can check access from both sides. The accounts and their password are listed at the
 top of that file.
 
 ## Local development

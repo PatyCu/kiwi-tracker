@@ -3,6 +3,49 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 export type Database = {
   public: {
     Tables: {
+      household_members: {
+        Row: {
+          household_id: string;
+          id: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          household_id: string;
+          id?: string;
+          user_id: string;
+        };
+        Update: {
+          household_id?: string;
+          id?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'household_members_household_id_fkey';
+            columns: ['household_id'];
+            isOneToOne: false;
+            referencedRelation: 'households';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      households: {
+        Row: {
+          alias: string;
+          id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          alias: string;
+          id?: string;
+        };
+        Update: {
+          alias?: string;
+          id?: string;
+        };
+        Relationships: [];
+      };
       pet_events: {
         Row: {
           created_at: string;
@@ -52,9 +95,9 @@ export type Database = {
         Row: {
           birth_date: string | null;
           breed: string | null;
+          household_id: string;
           id: string;
           name: string;
-          owner_id: string;
           photo_path: string | null;
           species: string;
         };
@@ -62,22 +105,30 @@ export type Database = {
         Insert: {
           birth_date?: string | null;
           breed?: string | null;
+          household_id: string;
           id?: string;
           name: string;
-          owner_id?: string;
           photo_path?: string | null;
           species: string;
         };
         Update: {
           birth_date?: string | null;
           breed?: string | null;
+          household_id?: string;
           id?: string;
           name?: string;
-          owner_id?: string;
           photo_path?: string | null;
           species?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: 'pets_household_id_fkey';
+            columns: ['household_id'];
+            isOneToOne: false;
+            referencedRelation: 'households';
+            referencedColumns: ['id'];
+          },
+        ];
       };
     };
     Views: {

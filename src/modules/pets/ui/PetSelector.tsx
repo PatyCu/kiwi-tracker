@@ -8,6 +8,7 @@ import { Palette } from '@/shared/theme/palette';
 import { SectionHeader } from '@/shared/ui/SectionHeader';
 
 type PetSelectorProps = {
+  title: string;
   pets: readonly Pet[];
   selectedPetId: string;
   colors: Palette;
@@ -17,6 +18,7 @@ type PetSelectorProps = {
 };
 
 export function PetSelector({
+  title,
   pets,
   selectedPetId,
   colors,
@@ -29,7 +31,7 @@ export function PetSelector({
   return (
     <View>
       <View style={styles.header}>
-        <SectionHeader compact title="Your pets" />
+        <SectionHeader compact title={title} />
         <Text style={styles.help}>Choose the profile you want to manage.</Text>
       </View>
       <ScrollView
