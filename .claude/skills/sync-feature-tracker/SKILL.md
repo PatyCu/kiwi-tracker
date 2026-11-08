@@ -18,7 +18,7 @@ Every feature, task and bug is an issue in the Kiwi Tracker project.
   - Title: the feature's name. Description: one or two sentences on what it is, not the work plan.
   - Tasks: a feature that needs more than one piece of work gets one sub-issue per task, in delivery order, with the same milestone and priority as the feature. Sub-issues get no labels.
 - **Bug**: an issue with the `Bug` label, priority Urgent and no milestone. The description says what happens and, once fixed, `Fixed in <short commit hash>.`
-- **Phase**: the issue's milestone, in this order: Engineering Roadmap, MVP - Foundation, MVP - UX Improvements, MVP - Free features, Premium v1, Premium v2. A feature with no milestone is Unplanned.
+- **Phase**: the issue's milestone. The developer sets the phase order by ordering the project's milestones in Linear; read it with `list_milestones` (lowest `sortOrder` first) and never assume a fixed order. A feature with no milestone is Unplanned.
 - **Area**: a label in the `Area` group: Pets, Event logging, Timeline, Health status, Care and scheduling, Insights and sharing, App and platform, Accounts and sharing, UX and UI (MVP - UX Improvements rows), Engineering (Engineering Roadmap rows). Add a new area label only when no existing one fits.
 - **Priority**: P0 is High, P1 is Medium, P2 is Low. Unplanned and MVP - UX Improvements rows have no priority until the developer sets one. Urgent is only for bugs.
 - **Status**:
@@ -52,7 +52,7 @@ Every feature, task and bug is an issue in the Kiwi Tracker project.
 
 ## Picking the next item
 
-Open bugs come first. After that, the next item is the first unfinished feature in the earliest milestone (Engineering Roadmap before the product phases), sorted by:
+Open bugs come first. After that, the next item is the first unfinished feature in the earliest milestone in Linear's milestone order, sorted by:
 
 1. Priority (High, then Medium, then Low)
 2. Status: In Progress, then Todo, then Backlog
