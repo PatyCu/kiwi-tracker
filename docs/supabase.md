@@ -1,8 +1,8 @@
 # Supabase backend
 
 Kiwi Tracker has a [Supabase](https://supabase.com) backend schema in which
-each person keeps their own pets, events and pet photos. The app has a Supabase
-client, but no screen uses it yet; data is still stored on the device.
+each person keeps their own pets, events and pet photos. The app uses Supabase
+Auth to sign in, but pets and events are still stored on the device.
 
 The schema lives in `supabase/migrations/` and is the source of truth. You
 develop against a local Supabase stack. The shared cloud project
@@ -42,8 +42,15 @@ function, not the stored rows or photo paths.
 
 ## Accounts
 
-Anyone can sign up with their email; there are no invitations or memberships to
-manage. A new account starts with no pets.
+The app signs in with an email and password and keeps the session on the device
+until the user signs out from Settings. Nobody can create an account from the
+app: public sign-up is off (`enable_signup = false` in `supabase/config.toml`
+for the local stack, and **Authentication → Sign In / Providers → Allow new
+users to sign up** turned off on the shared project).
+
+To add an account on the shared project, open **Authentication → Users → Add
+user → Create new user**, enter the email and a password, and keep **Auto
+Confirm User** ticked. A new account starts with no pets.
 
 Locally, `supabase/seed.sql` creates two accounts with one pet each, so you can
 check access from both sides. The accounts and their password are listed at the
