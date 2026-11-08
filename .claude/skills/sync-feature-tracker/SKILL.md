@@ -22,7 +22,7 @@ Its records live in the artifact's database. Update them with the `ArtifactData`
     - `"in-progress"`: In progress. Work on it has started and isn't finished.
     - `"partial"`: Ready for development. A placeholder or a partial version is already in the app.
     - `"missing"`: To-do. Nothing in the app yet.
-  - `phase`: `"MVP"`, `"Free v1"`, `"Premium v1"`, `"Premium v2"` or `"Unplanned"`.
+  - `phase`: `"MVP"`, `"Free v1"`, `"Free v2"`, `"Premium v1"`, `"Premium v2"` or `"Unplanned"`.
   - `priority`: `"P0"`, `"P1"` or `"P2"`; left out for Unplanned rows.
   - Areas and their `areaOrder`: Pets 1, Event logging 2, Timeline 3, Health status 4, Care and scheduling 5, Insights and sharing 6, App and platform 7, Accounts and sharing 8. Add a new area with the next number only when no existing area fits.
   - Document ids are kebab-case with an area prefix, for example `care-reminders`.
@@ -75,7 +75,7 @@ The page source isn't in this repo. To change the page, read the artifact with t
 
 ## Picking the next item
 
-The order the page shows rows in is the priority order. Open bugs come first. After that, the next item is the first unfinished row in the earliest phase (MVP, Free v1, Premium v1, Premium v2), where rows are sorted by:
+The order the page shows rows in is the priority order. Open bugs come first. After that, the next item is the first unfinished row in the earliest phase (MVP, Free v1, Free v2, Premium v1, Premium v2), where rows are sorted by:
 
 1. `priority` (P0 before P1 before P2)
 2. `status` in page order: `in-progress`, `partial`, `missing`
