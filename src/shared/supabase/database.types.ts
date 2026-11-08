@@ -5,17 +5,20 @@ export type Database = {
     Tables: {
       household_members: {
         Row: {
+          display_name: string;
           household_id: string;
           id: string;
           user_id: string;
         };
         ComputedFields: never;
         Insert: {
+          display_name: string;
           household_id: string;
           id?: string;
           user_id: string;
         };
         Update: {
+          display_name?: string;
           household_id?: string;
           id?: string;
           user_id?: string;

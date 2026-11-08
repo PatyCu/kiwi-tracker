@@ -3,7 +3,8 @@
 Kiwi Tracker has a [Supabase](https://supabase.com) backend schema in which
 each household shares its pets, events and pet photos. The app uses Supabase
 Auth to sign in and shows the signed-in user's household alias on Today, Pets
-and Settings, but pets and events are still stored on the device.
+and Settings, plus its members by name in Settings, but pets and events are
+still stored on the device.
 
 The schema lives in `supabase/migrations/` and is the source of truth. You
 develop against a local Supabase stack. The shared cloud project
@@ -11,19 +12,19 @@ develop against a local Supabase stack. The shared cloud project
 
 ## Data model
 
-| Table / bucket      | Holds                                                          |
-| ------------------- | -------------------------------------------------------------- |
-| `households`        | Households, each with an `alias` the app shows.                |
-| `household_members` | Which household each Supabase Auth user belongs to (one each). |
-| `pets`              | Pets, each in one household (`household_id`).                  |
-| `pet_events`        | Symptoms, diet changes and other events for a pet.             |
-| `pet-photos`        | Private storage bucket, files under `<pet_id>/<file>`.         |
+| Table / bucket      | Holds                                                                                                   |
+| ------------------- | ------------------------------------------------------------------------------------------------------- |
+| `households`        | Households, each with an `alias` the app shows.                                                         |
+| `household_members` | Which household each Supabase Auth user belongs to (one each), and the `display_name` they go by in it. |
+| `pets`              | Pets, each in one household (`household_id`).                                                           |
+| `pet_events`        | Symptoms, diet changes and other events for a pet.                                                      |
+| `pet-photos`        | Private storage bucket, files under `<pet_id>/<file>`.                                                  |
 
 Every member of a household can read, add, edit and delete its pets, and those
 pets' events and photos. A pet can't be moved to a household the user isn't in.
 People outside the household see none of it, and signed-out users have no
-access. Members can read their household and their own membership, but only
-the dashboard can create households or change memberships.
+access. Members can read their household and everyone's membership in it, but
+only the dashboard can create households or change memberships.
 
 Pet rules check `household_id` with `private.is_household_member()`. Event and
 photo rules go through `private.accessible_pet_ids()`, which returns the pets in
@@ -59,7 +60,8 @@ Confirm User** ticked. Then add the account to a household right away: every
 account must have one, and until it does the app shows "This account isn't in
 a household yet" instead of opening. In **Table Editor**, insert a row in
 `households` with an `alias` if the household is new, then a row in
-`household_members` with the account's user ID and the household's ID.
+`household_members` with the account's user ID, the household's ID and a
+`display_name`, the name the app shows for them instead of their email.
 
 Locally, `supabase/seed.sql` creates two accounts in separate households with
 one pet each, so you can check access from both sides. The accounts and their password are listed at the

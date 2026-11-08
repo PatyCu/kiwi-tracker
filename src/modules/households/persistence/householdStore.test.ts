@@ -1,10 +1,14 @@
-import { loadHouseholdAlias } from '@/modules/households/persistence/householdStore';
+import {
+  loadHouseholdAlias,
+  loadHouseholdMembers,
+} from '@/modules/households/persistence/householdStore';
 import { getSupabaseClient } from '@/shared/supabase/supabaseClient';
 
 jest.mock('@/shared/supabase/supabaseClient', () => ({ getSupabaseClient: jest.fn() }));
 
 const maybeSingle = jest.fn();
-const select = jest.fn(() => ({ maybeSingle }));
+const order = jest.fn();
+const select = jest.fn(() => ({ maybeSingle, order }));
 const from = jest.fn(() => ({ select }));
 
 describe('householdStore', () => {
@@ -15,23 +19,51 @@ describe('householdStore', () => {
       .mockReturnValue({ from } as unknown as ReturnType<typeof getSupabaseClient>);
   });
 
-  it("returns the signed-in user's household alias", async () => {
-    maybeSingle.mockResolvedValue({ data: { alias: 'The Burrow' }, error: null });
+  describe('loadHouseholdAlias', () => {
+    it("returns the signed-in user's household alias", async () => {
+      maybeSingle.mockResolvedValue({ data: { alias: 'The Burrow' }, error: null });
 
-    await expect(loadHouseholdAlias()).resolves.toBe('The Burrow');
-    expect(from).toHaveBeenCalledWith('households');
-    expect(select).toHaveBeenCalledWith('alias');
+      await expect(loadHouseholdAlias()).resolves.toBe('The Burrow');
+      expect(from).toHaveBeenCalledWith('households');
+      expect(select).toHaveBeenCalledWith('alias');
+    });
+
+    it('returns null when the user is not in a household', async () => {
+      maybeSingle.mockResolvedValue({ data: null, error: null });
+
+      await expect(loadHouseholdAlias()).resolves.toBeNull();
+    });
+
+    it('throws when the query fails', async () => {
+      maybeSingle.mockResolvedValue({ data: null, error: { message: 'offline' } });
+
+      await expect(loadHouseholdAlias()).rejects.toThrow('Could not load the household.');
+    });
   });
 
-  it('returns null when the user is not in a household', async () => {
-    maybeSingle.mockResolvedValue({ data: null, error: null });
+  describe('loadHouseholdMembers', () => {
+    it('returns the household members by name, without their emails', async () => {
+      order.mockResolvedValue({
+        data: [
+          { user_id: 'alex', display_name: 'Alex' },
+          { user_id: 'sam', display_name: 'Sam' },
+        ],
+        error: null,
+      });
 
-    await expect(loadHouseholdAlias()).resolves.toBeNull();
-  });
+      await expect(loadHouseholdMembers()).resolves.toEqual([
+        { userId: 'alex', displayName: 'Alex' },
+        { userId: 'sam', displayName: 'Sam' },
+      ]);
+      expect(from).toHaveBeenCalledWith('household_members');
+      expect(select).toHaveBeenCalledWith('user_id, display_name');
+      expect(order).toHaveBeenCalledWith('display_name');
+    });
 
-  it('throws when the query fails', async () => {
-    maybeSingle.mockResolvedValue({ data: null, error: { message: 'offline' } });
+    it('throws when the query fails', async () => {
+      order.mockResolvedValue({ data: null, error: { message: 'offline' } });
 
-    await expect(loadHouseholdAlias()).rejects.toThrow('Could not load the household.');
+      await expect(loadHouseholdMembers()).rejects.toThrow('Could not load the household members.');
+    });
   });
 });

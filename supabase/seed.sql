@@ -7,9 +7,9 @@
 --
 -- Sign in locally with either account:
 --
---   Email           Password        Household (alias, id)                              Sees
---   alex@kiwi.test  kiwi-local-dev  Alex's home  aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa  Kiwi (cat, one hairball event)
---   sam@kiwi.test   kiwi-local-dev  Sam's home   bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb  Biscuit (dog, no events)
+--   Email           Password        Name  Household (alias, id)                              Sees
+--   alex@kiwi.test  kiwi-local-dev  Alex  Alex's home  aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa  Kiwi (cat, one hairball event)
+--   sam@kiwi.test   kiwi-local-dev  Sam   Sam's home   bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb  Biscuit (dog, no events)
 
 -- Auth users ------------------------------------------------------------------
 
@@ -83,10 +83,10 @@ values
   ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'Alex''s home'),
   ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'Sam''s home');
 
-insert into public.household_members (user_id, household_id)
+insert into public.household_members (user_id, household_id, display_name)
 values
-  ('11111111-1111-4111-8111-111111111111', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
-  ('22222222-2222-4222-8222-222222222222', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb');
+  ('11111111-1111-4111-8111-111111111111', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'Alex'),
+  ('22222222-2222-4222-8222-222222222222', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'Sam');
 
 -- Pets and events ---------------------------------------------------------------
 

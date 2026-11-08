@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useSession } from '@/modules/auth/state/SessionProvider';
-import { useHouseholdAlias } from '@/modules/households/state/useHouseholdAlias';
 import { useAppearance } from '@/shared/theme/AppearanceProvider';
 import { Palette } from '@/shared/theme/palette';
 
@@ -10,7 +9,6 @@ export function AccountSection() {
   const { colors } = useAppearance();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { session, signOut } = useSession();
-  const householdAlias = useHouseholdAlias();
   const [signingOut, setSigningOut] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,13 +34,6 @@ export function AccountSection() {
           <Text style={styles.label}>Signed in as</Text>
           <Text style={styles.value}>{session.user.email}</Text>
         </View>
-        {/* Read-only for now; shown once loaded, and hidden for accounts without a household. */}
-        {householdAlias && (
-          <View style={[styles.row, styles.divider]}>
-            <Text style={styles.label}>Household</Text>
-            <Text style={styles.value}>{householdAlias}</Text>
-          </View>
-        )}
         <Pressable
           accessibilityRole="button"
           accessibilityState={{ disabled: signingOut }}
