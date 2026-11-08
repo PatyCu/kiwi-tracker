@@ -1,10 +1,15 @@
 import { NewPetEvent, PetEvent } from '@/modules/pet-events/model/PetEvent';
 import { isNewPetEvent, isPetEvent } from '@/modules/pet-events/model/validatePetEvent';
-import type { Json, Tables, TablesInsert } from '@/shared/supabase/database.types';
+import type { Json, Tables, TablesInsert, TablesUpdate } from '@/shared/supabase/database.types';
 import { getSupabaseClient } from '@/shared/supabase/supabaseClient';
 
 type PetEventRow = Tables<'pet_events'>;
 type PetEventColumns = Omit<TablesInsert<'pet_events'>, 'id' | 'created_at'>;
+/** The columns a person can correct; the id, pet, type and createdAt never change. */
+type EditablePetEventColumns = Pick<
+  TablesUpdate<'pet_events'>,
+  'occurred_at' | 'note' | 'symptom' | 'title' | 'diet_change'
+>;
 
 const EVENT_COLUMNS =
   'id, pet_id, type, occurred_at, note, symptom, title, diet_change, created_at';
@@ -52,8 +57,9 @@ export async function insertPetEvent(event: NewPetEvent): Promise<PetEvent> {
 }
 
 /**
- * Saves one corrected event and returns the stored version. Fails when the
- * event was deleted in the meantime.
+ * Saves the correctable fields of one event and returns the stored version.
+ * Its pet, type and createdAt are never written. Fails when the event was
+ * deleted in the meantime.
  */
 export async function updatePetEvent(event: PetEvent): Promise<PetEvent> {
   if (!isPetEvent(event)) {
@@ -61,7 +67,7 @@ export async function updatePetEvent(event: PetEvent): Promise<PetEvent> {
   }
   const { data, error } = await getSupabaseClient()
     .from('pet_events')
-    .update(toColumns(event))
+    .update(toEditableColumns(event))
     .eq('id', event.id)
     .select(EVENT_COLUMNS)
     .single();
@@ -87,6 +93,13 @@ function toColumns(event: NewPetEvent): PetEventColumns {
     title: event.type === 'other' ? event.title : null,
     diet_change: event.type === 'diet-change' ? (event.change as Json) : null,
   };
+}
+
+function toEditableColumns(event: PetEvent): EditablePetEventColumns {
+  const columns = { occurred_at: event.occurredAt, note: event.note ?? null };
+  if (event.type === 'symptom') return { ...columns, symptom: event.symptom };
+  if (event.type === 'other') return { ...columns, title: event.title };
+  return { ...columns, diet_change: event.change as Json };
 }
 
 function toPetEvent(row: PetEventRow): PetEvent {

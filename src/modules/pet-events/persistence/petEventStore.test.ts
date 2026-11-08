@@ -1,3 +1,4 @@
+import type { DietChange } from '@/modules/pet-events/model/PetEvent';
 import {
   deletePetEvent,
   insertPetEvent,
@@ -156,7 +157,7 @@ describe('pet event storage', () => {
     expect(from).not.toHaveBeenCalled();
   });
 
-  it('updates and deletes one event by id', async () => {
+  it('updates one event by id, writing only the fields a person can correct', async () => {
     const { query } = mockQuery({ data: { ...symptomRow, note: null }, error: null });
 
     await expect(
@@ -170,9 +171,56 @@ describe('pet event storage', () => {
       }),
     ).resolves.not.toHaveProperty('note');
     expect(query.eq).toHaveBeenCalledWith('id', 'event-1');
+    const [columns] = query.update.mock.calls[0];
+    expect(Object.keys(columns).sort()).toEqual(['note', 'occurred_at', 'symptom']);
+    expect(columns).toEqual({
+      occurred_at: '2026-07-16T09:30:00.000Z',
+      note: null,
+      symptom: 'Asthma',
+    });
+  });
+
+  it.each([
+    {
+      event: { type: 'other' as const, title: 'Started sleeping upstairs' },
+      columns: { title: 'Started sleeping upstairs' },
+    },
+    {
+      event: { type: 'diet-change' as const, change: dietChange as DietChange },
+      columns: { diet_change: dietChange },
+    },
+  ])(
+    'never writes the id, pet, type or createdAt of a $event.type event',
+    async ({ event, columns }) => {
+      const { query } = mockQuery({ data: null, error: { message: 'stop after the write' } });
+
+      await expect(
+        updatePetEvent({
+          id: 'event-2',
+          petId: 'kiwi',
+          note: 'Corrected.',
+          occurredAt: '2026-07-15T09:30:00.000Z',
+          createdAt: '2026-07-15T09:31:00.000Z',
+          ...event,
+        }),
+      ).rejects.toMatchObject({ code: 'WRITE_FAILED' });
+      expect(query.update).toHaveBeenCalledWith({
+        occurred_at: '2026-07-15T09:30:00.000Z',
+        note: 'Corrected.',
+        ...columns,
+      });
+      const [written] = query.update.mock.calls[0];
+      for (const fixed of ['id', 'pet_id', 'type', 'created_at']) {
+        expect(written).not.toHaveProperty(fixed);
+      }
+    },
+  );
+
+  it('deletes one event by id', async () => {
+    const { query } = mockQuery({ data: null, error: null });
 
     await deletePetEvent('event-1');
     expect(query.delete).toHaveBeenCalled();
-    expect(query.eq).toHaveBeenLastCalledWith('id', 'event-1');
+    expect(query.eq).toHaveBeenCalledWith('id', 'event-1');
   });
 });
