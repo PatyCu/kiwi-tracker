@@ -1,7 +1,7 @@
 import { PetEvent } from '@/modules/pet-events/model/PetEvent';
 import { getCurrentDiet } from '@/modules/pet-events/model/getCurrentDiet';
 
-const recordedAt = '2026-07-18T12:00:00.000Z';
+const createdAt = '2026-07-18T12:00:00.000Z';
 
 describe('current diet projection', () => {
   it('replays additions, replacements, and removals in occurrence order', () => {
@@ -65,6 +65,6 @@ function dietEvent(
     type: 'diet-change',
     change,
     occurredAt,
-    recordedAt,
+    createdAt,
   };
 }

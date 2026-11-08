@@ -8,9 +8,11 @@
     "npm": "10.x"
   },
   "scripts": {
-    "start": "expo start",
-    "ios": "expo start --ios",
-    "web": "expo start --web",
+    "start": "rm -f .env.development.local && expo start --clear",
+    "ios": "rm -f .env.development.local && expo start --clear --ios",
+    "web": "rm -f .env.development.local && expo start --clear --web",
+    "start:shared": "cp shared-project.env .env.development.local && expo start --clear",
+    "web:shared": "cp shared-project.env .env.development.local && expo start --clear --web",
     "typecheck": "tsc --noEmit",
     "lint": "expo lint .",
     "format": "prettier --write .",

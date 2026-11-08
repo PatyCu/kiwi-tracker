@@ -17,7 +17,8 @@ export type PetEventBase = {
   id: string;
   petId: string;
   occurredAt: string;
-  recordedAt: string;
+  /** When the event was logged; set by storage. */
+  createdAt: string;
   note?: string;
 };
 
@@ -55,6 +56,11 @@ export type OtherEvent = PetEventBase & {
 };
 
 export type PetEvent = SymptomEvent | DietChangeEvent | OtherEvent;
+
+/** An event about to be logged, before storage gives it an id and createdAt. */
+export type NewPetEvent = WithoutStoredFields<PetEvent>;
+// Distributes over the union, so each event type keeps its own fields.
+type WithoutStoredFields<Event> = Event extends PetEvent ? Omit<Event, 'id' | 'createdAt'> : never;
 
 type PetEventEditBase = {
   occurredAt: string;

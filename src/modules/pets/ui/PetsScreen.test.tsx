@@ -1,11 +1,13 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import { ReactNode } from 'react';
 import { StyleSheet } from 'react-native';
 
+import { PetEvent } from '@/modules/pet-events/model/PetEvent';
+import { loadPetEvents } from '@/modules/pet-events/persistence/petEventStore';
 import { PetEventFormsProvider } from '@/modules/pet-events/state/PetEventFormsProvider';
 import { PetEventsProvider } from '@/modules/pet-events/state/PetEventsProvider';
 import { PetProfileFormsProvider } from '@/modules/pets/state/PetProfileFormsProvider';
+import { loadPets } from '@/modules/pets/persistence/petStore';
 import { PetsProvider } from '@/modules/pets/state/PetsProvider';
 import { useHouseholdAlias } from '@/modules/households/state/useHouseholdAlias';
 import { PetsScreen } from '@/modules/pets/ui/PetsScreen';
@@ -31,11 +33,33 @@ jest.mock('@/modules/households/state/useHouseholdAlias', () => ({
   useHouseholdAlias: jest.fn(() => null),
 }));
 
-jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
-);
+jest.mock('@/modules/auth/state/SessionProvider', () => ({
+  useSession: () => ({
+    session: { status: 'signed-in', user: { id: 'alex', email: 'alex@kiwi.test' } },
+    signOut: jest.fn(),
+  }),
+}));
 
-const storage = jest.mocked(AsyncStorage);
+jest.mock('@/modules/households/state/HouseholdProvider', () => ({
+  useHousehold: () => ({
+    household: { status: 'ready', id: 'alexs-home', alias: "Alex's home" },
+    retryLoad: jest.fn(),
+  }),
+}));
+
+jest.mock('@/modules/pets/persistence/petStore', () => ({
+  loadPets: jest.fn(),
+  insertPet: jest.fn(),
+  updatePet: jest.fn(),
+}));
+jest.mock('@/modules/pet-events/persistence/petEventStore', () => ({
+  loadPetEvents: jest.fn(),
+  insertPetEvent: jest.fn(),
+  updatePetEvent: jest.fn(),
+  deletePetEvent: jest.fn(),
+}));
+
+const mockedLoadEvents = jest.mocked(loadPetEvents);
 
 function Providers({ children }: { children: ReactNode }) {
   return (
@@ -52,33 +76,15 @@ function Providers({ children }: { children: ReactNode }) {
 }
 
 describe('Pets screen', () => {
-  beforeEach(async () => {
-    await storage.clear();
+  beforeEach(() => {
     jest.clearAllMocks();
     jest.mocked(useHouseholdAlias).mockReturnValue(null);
     mockPetId = 'luna';
-    await storage.setItem(
-      '@kiwi-tracker/pet-state/v2',
-      JSON.stringify({
-        version: 2,
-        activePetId: 'kiwi',
-        pets: [
-          {
-            id: 'kiwi',
-            name: 'Kiwi',
-            species: 'Cat',
-            breed: 'Siamese',
-            createdAt: '2025-01-01T00:00:00.000Z',
-          },
-          {
-            id: 'luna',
-            name: 'Luna',
-            species: 'Dog',
-            createdAt: '2025-01-02T00:00:00.000Z',
-          },
-        ],
-      }),
-    );
+    jest.mocked(loadPets).mockResolvedValue([
+      { id: 'kiwi', name: 'Kiwi', species: 'Cat', breed: 'Siamese' },
+      { id: 'luna', name: 'Luna', species: 'Dog' },
+    ]);
+    mockedLoadEvents.mockResolvedValue([]);
   });
 
   it('shows the selected pet overview without an intermediate list screen', async () => {
@@ -163,19 +169,16 @@ describe('Pets screen', () => {
   });
 
   it('shows all recorded events for the selected pet in its recent timeline', async () => {
-    const recordedAt = new Date().toISOString();
-    await storage.setItem(
-      '@kiwi-tracker/timeline-events/v1',
-      JSON.stringify(
-        ['First', 'Second', 'Third', 'Fourth'].map((title, index) => ({
-          id: `event-${index}`,
-          petId: 'luna',
-          type: 'other',
-          title,
-          occurredAt: new Date(Date.now() - index * 60_000).toISOString(),
-          recordedAt,
-        })),
-      ),
+    const createdAt = new Date().toISOString();
+    mockedLoadEvents.mockResolvedValue(
+      ['First', 'Second', 'Third', 'Fourth'].map((title, index): PetEvent => ({
+        id: `event-${index}`,
+        petId: 'luna',
+        type: 'other',
+        title,
+        occurredAt: new Date(Date.now() - index * 60_000).toISOString(),
+        createdAt,
+      })),
     );
 
     const screen = render(<PetsScreen />, { wrapper: Providers });

@@ -66,7 +66,9 @@ a household yet" instead of opening. In **Table Editor**, insert a row in
 Locally, `supabase/seed.sql` mirrors the shared project: two accounts share a
 household and a third has its own, each household with one pet, so you can check
 what members share and what outsiders can't see. The accounts and their password
-are listed at the top of that file.
+are listed at the top of that file. Accounts on the shared project don't exist
+locally, and `supabase db reset` removes any account added to the local stack by
+hand.
 
 ## Local development
 
@@ -114,10 +116,29 @@ The app reads its Supabase connection from two Expo public env vars:
 cp .env.example .env.local
 ```
 
-`.env.local` is git-ignored. Point it at the shared project only to test against
-it on purpose, and never put a secret key in it: `EXPO_PUBLIC_*` values are
-bundled into the app. If a variable is missing or invalid, the first Supabase
-call throws an error that names it.
+`.env.local` is git-ignored and always points at the local stack. Never put a
+secret key in an env file: `EXPO_PUBLIC_*` values are bundled into the app. If a
+variable is missing or invalid, the first Supabase call throws an error that
+names it.
+
+### Test against the shared project
+
+To check a change with real accounts and data, put the shared project's values
+(**Project Settings → API**: the project URL and the publishable key) in a
+git-ignored `shared-project.env`, using the same two variables, then run:
+
+```bash
+npm run web:shared
+```
+
+`npm run start:shared` does the same for the iOS Simulator. Everything you add
+there is real data.
+
+The shared scripts copy `shared-project.env` to `.env.development.local`, which
+Expo applies over `.env.local`. `npm run web`, `npm run start` and `npm run ios`
+delete that copy and clear Metro's cache, so they always use the local stack.
+Don't name the file `.env.*`: in development Expo bundles every root file whose
+name starts with `.env`.
 
 Only persistence modules (`src/modules/*/persistence`) may use the client in
 `src/shared/supabase/supabaseClient.ts`; lint rejects imports from anywhere

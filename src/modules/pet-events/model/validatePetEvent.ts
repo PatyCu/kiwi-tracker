@@ -2,14 +2,25 @@ import {
   DIET_ITEM_TYPES,
   DietChange,
   DietItemSnapshot,
+  NewPetEvent,
   PetEvent,
-  PetEventBase,
   SYMPTOM_KINDS,
 } from '@/modules/pet-events/model/PetEvent';
 
 export function isPetEvent(value: unknown): value is PetEvent {
-  if (!isPetEventBase(value)) return false;
+  if (!isNewPetEvent(value)) return false;
   const event = value as Partial<PetEvent>;
+  return isNonEmptyString(event.id) && isIsoTimestamp(event.createdAt);
+}
+
+export function isNewPetEvent(value: unknown): value is NewPetEvent {
+  if (!value || typeof value !== 'object') return false;
+  const event = value as Partial<NewPetEvent>;
+  const baseIsValid =
+    isNonEmptyString(event.petId) &&
+    isIsoTimestamp(event.occurredAt) &&
+    (event.note === undefined || typeof event.note === 'string');
+  if (!baseIsValid) return false;
 
   if (event.type === 'symptom') {
     return SYMPTOM_KINDS.some((symptom) => symptom === event.symptom);
@@ -17,18 +28,6 @@ export function isPetEvent(value: unknown): value is PetEvent {
 
   if (event.type === 'diet-change') return isDietChange(event.change);
   return event.type === 'other' && isNonEmptyString(event.title);
-}
-
-function isPetEventBase(value: unknown): value is PetEventBase & { type?: unknown } {
-  if (!value || typeof value !== 'object') return false;
-  const event = value as Partial<PetEventBase>;
-  return (
-    isNonEmptyString(event.id) &&
-    isNonEmptyString(event.petId) &&
-    isIsoTimestamp(event.occurredAt) &&
-    isIsoTimestamp(event.recordedAt) &&
-    (event.note === undefined || typeof event.note === 'string')
-  );
 }
 
 function isDietChange(value: unknown): value is DietChange {

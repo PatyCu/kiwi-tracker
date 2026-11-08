@@ -1,11 +1,6 @@
 import { Directory, File } from 'expo-file-system';
 import { Platform } from 'react-native';
-import {
-  deletePersistedPetPhoto,
-  migrateLegacyPetPhotos,
-  persistPetPhoto,
-} from '@/modules/pets/media/petImageStore';
-import { Pet } from '@/modules/pets/model/Pet';
+import { deletePersistedPetPhoto, persistPetPhoto } from '@/modules/pets/media/petImageStore';
 
 jest.mock('expo-file-system', () => {
   class MockDirectory {
@@ -67,29 +62,6 @@ describe('pet image persistence', () => {
 
     expect(directory.create).toHaveBeenCalledWith({ intermediates: true, idempotent: true });
     expect(source.copy).toHaveBeenCalledWith(destination);
-  });
-
-  it('migrates a legacy native photo and reports the created file', async () => {
-    const pet: Pet = {
-      id: 'kiwi',
-      name: 'Kiwi',
-      species: 'Cat',
-      photoUri: 'file:///tmp/legacy-photo.jpg',
-      createdAt: '2025-01-01T00:00:00.000Z',
-    };
-
-    await expect(migrateLegacyPetPhotos([pet])).resolves.toEqual({
-      pets: [
-        {
-          ...pet,
-          photoUri: 'file:///documents/pet-images/kiwi-1750000000000.jpg',
-          photoStorageVersion: 1,
-        },
-      ],
-      createdUris: ['file:///documents/pet-images/kiwi-1750000000000.jpg'],
-      failedPetNames: [],
-      didChange: true,
-    });
   });
 
   it('deletes a photo owned by the app from permanent storage', async () => {

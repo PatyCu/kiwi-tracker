@@ -3,153 +3,155 @@ import {
   persistPetPhoto,
   SelectedPetPhoto,
 } from '@/modules/pets/media/petImageStore';
-import { DEFAULT_PET, Pet } from '@/modules/pets/model/Pet';
-import { loadPets, savePets } from '@/modules/pets/persistence/petStore';
+import { Pet } from '@/modules/pets/model/Pet';
+import { insertPet, updatePet } from '@/modules/pets/persistence/petStore';
 import { savePetProfile, PetProfileSaveError } from '@/modules/pets/profile/savePetProfile';
-
-jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
-);
 
 jest.mock('@/modules/pets/media/petImageStore', () => ({
   deletePersistedPetPhoto: jest.fn(),
   persistPetPhoto: jest.fn(),
 }));
 
-jest.mock('@/modules/pets/persistence/petStore', () => {
-  const actual = jest.requireActual('@/modules/pets/persistence/petStore');
-  return { ...actual, loadPets: jest.fn(), savePets: jest.fn() };
-});
+jest.mock('@/modules/pets/persistence/petStore', () => ({
+  insertPet: jest.fn(),
+  updatePet: jest.fn(),
+}));
 
 const mockedDeletePhoto = jest.mocked(deletePersistedPetPhoto);
 const mockedPersistPhoto = jest.mocked(persistPetPhoto);
-const mockedLoadPets = jest.mocked(loadPets);
-const mockedSavePets = jest.mocked(savePets);
+const mockedInsertPet = jest.mocked(insertPet);
+const mockedUpdatePet = jest.mocked(updatePet);
 
+const householdId = 'alexs-home';
+const newPhotoUri = 'file:///documents/pet-images/kiwi-new.jpg';
 const selectedPhoto: SelectedPetPhoto = { uri: 'file:///tmp/new-photo.jpg' };
-const petWithPhoto: Pet = {
-  ...DEFAULT_PET,
+const kiwi: Pet = {
+  id: 'kiwi',
+  name: 'Kiwi',
+  species: 'Cat',
   photoUri: 'file:///documents/pet-images/kiwi-old.jpg',
-  photoStorageVersion: 1,
 };
+const { photoUri: _photoUri, ...storedKiwi } = kiwi;
 
 describe('pet profile service', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockedPersistPhoto.mockResolvedValue('file:///documents/pet-images/kiwi-new.jpg');
-    mockedSavePets.mockResolvedValue();
+    mockedPersistPhoto.mockResolvedValue(newPhotoUri);
     mockedDeletePhoto.mockResolvedValue();
+    mockedInsertPet.mockImplementation(async (_householdId, profile) => ({
+      id: 'new-pet',
+      ...profile,
+    }));
+    mockedUpdatePet.mockImplementation(async (id, profile) => ({ id, ...profile }));
   });
 
-  it('commits the profile before deleting its previous photo', async () => {
+  it('adds a new pet to the household as one record', async () => {
     const result = await savePetProfile({
-      pets: [petWithPhoto],
-      editingPetId: petWithPhoto.id,
+      pets: [kiwi],
+      householdId,
+      name: ' Murri ',
+      species: 'Cat',
+      breed: '  ',
+    });
+
+    expect(mockedInsertPet).toHaveBeenCalledWith(householdId, {
+      name: 'Murri',
+      species: 'Cat',
+      breed: undefined,
+      birthDate: undefined,
+    });
+    expect(mockedUpdatePet).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      pet: { id: 'new-pet', name: 'Murri', species: 'Cat' },
+      previousPhotoCleanupFailed: false,
+    });
+  });
+
+  it('saves an existing pet before deleting its previous photo', async () => {
+    mockedUpdatePet.mockResolvedValueOnce({ ...storedKiwi, name: 'Kiwi updated' });
+
+    const result = await savePetProfile({
+      pets: [kiwi],
+      householdId,
+      editingPetId: kiwi.id,
       name: 'Kiwi updated',
       species: 'Cat',
       selectedPhoto,
     });
 
-    expect(mockedSavePets).toHaveBeenCalledWith(
-      [
-        {
-          ...petWithPhoto,
-          name: 'Kiwi updated',
-          photoUri: 'file:///documents/pet-images/kiwi-new.jpg',
-        },
-      ],
-      petWithPhoto.id,
+    expect(mockedUpdatePet).toHaveBeenCalledWith(
+      'kiwi',
+      expect.objectContaining({ name: 'Kiwi updated' }),
     );
-    expect(mockedDeletePhoto).toHaveBeenCalledWith(petWithPhoto.photoUri);
-    expect(result.previousPhotoCleanupFailed).toBe(false);
+    expect(mockedInsertPet).not.toHaveBeenCalled();
+    expect(mockedDeletePhoto).toHaveBeenCalledWith(kiwi.photoUri);
+    expect(result.pet).toEqual({ ...storedKiwi, name: 'Kiwi updated', photoUri: newPhotoUri });
   });
 
-  it('does not write a profile when its selected photo cannot be persisted', async () => {
-    mockedPersistPhoto.mockRejectedValueOnce(new Error('photo unavailable'));
-
-    await expect(
-      savePetProfile({
-        pets: [DEFAULT_PET],
-        name: 'Miso',
-        species: 'Cat',
-        selectedPhoto,
-      }),
-    ).rejects.toMatchObject<Partial<PetProfileSaveError>>({
-      name: 'PetProfileSaveError',
+  it('keeps the photo shown on this device when the profile is saved without a new one', async () => {
+    const result = await savePetProfile({
+      pets: [kiwi],
+      householdId,
+      editingPetId: kiwi.id,
+      name: 'Kiwi',
+      species: 'Cat',
     });
 
-    expect(mockedSavePets).not.toHaveBeenCalled();
+    expect(result.pet.photoUri).toBe(kiwi.photoUri);
     expect(mockedDeletePhoto).not.toHaveBeenCalled();
   });
 
-  it('removes a new photo after proving that a rejected state write did not commit', async () => {
-    mockedSavePets.mockRejectedValueOnce(new Error('disk full'));
-    mockedLoadPets.mockResolvedValueOnce({ pets: [DEFAULT_PET], activePetId: DEFAULT_PET.id });
+  it('does not save a profile when its selected photo cannot be kept', async () => {
+    mockedPersistPhoto.mockRejectedValueOnce(new Error('photo unavailable'));
 
     await expect(
-      savePetProfile({
-        pets: [DEFAULT_PET],
-        name: 'Miso',
-        species: 'Cat',
-        selectedPhoto,
-      }),
+      savePetProfile({ pets: [], householdId, name: 'Miso', species: 'Cat', selectedPhoto }),
+    ).rejects.toBeInstanceOf(PetProfileSaveError);
+
+    expect(mockedInsertPet).not.toHaveBeenCalled();
+  });
+
+  it('removes the new photo when the profile is not saved', async () => {
+    mockedInsertPet.mockRejectedValueOnce(new Error('offline'));
+
+    await expect(
+      savePetProfile({ pets: [], householdId, name: 'Miso', species: 'Cat', selectedPhoto }),
     ).rejects.toMatchObject<Partial<PetProfileSaveError>>({
       name: 'PetProfileSaveError',
       retainedPhotoUri: undefined,
     });
 
-    expect(mockedDeletePhoto).toHaveBeenCalledWith('file:///documents/pet-images/kiwi-new.jpg');
+    expect(mockedDeletePhoto).toHaveBeenCalledWith(newPhotoUri);
   });
 
-  it('retains a new photo when storage cannot confirm whether it was referenced', async () => {
-    mockedSavePets.mockRejectedValueOnce(new Error('storage disconnected'));
-    mockedLoadPets.mockRejectedValue(new Error('storage disconnected'));
+  it('reports the new photo it could not remove after a failed save', async () => {
+    mockedInsertPet.mockRejectedValueOnce(new Error('offline'));
+    mockedDeletePhoto.mockRejectedValueOnce(new Error('file locked'));
 
     await expect(
-      savePetProfile({
-        pets: [DEFAULT_PET],
-        name: 'Miso',
-        species: 'Cat',
-        selectedPhoto,
-      }),
-    ).rejects.toMatchObject<Partial<PetProfileSaveError>>({
-      retainedPhotoUri: 'file:///documents/pet-images/kiwi-new.jpg',
-    });
-
-    expect(mockedDeletePhoto).not.toHaveBeenCalled();
+      savePetProfile({ pets: [], householdId, name: 'Miso', species: 'Cat', selectedPhoto }),
+    ).rejects.toMatchObject<Partial<PetProfileSaveError>>({ retainedPhotoUri: newPhotoUri });
   });
 
-  it('reconciles a write that committed even though the storage promise rejected', async () => {
-    const committedPet: Pet = {
-      ...petWithPhoto,
-      name: 'Kiwi updated',
-      photoUri: 'file:///documents/pet-images/kiwi-new.jpg',
-    };
-    mockedSavePets.mockRejectedValueOnce(new Error('late storage error'));
-    mockedLoadPets.mockResolvedValueOnce({ pets: [committedPet], activePetId: committedPet.id });
-
+  it('refuses to edit a pet that is no longer in the list', async () => {
     await expect(
-      savePetProfile({
-        pets: [petWithPhoto],
-        editingPetId: petWithPhoto.id,
-        name: committedPet.name,
-        species: committedPet.species,
-        selectedPhoto,
-      }),
-    ).resolves.toMatchObject({ pet: committedPet, pets: [committedPet] });
+      savePetProfile({ pets: [], householdId, editingPetId: 'gone', name: 'X', species: 'Cat' }),
+    ).rejects.toBeInstanceOf(PetProfileSaveError);
 
-    expect(mockedDeletePhoto).toHaveBeenCalledWith(petWithPhoto.photoUri);
+    expect(mockedInsertPet).not.toHaveBeenCalled();
+    expect(mockedUpdatePet).not.toHaveBeenCalled();
   });
 
-  it('reports old-photo cleanup separately after a successful profile save', async () => {
+  it('reports old-photo cleanup separately after a successful save', async () => {
     mockedDeletePhoto.mockRejectedValueOnce(new Error('file locked'));
 
     await expect(
       savePetProfile({
-        pets: [petWithPhoto],
-        editingPetId: petWithPhoto.id,
-        name: petWithPhoto.name,
-        species: petWithPhoto.species,
+        pets: [kiwi],
+        householdId,
+        editingPetId: kiwi.id,
+        name: kiwi.name,
+        species: kiwi.species,
         selectedPhoto,
       }),
     ).resolves.toMatchObject({ previousPhotoCleanupFailed: true });

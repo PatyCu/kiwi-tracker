@@ -4,6 +4,7 @@ import { StyleSheet, View } from 'react-native';
 import { useAppearance } from '@/shared/theme/AppearanceProvider';
 import { useHouseholdAlias } from '@/modules/households/state/useHouseholdAlias';
 import { usePetEvents } from '@/modules/pet-events/state/PetEventsProvider';
+import { usePetProfileForms } from '@/modules/pets/state/PetProfileFormsProvider';
 import { usePets } from '@/modules/pets/state/PetsProvider';
 import { buildTodayViewModel } from '@/modules/today/buildTodayViewModel';
 import { TodayCard } from '@/modules/today/ui/TodayCard';
@@ -17,17 +18,44 @@ export function TodayScreen() {
   const { colors } = useAppearance();
   const { pets, loadStatus: petsStatus, retryLoad: retryPets } = usePets();
   const { events, loadStatus: eventsStatus, retryLoad: retryEvents } = usePetEvents();
+  const { addPet } = usePetProfileForms();
   const householdAlias = useHouseholdAlias();
-  const now = new Date();
-  const viewModel = buildTodayViewModel(pets, events, now, householdAlias);
 
   if (petsStatus === 'error' || eventsStatus === 'error') {
     return (
       <Screen>
-        <LoadError onRetry={() => void Promise.all([retryPets(), retryEvents()])} />
+        <LoadError
+          onRetry={() => {
+            retryPets();
+            retryEvents();
+          }}
+        />
       </Screen>
     );
   }
+
+  // Until both have loaded, an empty screen avoids showing "No pets yet" to a household with pets.
+  if (petsStatus === 'loading' || eventsStatus === 'loading') return <Screen>{null}</Screen>;
+
+  if (pets.length === 0) {
+    return (
+      <Screen>
+        <SectionHeader
+          compact
+          title={householdAlias ? `Today in ${householdAlias}` : 'Today'}
+          actionLabel="Add pet"
+          onAction={addPet}
+        />
+        <PlaceholderCard
+          title="No pets yet"
+          description="Add a pet to start tracking their care."
+          icon="paw-outline"
+        />
+      </Screen>
+    );
+  }
+
+  const viewModel = buildTodayViewModel(pets, events, new Date(), householdAlias);
 
   return (
     <Screen>

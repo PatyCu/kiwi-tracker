@@ -1,88 +1,67 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { DEFAULT_PET, Pet } from '@/modules/pets/model/Pet';
-import { loadPets, PetStorageError, savePets } from '@/modules/pets/persistence/petStore';
+import {
+  insertPet,
+  loadPets,
+  PetStorageError,
+  updatePet,
+} from '@/modules/pets/persistence/petStore';
+import { getSupabaseClient } from '@/shared/supabase/supabaseClient';
 
-jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
-);
+jest.mock('@/shared/supabase/supabaseClient', () => ({ getSupabaseClient: jest.fn() }));
 
-const mockedStorage = jest.mocked(AsyncStorage);
-const stateKey = '@kiwi-tracker/pet-state/v2';
-const legacyPetsKey = '@kiwi-tracker/pets/v1';
-const legacyActivePetKey = '@kiwi-tracker/active-pet/v1';
+type Result = { data: unknown; error: unknown };
 
-const secondPet: Pet = {
-  id: 'miso',
-  name: 'Miso',
+/** A query that records each call and resolves to `result`, awaited or through single(). */
+function mockQuery(result: Result) {
+  const query: Record<string, jest.Mock> = {
+    then: jest.fn((resolve, reject) => Promise.resolve(result).then(resolve, reject)),
+  };
+  for (const method of ['select', 'insert', 'update', 'eq', 'order']) {
+    query[method] = jest.fn(() => query);
+  }
+  query.single = jest.fn(() => Promise.resolve(result));
+  const from = jest.fn(() => query);
+  jest
+    .mocked(getSupabaseClient)
+    .mockReturnValue({ from } as unknown as ReturnType<typeof getSupabaseClient>);
+  return { from, query };
+}
+
+const kiwiRow = {
+  id: 'kiwi-id',
+  name: 'Kiwi',
   species: 'Cat',
-  createdAt: '2025-02-01T10:00:00.000Z',
+  breed: 'European Shorthair',
+  birth_date: '2021-04-12',
 };
 
 describe('pet storage', () => {
-  beforeEach(() => {
-    mockedStorage.clear();
-    jest.clearAllMocks();
-  });
+  beforeEach(() => jest.clearAllMocks());
 
-  it('provides the original Kiwi profile when no pet data exists', async () => {
-    await expect(loadPets()).resolves.toEqual({
-      pets: [DEFAULT_PET],
-      activePetId: DEFAULT_PET.id,
+  it("loads the household's pets by name", async () => {
+    const { from, query } = mockQuery({
+      data: [
+        kiwiRow,
+        { id: 'murri-id', name: 'Murri', species: 'Cat', breed: null, birth_date: null },
+      ],
+      error: null,
     });
-    await expect(mockedStorage.getItem(stateKey)).resolves.toBeNull();
-  });
 
-  it('migrates legacy profiles into one versioned state document', async () => {
-    await mockedStorage.multiSet([
-      [legacyPetsKey, JSON.stringify([DEFAULT_PET, secondPet])],
-      [legacyActivePetKey, secondPet.id],
+    await expect(loadPets()).resolves.toEqual([
+      {
+        id: 'kiwi-id',
+        name: 'Kiwi',
+        species: 'Cat',
+        breed: 'European Shorthair',
+        birthDate: '2021-04-12',
+      },
+      { id: 'murri-id', name: 'Murri', species: 'Cat' },
     ]);
-
-    await expect(loadPets()).resolves.toEqual({
-      pets: [DEFAULT_PET, secondPet],
-      activePetId: secondPet.id,
-    });
-    await expect(mockedStorage.getItem(stateKey)).resolves.toBe(
-      JSON.stringify({
-        version: 2,
-        pets: [DEFAULT_PET, secondPet],
-        activePetId: secondPet.id,
-      }),
-    );
-    await expect(mockedStorage.getItem(legacyPetsKey)).resolves.not.toBeNull();
+    expect(from).toHaveBeenCalledWith('pets');
+    expect(query.order).toHaveBeenCalledWith('name');
   });
 
-  it('falls back to the first legacy pet when the selected pet is stale', async () => {
-    await mockedStorage.multiSet([
-      [legacyPetsKey, JSON.stringify([secondPet, DEFAULT_PET])],
-      [legacyActivePetKey, 'missing-pet'],
-    ]);
-
-    await expect(loadPets()).resolves.toEqual({
-      pets: [secondPet, DEFAULT_PET],
-      activePetId: secondPet.id,
-    });
-  });
-
-  it('prefers the versioned state after migration', async () => {
-    await mockedStorage.multiSet([
-      [stateKey, JSON.stringify({ version: 2, pets: [secondPet], activePetId: secondPet.id })],
-      [legacyPetsKey, JSON.stringify([DEFAULT_PET])],
-      [legacyActivePetKey, DEFAULT_PET.id],
-    ]);
-
-    await expect(loadPets()).resolves.toEqual({ pets: [secondPet], activePetId: secondPet.id });
-  });
-
-  it('rejects malformed timestamps and dates in persisted profiles', async () => {
-    await mockedStorage.setItem(
-      stateKey,
-      JSON.stringify({
-        version: 2,
-        pets: [{ ...secondPet, createdAt: 'yesterday', birthDate: '2025-02-31' }],
-        activePetId: secondPet.id,
-      }),
-    );
+  it('reports an unknown species instead of guessing', async () => {
+    mockQuery({ data: [{ ...kiwiRow, species: 'Ferret' }], error: null });
 
     await expect(loadPets()).rejects.toMatchObject<Partial<PetStorageError>>({
       name: 'PetStorageError',
@@ -90,60 +69,56 @@ describe('pet storage', () => {
     });
   });
 
-  it('treats an empty state document as corrupted data', async () => {
-    mockedStorage.getItem.mockResolvedValueOnce('');
-
-    await expect(loadPets()).rejects.toMatchObject<Partial<PetStorageError>>({
-      code: 'INVALID_DATA',
-    });
-  });
-
-  it('wraps storage read failures in a typed storage error', async () => {
-    mockedStorage.getItem.mockRejectedValueOnce(new Error('storage unavailable'));
+  it('wraps a failed load in a typed error', async () => {
+    mockQuery({ data: null, error: { message: 'offline' } });
 
     await expect(loadPets()).rejects.toMatchObject<Partial<PetStorageError>>({
       code: 'READ_FAILED',
     });
   });
 
-  it('reports a migration write failure without deleting legacy data', async () => {
-    await mockedStorage.multiSet([
-      [legacyPetsKey, JSON.stringify([DEFAULT_PET])],
-      [legacyActivePetKey, DEFAULT_PET.id],
-    ]);
-    mockedStorage.setItem.mockRejectedValueOnce(new Error('disk full'));
+  it('adds a pet to the given household as one row', async () => {
+    const { query } = mockQuery({ data: kiwiRow, error: null });
 
-    await expect(loadPets()).rejects.toMatchObject<Partial<PetStorageError>>({
-      code: 'MIGRATION_FAILED',
-    });
-    await expect(mockedStorage.getItem(legacyPetsKey)).resolves.toBe(JSON.stringify([DEFAULT_PET]));
-  });
-
-  it('persists profiles and their active selection with one write', async () => {
-    await savePets([DEFAULT_PET, secondPet], secondPet.id);
-
-    expect(mockedStorage.setItem).toHaveBeenCalledTimes(1);
-    await expect(mockedStorage.getItem(stateKey)).resolves.toBe(
-      JSON.stringify({
-        version: 2,
-        pets: [DEFAULT_PET, secondPet],
-        activePetId: secondPet.id,
+    await expect(
+      insertPet('alexs-home', {
+        name: 'Kiwi',
+        species: 'Cat',
+        breed: 'European Shorthair',
+        birthDate: '2021-04-12',
       }),
-    );
+    ).resolves.toMatchObject({ id: 'kiwi-id', name: 'Kiwi' });
+    expect(query.insert).toHaveBeenCalledWith({
+      household_id: 'alexs-home',
+      name: 'Kiwi',
+      species: 'Cat',
+      breed: 'European Shorthair',
+      birth_date: '2021-04-12',
+    });
   });
 
-  it('does not write an invalid active-pet selection', async () => {
-    await expect(savePets([DEFAULT_PET], 'missing-pet')).rejects.toMatchObject<
-      Partial<PetStorageError>
-    >({ code: 'INVALID_DATA' });
+  it('saves one pet by id and clears fields left empty', async () => {
+    const { query } = mockQuery({ data: { ...kiwiRow, breed: null }, error: null });
 
-    expect(mockedStorage.setItem).not.toHaveBeenCalled();
+    await expect(updatePet('kiwi-id', { name: 'Kiwi', species: 'Cat' })).resolves.toEqual({
+      id: 'kiwi-id',
+      name: 'Kiwi',
+      species: 'Cat',
+      birthDate: '2021-04-12',
+    });
+    expect(query.update).toHaveBeenCalledWith({
+      name: 'Kiwi',
+      species: 'Cat',
+      breed: null,
+      birth_date: null,
+    });
+    expect(query.eq).toHaveBeenCalledWith('id', 'kiwi-id');
   });
 
-  it('wraps a state-document write failure', async () => {
-    mockedStorage.setItem.mockRejectedValueOnce(new Error('disk full'));
+  it('wraps a failed write in a typed error', async () => {
+    mockQuery({ data: null, error: { message: 'row-level security' } });
 
-    await expect(savePets([DEFAULT_PET], DEFAULT_PET.id)).rejects.toMatchObject<
+    await expect(insertPet('other-home', { name: 'Kiwi', species: 'Cat' })).rejects.toMatchObject<
       Partial<PetStorageError>
     >({ code: 'WRITE_FAILED' });
   });

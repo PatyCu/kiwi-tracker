@@ -9,14 +9,14 @@
     },
     {
       "name": "web",
-      "runtimeExecutable": "npx",
-      "runtimeArgs": ["expo", "start", "--web", "--port", "8081"],
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "web", "--", "--port", "8081"],
       "port": 8081
     },
     {
       "name": "ios",
-      "runtimeExecutable": "npx",
-      "runtimeArgs": ["expo", "start", "--port", "8083"],
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "start", "--", "--port", "8083"],
       "port": 8083
     }
   ]

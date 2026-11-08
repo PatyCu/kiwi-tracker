@@ -92,7 +92,7 @@ function symptom(kind: SymptomEvent['symptom'], occurredAt: string): SymptomEven
     type: 'symptom',
     symptom: kind,
     occurredAt,
-    recordedAt: occurredAt,
+    createdAt: occurredAt,
   };
 }
 
@@ -106,7 +106,7 @@ function dietChange(occurredAt: string): DietChangeEvent {
       item: { id: 'food-1', productName: 'New food', foodType: 'dry-food' },
     },
     occurredAt,
-    recordedAt: occurredAt,
+    createdAt: occurredAt,
   };
 }
 
@@ -117,6 +117,6 @@ function otherEvent(occurredAt: string) {
     type: 'other' as const,
     title: 'Played with a new toy',
     occurredAt,
-    recordedAt: occurredAt,
+    createdAt: occurredAt,
   };
 }

@@ -36,7 +36,7 @@ export function getCurrentDiet(
 function comparePetEvents(left: PetEvent, right: PetEvent): number {
   return (
     Date.parse(left.occurredAt) - Date.parse(right.occurredAt) ||
-    Date.parse(left.recordedAt) - Date.parse(right.recordedAt) ||
+    Date.parse(left.createdAt) - Date.parse(right.createdAt) ||
     left.id.localeCompare(right.id)
   );
 }

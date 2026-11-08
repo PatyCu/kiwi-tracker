@@ -230,7 +230,7 @@ describe('form hooks', () => {
         symptom: 'Asthma',
         note: 'Recovered quickly.',
         occurredAt,
-        recordedAt: occurredAt,
+        createdAt: occurredAt,
       }),
     );
 
@@ -276,7 +276,7 @@ describe('form hooks', () => {
         type: 'other',
         title: 'Moved house',
         occurredAt,
-        recordedAt: occurredAt,
+        createdAt: occurredAt,
       });
       result.current.setTitle('Moved flat');
     });
@@ -306,7 +306,7 @@ describe('form hooks', () => {
         type: 'diet-change',
         change,
         occurredAt,
-        recordedAt: occurredAt,
+        createdAt: occurredAt,
       }),
     );
     expect(result.current).toMatchObject({

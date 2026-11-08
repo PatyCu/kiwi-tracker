@@ -31,7 +31,7 @@ export function GlobalTimelineScreen() {
   if (loadStatus === 'error')
     return (
       <Screen>
-        <LoadError onRetry={() => void retryLoad()} />
+        <LoadError onRetry={retryLoad} />
       </Screen>
     );
   return (

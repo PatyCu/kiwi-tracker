@@ -5,8 +5,8 @@ import { buildTodayViewModel } from '@/modules/today/buildTodayViewModel';
 
 const now = new Date('2026-08-01T12:00:00.000Z');
 const pets: Pet[] = [
-  { id: 'kiwi', name: 'Kiwi', species: 'Cat', createdAt: '2026-01-01T00:00:00.000Z' },
-  { id: 'luna', name: 'Luna', species: 'Dog', createdAt: '2026-01-02T00:00:00.000Z' },
+  { id: 'kiwi', name: 'Kiwi', species: 'Cat' },
+  { id: 'luna', name: 'Luna', species: 'Dog' },
 ];
 const events: PetEvent[] = [
   {
@@ -18,7 +18,7 @@ const events: PetEvent[] = [
       item: { id: 'food-1', productName: 'Sensitive food', foodType: 'dry-food' },
     },
     occurredAt: now.toISOString(),
-    recordedAt: now.toISOString(),
+    createdAt: now.toISOString(),
   },
   {
     id: 'symptom-1',
@@ -26,7 +26,7 @@ const events: PetEvent[] = [
     type: 'symptom',
     symptom: 'Diarrhea',
     occurredAt: now.toISOString(),
-    recordedAt: now.toISOString(),
+    createdAt: now.toISOString(),
   },
 ];
 
@@ -55,10 +55,7 @@ describe('buildTodayViewModel', () => {
   });
 
   it('includes every pet in insights and orders alerts before all-clear pets', () => {
-    const allPets: Pet[] = [
-      { id: 'milo', name: 'Milo', species: 'Cat', createdAt: '2026-01-03T00:00:00.000Z' },
-      ...pets,
-    ];
+    const allPets: Pet[] = [{ id: 'milo', name: 'Milo', species: 'Cat' }, ...pets];
 
     const result = buildTodayViewModel(allPets, events, now, null);
 

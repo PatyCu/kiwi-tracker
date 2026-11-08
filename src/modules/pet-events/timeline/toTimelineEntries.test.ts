@@ -1,7 +1,7 @@
 import { PetEvent } from '@/modules/pet-events/model/PetEvent';
 import { toTimelineEntries } from '@/modules/pet-events/timeline/toTimelineEntries';
 
-const recordedAt = '2026-07-18T12:00:00.000Z';
+const createdAt = '2026-07-18T12:00:00.000Z';
 
 describe('timeline event presentation', () => {
   it('maps symptom, diet, and other events for only the active pet', () => {
@@ -13,7 +13,7 @@ describe('timeline event presentation', () => {
         symptom: 'Asthma',
         note: 'Recovered quickly.',
         occurredAt: '2026-07-18T11:00:00.000Z',
-        recordedAt,
+        createdAt,
       },
       {
         id: 'kiwi-diet',
@@ -33,7 +33,7 @@ describe('timeline event presentation', () => {
           },
         },
         occurredAt: '2026-07-17T09:30:00.000Z',
-        recordedAt,
+        createdAt,
       },
       {
         id: 'kiwi-other',
@@ -42,7 +42,7 @@ describe('timeline event presentation', () => {
         title: 'Started sleeping upstairs',
         note: 'Near the radiator.',
         occurredAt: '2026-07-18T11:30:00.000Z',
-        recordedAt,
+        createdAt,
       },
       {
         id: 'miso-symptom',
@@ -50,7 +50,7 @@ describe('timeline event presentation', () => {
         type: 'symptom',
         symptom: 'Vomiting',
         occurredAt: '2026-07-18T10:00:00.000Z',
-        recordedAt,
+        createdAt,
       },
     ];
 
@@ -118,6 +118,6 @@ function symptomEvent(id: string, occurredAt: string): PetEvent {
     type: 'symptom',
     symptom: 'Asthma',
     occurredAt,
-    recordedAt,
+    createdAt,
   };
 }

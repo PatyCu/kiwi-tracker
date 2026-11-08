@@ -1,5 +1,5 @@
 import {
-  loadHouseholdAlias,
+  loadHousehold,
   loadHouseholdMembers,
 } from '@/modules/households/persistence/householdStore';
 import { getSupabaseClient } from '@/shared/supabase/supabaseClient';
@@ -19,25 +19,25 @@ describe('householdStore', () => {
       .mockReturnValue({ from } as unknown as ReturnType<typeof getSupabaseClient>);
   });
 
-  describe('loadHouseholdAlias', () => {
-    it("returns the signed-in user's household alias", async () => {
-      maybeSingle.mockResolvedValue({ data: { alias: 'The Burrow' }, error: null });
+  describe('loadHousehold', () => {
+    it("returns the signed-in user's household", async () => {
+      maybeSingle.mockResolvedValue({ data: { id: 'burrow', alias: 'The Burrow' }, error: null });
 
-      await expect(loadHouseholdAlias()).resolves.toBe('The Burrow');
+      await expect(loadHousehold()).resolves.toEqual({ id: 'burrow', alias: 'The Burrow' });
       expect(from).toHaveBeenCalledWith('households');
-      expect(select).toHaveBeenCalledWith('alias');
+      expect(select).toHaveBeenCalledWith('id, alias');
     });
 
     it('returns null when the user is not in a household', async () => {
       maybeSingle.mockResolvedValue({ data: null, error: null });
 
-      await expect(loadHouseholdAlias()).resolves.toBeNull();
+      await expect(loadHousehold()).resolves.toBeNull();
     });
 
     it('throws when the query fails', async () => {
       maybeSingle.mockResolvedValue({ data: null, error: { message: 'offline' } });
 
-      await expect(loadHouseholdAlias()).rejects.toThrow('Could not load the household.');
+      await expect(loadHousehold()).rejects.toThrow('Could not load the household.');
     });
   });
 

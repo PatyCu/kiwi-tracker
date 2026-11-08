@@ -51,7 +51,9 @@ npm start
 
 From the Expo terminal, press `w` to open the web app or `i` to open the iOS
 Simulator. The app opens at sign-in; locally, use a seeded account (see
-[Accounts](docs/supabase.md#accounts)).
+[Accounts](docs/supabase.md#accounts)). To use real accounts and data instead,
+run `npm run web:shared` (see
+[Test against the shared project](docs/supabase.md#test-against-the-shared-project)).
 
 ## Validate
 

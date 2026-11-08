@@ -12,6 +12,8 @@ import {
  *
  * Correcting a diet item's name or food type also updates every other snapshot of that item
  * for the same pet (for example a later "Stopped" event), so the timeline stays consistent.
+ * Events the edit doesn't touch are returned as the same objects, so callers can save only
+ * the ones that changed.
  */
 export function applyPetEventEdit(
   events: readonly PetEvent[],
@@ -28,7 +30,8 @@ export function applyPetEventEdit(
   return events.map((event) => {
     if (event.id === eventId) return updated;
     if (correctedItem && event.petId === target.petId && event.type === 'diet-change') {
-      return { ...event, change: renameDietItem(event.change, correctedItem) };
+      const change = renameDietItem(event.change, correctedItem);
+      return change === event.change ? event : { ...event, change };
     }
     return event;
   });
@@ -72,6 +75,8 @@ function getIntroducedItem(change: DietChange): DietItemSnapshot | null {
 }
 
 function renameDietItem(change: DietChange, corrected: DietItemSnapshot): DietChange {
+  const items = change.type === 'replace' ? [change.previousItem, change.nextItem] : [change.item];
+  if (!items.some((item) => item.id === corrected.id)) return change;
   const fix = (item: DietItemSnapshot) => (item.id === corrected.id ? corrected : item);
   if (change.type === 'replace') {
     return { ...change, previousItem: fix(change.previousItem), nextItem: fix(change.nextItem) };

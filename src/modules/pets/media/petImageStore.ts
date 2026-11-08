@@ -1,6 +1,5 @@
 import { Directory, File, Paths } from 'expo-file-system';
 import { Platform } from 'react-native';
-import { Pet } from '@/modules/pets/model/Pet';
 
 const PET_IMAGE_DIRECTORY_NAME = 'pet-images';
 
@@ -52,55 +51,6 @@ export async function deletePersistedPetPhoto(uri?: string): Promise<void> {
   } catch (error) {
     throw new PetImageError('Could not remove the previous pet photo.', error);
   }
-}
-
-export async function migrateLegacyPetPhotos(pets: Pet[]): Promise<{
-  pets: Pet[];
-  createdUris: string[];
-  failedPetNames: string[];
-  didChange: boolean;
-}> {
-  const createdUris: string[] = [];
-  const failedPetNames: string[] = [];
-  let didChange = false;
-
-  const migratedPets = await Promise.all(
-    pets.map(async (pet) => {
-      if (!pet.photoUri) return pet;
-      if (Platform.OS === 'web') {
-        if (pet.photoUri.startsWith('data:') && pet.photoStorageVersion !== 1) {
-          try {
-            const photoUri = await optimizeWebPhoto(pet.photoUri);
-            didChange = true;
-            return { ...pet, photoUri, photoStorageVersion: 1 as const };
-          } catch {
-            failedPetNames.push(pet.name);
-            return pet;
-          }
-        }
-        if (isPersistedPetPhoto(pet.photoUri)) return pet;
-        failedPetNames.push(pet.name);
-        return pet;
-      }
-      if (isPersistedPetPhoto(pet.photoUri)) return pet;
-      try {
-        const photoUri = await persistPetPhoto({ uri: pet.photoUri }, pet.id);
-        createdUris.push(photoUri);
-        didChange = true;
-        return { ...pet, photoUri, photoStorageVersion: 1 as const };
-      } catch {
-        failedPetNames.push(pet.name);
-        return pet;
-      }
-    }),
-  );
-
-  return { pets: migratedPets, createdUris, failedPetNames, didChange };
-}
-
-function isPersistedPetPhoto(uri: string): boolean {
-  if (Platform.OS === 'web') return uri.startsWith('data:') || uri.startsWith('http');
-  return uri.startsWith(getPetImageDirectory().uri);
 }
 
 function getPetImageDirectory(): Directory {

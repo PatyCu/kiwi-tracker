@@ -24,10 +24,13 @@ export function PetsScreen() {
   if (loadStatus === 'error') {
     return (
       <Screen>
-        <LoadError onRetry={() => void retryLoad()} />
+        <LoadError onRetry={retryLoad} />
       </Screen>
     );
   }
+
+  // An empty screen while loading avoids showing "No pets yet" to a household with pets.
+  if (loadStatus === 'loading') return <Screen>{null}</Screen>;
 
   if (!selectedPet) {
     return (

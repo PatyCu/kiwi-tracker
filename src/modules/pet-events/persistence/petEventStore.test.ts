@@ -1,31 +1,111 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
-import { PetEvent } from '@/modules/pet-events/model/PetEvent';
 import {
+  deletePetEvent,
+  insertPetEvent,
   loadPetEvents,
-  savePetEvents,
   PetEventStorageError,
+  updatePetEvent,
 } from '@/modules/pet-events/persistence/petEventStore';
+import { getSupabaseClient } from '@/shared/supabase/supabaseClient';
 
-jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
-);
+jest.mock('@/shared/supabase/supabaseClient', () => ({ getSupabaseClient: jest.fn() }));
 
-const mockedStorage = jest.mocked(AsyncStorage);
-const storageKey = '@kiwi-tracker/timeline-events/v1';
+type Result = { data: unknown; error: unknown };
 
-describe('timeline event storage', () => {
-  beforeEach(() => {
-    mockedStorage.clear();
-    jest.clearAllMocks();
+/** A query that records each call and resolves to `result`, awaited or through single(). */
+function mockQuery(result: Result) {
+  const query: Record<string, jest.Mock> = {
+    then: jest.fn((resolve, reject) => Promise.resolve(result).then(resolve, reject)),
+  };
+  for (const method of ['select', 'insert', 'update', 'delete', 'eq', 'order']) {
+    query[method] = jest.fn(() => query);
+  }
+  query.single = jest.fn(() => Promise.resolve(result));
+  const from = jest.fn(() => query);
+  jest
+    .mocked(getSupabaseClient)
+    .mockReturnValue({ from } as unknown as ReturnType<typeof getSupabaseClient>);
+  return { from, query };
+}
+
+const emptyColumns = { note: null, symptom: null, title: null, diet_change: null };
+const symptomRow = {
+  ...emptyColumns,
+  id: 'event-1',
+  pet_id: 'kiwi',
+  type: 'symptom',
+  symptom: 'Asthma',
+  note: 'Recovered quickly.',
+  // How Postgres returns timestamptz values.
+  occurred_at: '2026-07-16T09:30:00+00:00',
+  created_at: '2026-07-16T09:31:00.123456+00:00',
+};
+const dietChange = {
+  type: 'add',
+  item: { id: 'item-1', productName: 'Dental chew', foodType: 'snack' },
+};
+
+describe('pet event storage', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('loads symptom, diet-change and other events with ISO timestamps, newest first', async () => {
+    const { from, query } = mockQuery({
+      data: [
+        symptomRow,
+        {
+          ...emptyColumns,
+          id: 'event-2',
+          pet_id: 'kiwi',
+          type: 'diet-change',
+          diet_change: dietChange,
+          occurred_at: '2026-07-15T09:30:00+00:00',
+          created_at: '2026-07-15T09:31:00+00:00',
+        },
+        {
+          ...emptyColumns,
+          id: 'event-3',
+          pet_id: 'kiwi',
+          type: 'other',
+          title: 'Started sleeping upstairs',
+          occurred_at: '2026-07-14T09:30:00+00:00',
+          created_at: '2026-07-14T09:31:00+00:00',
+        },
+      ],
+      error: null,
+    });
+
+    await expect(loadPetEvents()).resolves.toEqual([
+      {
+        id: 'event-1',
+        petId: 'kiwi',
+        type: 'symptom',
+        symptom: 'Asthma',
+        note: 'Recovered quickly.',
+        occurredAt: '2026-07-16T09:30:00.000Z',
+        createdAt: '2026-07-16T09:31:00.123Z',
+      },
+      {
+        id: 'event-2',
+        petId: 'kiwi',
+        type: 'diet-change',
+        change: dietChange,
+        occurredAt: '2026-07-15T09:30:00.000Z',
+        createdAt: '2026-07-15T09:31:00.000Z',
+      },
+      {
+        id: 'event-3',
+        petId: 'kiwi',
+        type: 'other',
+        title: 'Started sleeping upstairs',
+        occurredAt: '2026-07-14T09:30:00.000Z',
+        createdAt: '2026-07-14T09:31:00.000Z',
+      },
+    ]);
+    expect(from).toHaveBeenCalledWith('pet_events');
+    expect(query.order).toHaveBeenCalledWith('occurred_at', { ascending: false });
   });
 
-  it('returns an empty list when nothing has been stored', async () => {
-    await expect(loadPetEvents()).resolves.toEqual([]);
-  });
-
-  it('reports invalid persisted data explicitly', async () => {
-    await mockedStorage.setItem(storageKey, '{not-json');
+  it('reports a malformed row instead of showing it', async () => {
+    mockQuery({ data: [{ ...symptomRow, diet_change: null, type: 'diet-change' }], error: null });
 
     await expect(loadPetEvents()).rejects.toMatchObject<Partial<PetEventStorageError>>({
       name: 'PetEventStorageError',
@@ -33,92 +113,66 @@ describe('timeline event storage', () => {
     });
   });
 
-  it('rejects the obsolete symptom shape instead of silently migrating it', async () => {
-    await mockedStorage.setItem(
-      storageKey,
-      JSON.stringify([
-        {
-          id: 'old-event',
-          petId: 'kiwi',
-          kind: 'Asthma',
-          occurredAt: '2026-07-16T09:30:00.000Z',
-        },
-      ]),
-    );
+  it('distinguishes read and write failures', async () => {
+    mockQuery({ data: null, error: { message: 'offline' } });
 
-    await expect(loadPetEvents()).rejects.toMatchObject<Partial<PetEventStorageError>>({
-      code: 'INVALID_DATA',
-    });
+    await expect(loadPetEvents()).rejects.toMatchObject({ code: 'READ_FAILED' });
+    await expect(deletePetEvent('event-1')).rejects.toMatchObject({ code: 'WRITE_FAILED' });
   });
 
-  it('serializes symptom, diet-change, and other events together', async () => {
-    const events: PetEvent[] = [
-      {
-        id: 'symptom-1',
+  it('logs one event and lets storage set its id and createdAt', async () => {
+    const { query } = mockQuery({ data: symptomRow, error: null });
+
+    await expect(
+      insertPetEvent({
         petId: 'kiwi',
         type: 'symptom',
         symptom: 'Asthma',
+        note: 'Recovered quickly.',
         occurredAt: '2026-07-16T09:30:00.000Z',
-        recordedAt: '2026-07-16T09:31:00.000Z',
-      },
-      {
-        id: 'diet-1',
-        petId: 'kiwi',
-        type: 'diet-change',
-        change: {
-          type: 'add',
-          item: {
-            id: 'item-1',
-            productName: 'Dental chew',
-            foodType: 'snack',
-          },
-        },
-        occurredAt: '2026-07-17T09:30:00.000Z',
-        recordedAt: '2026-07-17T09:31:00.000Z',
-      },
-      {
-        id: 'other-1',
-        petId: 'kiwi',
-        type: 'other',
-        title: 'Started sleeping upstairs',
-        note: 'First noticed after dinner.',
-        occurredAt: '2026-07-18T09:30:00.000Z',
-        recordedAt: '2026-07-18T09:31:00.000Z',
-      },
-    ];
-
-    await savePetEvents(events);
-
-    await expect(mockedStorage.getItem(storageKey)).resolves.toBe(JSON.stringify(events));
-    await expect(loadPetEvents()).resolves.toEqual(events);
-  });
-
-  it('distinguishes read and write failures', async () => {
-    mockedStorage.getItem.mockRejectedValueOnce(new Error('storage unavailable'));
-    await expect(loadPetEvents()).rejects.toMatchObject<Partial<PetEventStorageError>>({
-      code: 'READ_FAILED',
-    });
-
-    mockedStorage.setItem.mockRejectedValueOnce(new Error('disk full'));
-    await expect(savePetEvents([])).rejects.toMatchObject<Partial<PetEventStorageError>>({
-      code: 'WRITE_FAILED',
+      }),
+    ).resolves.toMatchObject({ id: 'event-1', createdAt: '2026-07-16T09:31:00.123Z' });
+    expect(query.insert).toHaveBeenCalledWith({
+      ...emptyColumns,
+      pet_id: 'kiwi',
+      type: 'symptom',
+      symptom: 'Asthma',
+      note: 'Recovered quickly.',
+      occurred_at: '2026-07-16T09:30:00.000Z',
     });
   });
 
   it('does not write an invalid event', async () => {
-    await expect(
-      savePetEvents([
-        {
-          id: 'symptom-1',
-          petId: '',
-          type: 'symptom',
-          symptom: 'Asthma',
-          occurredAt: '2026-07-16T09:30:00.000Z',
-          recordedAt: '2026-07-16T09:31:00.000Z',
-        },
-      ]),
-    ).rejects.toMatchObject<Partial<PetEventStorageError>>({ code: 'INVALID_DATA' });
+    const { from } = mockQuery({ data: null, error: null });
 
-    expect(mockedStorage.setItem).not.toHaveBeenCalled();
+    await expect(
+      insertPetEvent({
+        petId: '',
+        type: 'symptom',
+        symptom: 'Asthma',
+        occurredAt: '2026-07-16T09:30:00.000Z',
+      }),
+    ).rejects.toMatchObject({ code: 'INVALID_DATA' });
+    expect(from).not.toHaveBeenCalled();
+  });
+
+  it('updates and deletes one event by id', async () => {
+    const { query } = mockQuery({ data: { ...symptomRow, note: null }, error: null });
+
+    await expect(
+      updatePetEvent({
+        id: 'event-1',
+        petId: 'kiwi',
+        type: 'symptom',
+        symptom: 'Asthma',
+        occurredAt: '2026-07-16T09:30:00.000Z',
+        createdAt: '2026-07-16T09:31:00.123Z',
+      }),
+    ).resolves.not.toHaveProperty('note');
+    expect(query.eq).toHaveBeenCalledWith('id', 'event-1');
+
+    await deletePetEvent('event-1');
+    expect(query.delete).toHaveBeenCalled();
+    expect(query.eq).toHaveBeenLastCalledWith('id', 'event-1');
   });
 });

@@ -1,12 +1,15 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import { ReactNode } from 'react';
 import { StyleSheet } from 'react-native';
 
 import { AppearanceProvider } from '@/shared/theme/AppearanceProvider';
+import { PetEvent } from '@/modules/pet-events/model/PetEvent';
+import { insertPetEvent, loadPetEvents } from '@/modules/pet-events/persistence/petEventStore';
 import { PetEventFormsProvider } from '@/modules/pet-events/state/PetEventFormsProvider';
 import { PetEventsProvider } from '@/modules/pet-events/state/PetEventsProvider';
 import { PetProfileFormsProvider } from '@/modules/pets/state/PetProfileFormsProvider';
+import { Pet } from '@/modules/pets/model/Pet';
+import { loadPets } from '@/modules/pets/persistence/petStore';
 import { PetsProvider } from '@/modules/pets/state/PetsProvider';
 import { useHouseholdAlias } from '@/modules/households/state/useHouseholdAlias';
 import { TodayScreen } from '@/modules/today/ui/TodayScreen';
@@ -28,11 +31,37 @@ jest.mock('@/modules/households/state/useHouseholdAlias', () => ({
   useHouseholdAlias: jest.fn(() => null),
 }));
 
-jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
-);
+jest.mock('@/modules/auth/state/SessionProvider', () => ({
+  useSession: () => ({
+    session: { status: 'signed-in', user: { id: 'alex', email: 'alex@kiwi.test' } },
+    signOut: jest.fn(),
+  }),
+}));
 
-const storage = jest.mocked(AsyncStorage);
+jest.mock('@/modules/households/state/HouseholdProvider', () => ({
+  useHousehold: () => ({
+    household: { status: 'ready', id: 'alexs-home', alias: "Alex's home" },
+    retryLoad: jest.fn(),
+  }),
+}));
+
+jest.mock('@/modules/pets/persistence/petStore', () => ({
+  loadPets: jest.fn(),
+  insertPet: jest.fn(),
+  updatePet: jest.fn(),
+}));
+jest.mock('@/modules/pet-events/persistence/petEventStore', () => ({
+  loadPetEvents: jest.fn(),
+  insertPetEvent: jest.fn(),
+  updatePetEvent: jest.fn(),
+  deletePetEvent: jest.fn(),
+}));
+
+const kiwi: Pet = { id: 'kiwi', name: 'Kiwi', species: 'Cat' };
+const luna: Pet = { id: 'luna', name: 'Luna', species: 'Dog' };
+const mockedLoadPets = jest.mocked(loadPets);
+const mockedLoadEvents = jest.mocked(loadPetEvents);
+const mockedInsertEvent = jest.mocked(insertPetEvent);
 
 function Providers({ children }: { children: ReactNode }) {
   return (
@@ -50,9 +79,14 @@ function Providers({ children }: { children: ReactNode }) {
 
 describe('Today screen', () => {
   beforeEach(() => {
-    storage.clear();
     jest.clearAllMocks();
     jest.mocked(useHouseholdAlias).mockReturnValue(null);
+    mockedLoadPets.mockResolvedValue([kiwi]);
+    mockedLoadEvents.mockResolvedValue([]);
+    mockedInsertEvent.mockImplementation(
+      async (event) =>
+        ({ ...event, id: 'saved-event', createdAt: new Date().toISOString() }) as PetEvent,
+    );
   });
 
   it('shows the original semaphore card with truthful care placeholders', async () => {
@@ -82,6 +116,17 @@ describe('Today screen', () => {
     expect(screen.queryByLabelText('Quick log')).toBeNull();
   });
 
+  it('offers to add a pet when the household has none yet', async () => {
+    mockedLoadPets.mockResolvedValue([]);
+
+    const screen = render(<TodayScreen />, { wrapper: Providers });
+
+    await waitFor(() => expect(screen.getByText('No pets yet')).toBeTruthy());
+    expect(screen.queryByText('Add event')).toBeNull();
+    fireEvent.press(screen.getByText('Add pet'));
+    expect(screen.getByTestId('pet-profile-modal')).toBeTruthy();
+  });
+
   it('names the household in the summary card once its alias loads', async () => {
     jest.mocked(useHouseholdAlias).mockReturnValue('The Burrow');
 
@@ -92,27 +137,7 @@ describe('Today screen', () => {
   });
 
   it('renders one aggregate semaphore card for multiple persisted pets', async () => {
-    await storage.setItem(
-      '@kiwi-tracker/pet-state/v2',
-      JSON.stringify({
-        version: 2,
-        activePetId: 'kiwi',
-        pets: [
-          {
-            id: 'kiwi',
-            name: 'Kiwi',
-            species: 'Cat',
-            createdAt: '2025-01-01T00:00:00.000Z',
-          },
-          {
-            id: 'luna',
-            name: 'Luna',
-            species: 'Dog',
-            createdAt: '2025-01-02T00:00:00.000Z',
-          },
-        ],
-      }),
-    );
+    mockedLoadPets.mockResolvedValue([kiwi, luna]);
 
     const screen = render(<TodayScreen />, { wrapper: Providers });
 
@@ -134,33 +159,13 @@ describe('Today screen', () => {
     fireEvent.press(screen.getByText('Save diet change'));
 
     await waitFor(() => expect(screen.getByText('Something to keep an eye on.')).toBeTruthy());
-    await expect(storage.getItem('@kiwi-tracker/timeline-events/v1')).resolves.toContain(
-      'diet-change',
+    expect(mockedInsertEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ petId: 'kiwi', type: 'diet-change' }),
     );
   });
 
   it('attaches an event from the Today bar to the selected pet', async () => {
-    await storage.setItem(
-      '@kiwi-tracker/pet-state/v2',
-      JSON.stringify({
-        version: 2,
-        activePetId: 'kiwi',
-        pets: [
-          {
-            id: 'kiwi',
-            name: 'Kiwi',
-            species: 'Cat',
-            createdAt: '2025-01-01T00:00:00.000Z',
-          },
-          {
-            id: 'luna',
-            name: 'Luna',
-            species: 'Dog',
-            createdAt: '2025-01-02T00:00:00.000Z',
-          },
-        ],
-      }),
-    );
+    mockedLoadPets.mockResolvedValue([kiwi, luna]);
 
     const screen = render(<TodayScreen />, { wrapper: Providers });
     await waitFor(() => expect(screen.getByText('Today with Kiwi and Luna')).toBeTruthy());
@@ -171,28 +176,30 @@ describe('Today screen', () => {
     fireEvent.changeText(screen.getByLabelText('Diet product name'), 'Luna sensitive food');
     fireEvent.press(screen.getByText('Save diet change'));
 
-    await waitFor(async () => {
-      const savedEvents = await storage.getItem('@kiwi-tracker/timeline-events/v1');
-      expect(savedEvents).toContain('"petId":"luna"');
-      expect(savedEvents).toContain('Luna sensitive food');
-    });
+    await waitFor(() =>
+      expect(mockedInsertEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          petId: 'luna',
+          change: expect.objectContaining({
+            item: expect.objectContaining({ productName: 'Luna sensitive food' }),
+          }),
+        }),
+      ),
+    );
   });
 
   it('preserves the red semaphore copy in the global attention view', async () => {
     const now = new Date();
-    await storage.setItem(
-      '@kiwi-tracker/timeline-events/v1',
-      JSON.stringify([
-        {
-          id: 'symptom-1',
-          petId: 'kiwi',
-          type: 'symptom',
-          symptom: 'Diarrhea',
-          occurredAt: now.toISOString(),
-          recordedAt: now.toISOString(),
-        },
-      ]),
-    );
+    mockedLoadEvents.mockResolvedValue([
+      {
+        id: 'symptom-1',
+        petId: 'kiwi',
+        type: 'symptom',
+        symptom: 'Diarrhea',
+        occurredAt: now.toISOString(),
+        createdAt: now.toISOString(),
+      },
+    ] as PetEvent[]);
     const screen = render(<TodayScreen />, { wrapper: Providers });
     await waitFor(() => expect(screen.getByText('Something needs your attention.')).toBeTruthy());
     expect(screen.getByText(/Diarrhea was logged today/)).toBeTruthy();
@@ -209,40 +216,17 @@ describe('Today screen', () => {
 
   it('shows alert entries before pets with nothing to report', async () => {
     const now = new Date();
-    await storage.setItem(
-      '@kiwi-tracker/pet-state/v2',
-      JSON.stringify({
-        version: 2,
-        activePetId: 'kiwi',
-        pets: [
-          {
-            id: 'kiwi',
-            name: 'Kiwi',
-            species: 'Cat',
-            createdAt: '2025-01-01T00:00:00.000Z',
-          },
-          {
-            id: 'luna',
-            name: 'Luna',
-            species: 'Dog',
-            createdAt: '2025-01-02T00:00:00.000Z',
-          },
-        ],
-      }),
-    );
-    await storage.setItem(
-      '@kiwi-tracker/timeline-events/v1',
-      JSON.stringify([
-        {
-          id: 'symptom-1',
-          petId: 'luna',
-          type: 'symptom',
-          symptom: 'Diarrhea',
-          occurredAt: now.toISOString(),
-          recordedAt: now.toISOString(),
-        },
-      ]),
-    );
+    mockedLoadPets.mockResolvedValue([kiwi, luna]);
+    mockedLoadEvents.mockResolvedValue([
+      {
+        id: 'symptom-1',
+        petId: 'luna',
+        type: 'symptom',
+        symptom: 'Diarrhea',
+        occurredAt: now.toISOString(),
+        createdAt: now.toISOString(),
+      },
+    ] as PetEvent[]);
 
     const screen = render(<TodayScreen />, { wrapper: Providers });
 
@@ -255,27 +239,24 @@ describe('Today screen', () => {
   it('lists repeated status reasons without duplicate React keys', async () => {
     const occurredAt = new Date().toISOString();
     const item = { id: 'item-1', productName: 'Royal Canin', foodType: 'dry-food' };
-    await storage.setItem(
-      '@kiwi-tracker/timeline-events/v1',
-      JSON.stringify([
-        {
-          id: 'diet-add',
-          petId: 'kiwi',
-          type: 'diet-change',
-          change: { type: 'add', item },
-          occurredAt,
-          recordedAt: occurredAt,
-        },
-        {
-          id: 'diet-remove',
-          petId: 'kiwi',
-          type: 'diet-change',
-          change: { type: 'remove', item },
-          occurredAt,
-          recordedAt: occurredAt,
-        },
-      ]),
-    );
+    mockedLoadEvents.mockResolvedValue([
+      {
+        id: 'diet-add',
+        petId: 'kiwi',
+        type: 'diet-change',
+        change: { type: 'add', item },
+        occurredAt,
+        createdAt: occurredAt,
+      },
+      {
+        id: 'diet-remove',
+        petId: 'kiwi',
+        type: 'diet-change',
+        change: { type: 'remove', item },
+        occurredAt,
+        createdAt: occurredAt,
+      },
+    ] as PetEvent[]);
     const consoleError = jest.spyOn(console, 'error').mockImplementation(() => undefined);
 
     const screen = render(<TodayScreen />, { wrapper: Providers });

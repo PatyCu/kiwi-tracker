@@ -9,11 +9,11 @@ import {
 } from 'react';
 
 import { useSession } from '@/modules/auth/state/SessionProvider';
-import { loadHouseholdAlias } from '@/modules/households/persistence/householdStore';
+import { loadHousehold } from '@/modules/households/persistence/householdStore';
 
 export type HouseholdState =
   | { status: 'loading' }
-  | { status: 'ready'; alias: string }
+  | { status: 'ready'; id: string; alias: string }
   /** Signed in, but the account was never added to a household: a setup mistake. */
   | { status: 'missing' }
   | { status: 'error' };
@@ -37,9 +37,10 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!userId) return;
     let current = true;
-    loadHouseholdAlias()
+    loadHousehold()
       .then(
-        (alias): HouseholdState => (alias ? { status: 'ready', alias } : { status: 'missing' }),
+        (loaded): HouseholdState =>
+          loaded ? { status: 'ready', ...loaded } : { status: 'missing' },
         (): HouseholdState => ({ status: 'error' }),
       )
       .then((household) => {

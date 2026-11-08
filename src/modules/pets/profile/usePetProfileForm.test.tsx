@@ -16,11 +16,8 @@ describe('usePetProfileForm', () => {
       id: 'miso',
       name: 'Miso',
       species: 'Dog' as const,
-      createdAt: '2025-01-01T00:00:00.000Z',
     };
     const onSubmit = jest.fn().mockResolvedValue({
-      pets: [savedPet],
-      activePetId: savedPet.id,
       pet: savedPet,
       previousPhotoCleanupFailed: false,
     });

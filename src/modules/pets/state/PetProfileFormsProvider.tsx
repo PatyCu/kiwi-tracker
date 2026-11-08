@@ -1,4 +1,4 @@
-import { createContext, ReactNode, useContext, useEffect, useMemo } from 'react';
+import { createContext, ReactNode, useContext, useMemo } from 'react';
 
 import { useAppearance } from '@/shared/theme/AppearanceProvider';
 import { Pet } from '@/modules/pets/model/Pet';
@@ -16,17 +16,8 @@ const PetProfileFormsContext = createContext<PetProfileFormsContextValue | null>
 
 export function PetProfileFormsProvider({ children }: { children: ReactNode }) {
   const { colors } = useAppearance();
-  const { saveProfile, photoMigrationWarningPetNames, clearPhotoMigrationWarning } = usePets();
+  const { saveProfile } = usePets();
   const form = usePetProfileForm({ onSubmit: saveProfile });
-
-  useEffect(() => {
-    if (photoMigrationWarningPetNames.length === 0) return;
-    showMessage(
-      'Some photos need updating',
-      `Please choose a new photo for ${photoMigrationWarningPetNames.join(', ')} so it can be stored permanently.`,
-    );
-    clearPhotoMigrationWarning();
-  }, [clearPhotoMigrationWarning, photoMigrationWarningPetNames]);
 
   const pickPhoto = async () => {
     const result = await form.pickPhoto();

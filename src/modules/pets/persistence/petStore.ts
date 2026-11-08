@@ -1,18 +1,12 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Pet, PET_SPECIES, PetProfile } from '@/modules/pets/model/Pet';
+import type { Tables } from '@/shared/supabase/database.types';
+import { getSupabaseClient } from '@/shared/supabase/supabaseClient';
 
-import { DEFAULT_PET, Pet, PetState } from '@/modules/pets/model/Pet';
-import { isPet, isPetState } from '@/modules/pets/model/validatePet';
+type PetRow = Pick<Tables<'pets'>, 'id' | 'name' | 'species' | 'breed' | 'birth_date'>;
 
-const STATE_STORAGE_KEY = '@kiwi-tracker/pet-state/v2';
-const LEGACY_PETS_STORAGE_KEY = '@kiwi-tracker/pets/v1';
-const LEGACY_ACTIVE_PET_STORAGE_KEY = '@kiwi-tracker/active-pet/v1';
-const PET_STATE_VERSION = 2;
+const PET_COLUMNS = 'id, name, species, breed, birth_date';
 
-type StoredPetState = PetState & {
-  version: typeof PET_STATE_VERSION;
-};
-
-type PetStorageErrorCode = 'READ_FAILED' | 'INVALID_DATA' | 'MIGRATION_FAILED' | 'WRITE_FAILED';
+type PetStorageErrorCode = 'READ_FAILED' | 'INVALID_DATA' | 'WRITE_FAILED';
 
 export class PetStorageError extends Error {
   readonly code: PetStorageErrorCode;
@@ -26,98 +20,66 @@ export class PetStorageError extends Error {
   }
 }
 
-export async function loadPets(): Promise<PetState> {
-  let storedState: string | null;
-
-  try {
-    storedState = await AsyncStorage.getItem(STATE_STORAGE_KEY);
-  } catch (error) {
-    throw new PetStorageError('READ_FAILED', 'Could not read locally saved pets.', error);
-  }
-
-  if (storedState !== null) return parseStoredState(storedState);
-  return loadAndMigrateLegacyState();
+/**
+ * Returns the pets of the signed-in user's household, by name. Access
+ * rules only return that household's pets. Photos aren't stored yet, so loaded
+ * pets have no photoUri.
+ */
+export async function loadPets(): Promise<Pet[]> {
+  const { data, error } = await getSupabaseClient()
+    .from('pets')
+    .select(PET_COLUMNS)
+    .order('name')
+    .order('id');
+  if (error) throw new PetStorageError('READ_FAILED', 'Could not load pets.', error);
+  return data.map(toPet);
 }
 
-export async function savePets(pets: Pet[], activePetId: string): Promise<void> {
-  const state = { pets, activePetId };
-  if (!isPetState(state)) {
-    throw new PetStorageError('INVALID_DATA', 'Pet state is not valid and was not saved.');
-  }
-
-  try {
-    await writeState(state);
-  } catch (error) {
-    throw new PetStorageError('WRITE_FAILED', 'Could not save pets.', error);
-  }
+/** Adds a pet to the given household and returns it with its new id. */
+export async function insertPet(householdId: string, profile: PetProfile): Promise<Pet> {
+  const { data, error } = await getSupabaseClient()
+    .from('pets')
+    .insert({ household_id: householdId, ...toPetColumns(profile) })
+    .select(PET_COLUMNS)
+    .single();
+  if (error) throw new PetStorageError('WRITE_FAILED', 'Could not add the pet.', error);
+  return toPet(data);
 }
 
-async function loadAndMigrateLegacyState(): Promise<PetState> {
-  let storedPets: string | null;
-  let storedActivePetId: string | null;
-
-  try {
-    [storedPets, storedActivePetId] = await Promise.all([
-      AsyncStorage.getItem(LEGACY_PETS_STORAGE_KEY),
-      AsyncStorage.getItem(LEGACY_ACTIVE_PET_STORAGE_KEY),
-    ]);
-  } catch (error) {
-    throw new PetStorageError('READ_FAILED', 'Could not read legacy pet data.', error);
-  }
-
-  if (storedPets === null) return { pets: [DEFAULT_PET], activePetId: DEFAULT_PET.id };
-
-  let parsedPets: unknown;
-  try {
-    parsedPets = JSON.parse(storedPets);
-  } catch (error) {
-    throw new PetStorageError('INVALID_DATA', 'Legacy pet data is not valid JSON.', error);
-  }
-
-  if (!Array.isArray(parsedPets) || parsedPets.length === 0 || !parsedPets.every(isPet)) {
-    throw new PetStorageError('INVALID_DATA', 'Legacy pet data has an invalid format.');
-  }
-
-  const activePetId = parsedPets.some((pet) => pet.id === storedActivePetId)
-    ? storedActivePetId!
-    : parsedPets[0].id;
-  const state = { pets: parsedPets, activePetId };
-
-  try {
-    await writeState(state);
-  } catch (error) {
-    throw new PetStorageError(
-      'MIGRATION_FAILED',
-      'Legacy pet data could not be migrated safely.',
-      error,
-    );
-  }
-
-  return state;
+/**
+ * Saves a pet's profile and returns the stored pet. Fails when the pet no
+ * longer exists or belongs to another household.
+ */
+export async function updatePet(petId: string, profile: PetProfile): Promise<Pet> {
+  const { data, error } = await getSupabaseClient()
+    .from('pets')
+    .update(toPetColumns(profile))
+    .eq('id', petId)
+    .select(PET_COLUMNS)
+    .single();
+  if (error) throw new PetStorageError('WRITE_FAILED', 'Could not save the pet.', error);
+  return toPet(data);
 }
 
-function parseStoredState(stored: string): PetState {
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(stored);
-  } catch (error) {
-    throw new PetStorageError('INVALID_DATA', 'Stored pet state is not valid JSON.', error);
-  }
-
-  if (!isStoredPetState(parsed)) {
-    throw new PetStorageError('INVALID_DATA', 'Stored pet state has an invalid format.');
-  }
-
-  return { pets: parsed.pets, activePetId: parsed.activePetId };
+function toPetColumns(profile: PetProfile) {
+  return {
+    name: profile.name,
+    species: profile.species,
+    breed: profile.breed ?? null,
+    birth_date: profile.birthDate ?? null,
+  };
 }
 
-function writeState(state: PetState): Promise<void> {
-  const storedState: StoredPetState = { version: PET_STATE_VERSION, ...state };
-  return AsyncStorage.setItem(STATE_STORAGE_KEY, JSON.stringify(storedState));
-}
-
-function isStoredPetState(value: unknown): value is StoredPetState {
-  if (!value || typeof value !== 'object') return false;
-  const state = value as Partial<StoredPetState>;
-  return state.version === PET_STATE_VERSION && isPetState(state);
+function toPet(row: PetRow): Pet {
+  const species = PET_SPECIES.find((value) => value === row.species);
+  if (!species) {
+    throw new PetStorageError('INVALID_DATA', `Pet ${row.id} has an unknown species.`);
+  }
+  return {
+    id: row.id,
+    name: row.name,
+    species,
+    ...(row.breed ? { breed: row.breed } : {}),
+    ...(row.birth_date ? { birthDate: row.birth_date } : {}),
+  };
 }

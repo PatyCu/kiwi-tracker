@@ -1,164 +1,253 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 import { ReactNode } from 'react';
 
+import { SessionState, useSession } from '@/modules/auth/state/SessionProvider';
 import { getCurrentDiet } from '@/modules/pet-events/model/getCurrentDiet';
-import { PetEventStorageError } from '@/modules/pet-events/persistence/petEventStore';
+import { NewPetEvent, PetEvent } from '@/modules/pet-events/model/PetEvent';
+import {
+  deletePetEvent,
+  insertPetEvent,
+  loadPetEvents,
+  updatePetEvent,
+} from '@/modules/pet-events/persistence/petEventStore';
 import { PetEventsProvider, usePetEvents } from '@/modules/pet-events/state/PetEventsProvider';
 
-jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
-);
+jest.mock('@/modules/auth/state/SessionProvider', () => ({ useSession: jest.fn() }));
+jest.mock('@/modules/pet-events/persistence/petEventStore', () => ({
+  loadPetEvents: jest.fn(),
+  insertPetEvent: jest.fn(),
+  updatePetEvent: jest.fn(),
+  deletePetEvent: jest.fn(),
+}));
 
-const mockedStorage = jest.mocked(AsyncStorage);
-const storageKey = '@kiwi-tracker/timeline-events/v1';
+const mockedLoad = jest.mocked(loadPetEvents);
+const mockedInsert = jest.mocked(insertPetEvent);
+const mockedUpdate = jest.mocked(updatePetEvent);
+const mockedDelete = jest.mocked(deletePetEvent);
+
 const wrapper = ({ children }: { children: ReactNode }) => (
   <PetEventsProvider>{children}</PetEventsProvider>
 );
 
+function signInAs(id: string) {
+  const session: SessionState = { status: 'signed-in', user: { id, email: `${id}@kiwi.test` } };
+  jest.mocked(useSession).mockReturnValue({ session, signOut: jest.fn() });
+}
+
+let savedCount = 0;
+function stored(event: NewPetEvent): PetEvent {
+  savedCount += 1;
+  return { ...event, id: `event-${savedCount}`, createdAt: '2026-07-16T10:00:00.000Z' } as PetEvent;
+}
+
+async function renderReady() {
+  const rendered = renderHook(() => usePetEvents(), { wrapper });
+  await waitFor(() => expect(rendered.result.current.loadStatus).toBe('ready'));
+  return rendered;
+}
+
 describe('PetEventsProvider', () => {
   beforeEach(() => {
-    mockedStorage.clear();
-    jest.clearAllMocks();
+    jest.resetAllMocks();
+    signInAs('alex');
+    mockedLoad.mockResolvedValue([]);
+    mockedInsert.mockImplementation(async (event) => stored(event));
+    mockedUpdate.mockImplementation(async (event) => event);
+    mockedDelete.mockResolvedValue();
   });
 
-  it('persists events for the explicit pet id', async () => {
-    const { result } = renderHook(() => usePetEvents(), { wrapper });
-    await waitFor(() => expect(result.current.loadStatus).toBe('ready'));
+  it('saves a new symptom as one record for the explicit pet', async () => {
+    const { result } = await renderReady();
 
     await act(async () => {
       await result.current.logSymptom(
         'miso',
         'Asthma',
-        'Recovered quickly.',
+        ' Recovered quickly. ',
         '2026-07-16T09:30:00.000Z',
       );
     });
 
-    expect(result.current.events).toHaveLength(1);
-    expect(result.current.events[0]).toMatchObject({
+    expect(mockedInsert).toHaveBeenCalledTimes(1);
+    expect(mockedInsert).toHaveBeenCalledWith({
       petId: 'miso',
       type: 'symptom',
       symptom: 'Asthma',
       note: 'Recovered quickly.',
+      occurredAt: '2026-07-16T09:30:00.000Z',
     });
+    expect(result.current.events).toEqual([expect.objectContaining({ id: 'event-1' })]);
   });
 
-  it('persists diet changes that can be projected for one pet', async () => {
-    const { result } = renderHook(() => usePetEvents(), { wrapper });
-    await waitFor(() => expect(result.current.loadStatus).toBe('ready'));
+  it('saves diet changes that can be projected for one pet', async () => {
+    const { result } = await renderReady();
 
     await act(async () => {
       await result.current.logDietChange(
         'kiwi',
         { type: 'add', item: { productName: 'Greenies Dental chew', foodType: 'snack' } },
-        'One after dinner.',
+        '',
         '2026-07-16T09:30:00.000Z',
       );
     });
 
+    expect(mockedInsert.mock.calls[0][0]).not.toHaveProperty('note');
     expect(getCurrentDiet(result.current.events, 'kiwi')).toEqual([
       expect.objectContaining({ productName: 'Greenies Dental chew', foodType: 'snack' }),
     ]);
   });
 
-  it('persists and trims a custom event', async () => {
-    const { result } = renderHook(() => usePetEvents(), { wrapper });
-    await waitFor(() => expect(result.current.loadStatus).toBe('ready'));
+  it('trims a custom event and rejects an empty title without saving', async () => {
+    const { result } = await renderReady();
+
     await act(async () => {
-      await result.current.logOtherEvent(
-        'kiwi',
-        ' Started sleeping upstairs ',
-        ' Near the radiator. ',
-        '2026-07-16T09:30:00.000Z',
-      );
+      await result.current.logOtherEvent('kiwi', ' Upstairs ', '', '2026-07-16T09:30:00.000Z');
+      await expect(
+        result.current.logOtherEvent('kiwi', ' ', '', '2026-07-16T09:30:00.000Z'),
+      ).rejects.toThrow();
     });
-    expect(result.current.events[0]).toMatchObject({
-      petId: 'kiwi',
-      type: 'other',
-      title: 'Started sleeping upstairs',
-      note: 'Near the radiator.',
-    });
+
+    expect(mockedInsert).toHaveBeenCalledTimes(1);
+    expect(result.current.events[0]).toMatchObject({ type: 'other', title: 'Upstairs' });
   });
 
-  it('persists deletion before removing an event from state', async () => {
-    const { result } = renderHook(() => usePetEvents(), { wrapper });
-    await waitFor(() => expect(result.current.loadStatus).toBe('ready'));
+  it('keeps the list unchanged when a new event is not saved', async () => {
+    const { result } = await renderReady();
+    mockedInsert.mockRejectedValueOnce(new Error('offline'));
+
     await act(async () => {
-      await result.current.logSymptom('kiwi', 'Asthma', 'Keep.', '2026-07-16T09:30:00.000Z');
+      await expect(
+        result.current.logSymptom('kiwi', 'Asthma', '', '2026-07-16T09:30:00.000Z'),
+      ).rejects.toThrow('offline');
     });
-    const event = result.current.events[0];
-    await act(async () => result.current.deleteEvent(event.id));
+
     expect(result.current.events).toEqual([]);
-    await expect(mockedStorage.getItem(storageKey)).resolves.toBe('[]');
   });
 
-  it('retains state when deletion persistence fails', async () => {
-    const { result } = renderHook(() => usePetEvents(), { wrapper });
-    await waitFor(() => expect(result.current.loadStatus).toBe('ready'));
-    await act(async () => {
-      await result.current.logSymptom('kiwi', 'Asthma', 'Keep.', '2026-07-16T09:30:00.000Z');
+  it('deletes one record and keeps the event when the delete fails', async () => {
+    const event = stored({
+      petId: 'kiwi',
+      type: 'symptom',
+      symptom: 'Asthma',
+      occurredAt: '2026-07-16T09:30:00.000Z',
     });
-    const event = result.current.events[0];
-    mockedStorage.setItem.mockRejectedValueOnce(new Error('disk full'));
+    mockedLoad.mockResolvedValue([event]);
+    const { result } = await renderReady();
+
+    mockedDelete.mockRejectedValueOnce(new Error('offline'));
     await act(async () => {
-      await expect(result.current.deleteEvent(event.id)).rejects.toBeInstanceOf(
-        PetEventStorageError,
-      );
+      await expect(result.current.deleteEvent(event.id)).rejects.toThrow('offline');
     });
     expect(result.current.events).toEqual([event]);
     expect(result.current.deletingEventId).toBeNull();
+
+    await act(async () => result.current.deleteEvent(event.id));
+    expect(mockedDelete).toHaveBeenLastCalledWith(event.id);
+    expect(result.current.events).toEqual([]);
   });
 
-  it('persists timestamp updates and retains the original on failure', async () => {
-    const { result } = renderHook(() => usePetEvents(), { wrapper });
-    await waitFor(() => expect(result.current.loadStatus).toBe('ready'));
-    await act(async () => {
-      await result.current.logSymptom('kiwi', 'Asthma', '', '2026-07-16T09:30:00.000Z');
+  it('saves a new time for one event and keeps the stored one on failure', async () => {
+    const event = stored({
+      petId: 'kiwi',
+      type: 'symptom',
+      symptom: 'Asthma',
+      occurredAt: '2026-07-16T09:30:00.000Z',
     });
-    const event = result.current.events[0];
+    mockedLoad.mockResolvedValue([event]);
+    const { result } = await renderReady();
+
     await act(async () => {
       await result.current.updateEventOccurredAt(event.id, '2026-07-17T10:45:00.000Z');
     });
+    expect(mockedUpdate).toHaveBeenCalledWith({ ...event, occurredAt: '2026-07-17T10:45:00.000Z' });
     expect(result.current.events[0].occurredAt).toBe('2026-07-17T10:45:00.000Z');
 
-    mockedStorage.setItem.mockRejectedValueOnce(new Error('disk full'));
+    mockedUpdate.mockRejectedValueOnce(new Error('offline'));
     await act(async () => {
       await expect(
         result.current.updateEventOccurredAt(event.id, '2026-07-18T10:45:00.000Z'),
-      ).rejects.toBeInstanceOf(PetEventStorageError);
+      ).rejects.toThrow('offline');
     });
     expect(result.current.events[0].occurredAt).toBe('2026-07-17T10:45:00.000Z');
+    expect(result.current.updatingEventId).toBeNull();
   });
 
-  it('persists event edits and keeps the saved event when persistence fails', async () => {
-    const { result } = renderHook(() => usePetEvents(), { wrapper });
-    await waitFor(() => expect(result.current.loadStatus).toBe('ready'));
-    await act(async () => {
-      await result.current.logSymptom('kiwi', 'Asthma', 'Keep.', '2026-07-16T09:30:00.000Z');
+  it('saves only the events an edit touched, and keeps those saved when a later one fails', async () => {
+    const kibble = { id: 'item-1', productName: 'Royal Kanin', foodType: 'dry-food' as const };
+    const added = stored({
+      petId: 'kiwi',
+      type: 'diet-change',
+      change: { type: 'add', item: kibble },
+      occurredAt: '2026-07-01T08:00:00.000Z',
     });
-    const event = result.current.events[0];
-    const edit = {
-      type: 'symptom' as const,
-      symptom: 'Hairball' as const,
-      note: 'Corrected.',
-      occurredAt: event.occurredAt,
-    };
-
-    await act(async () => result.current.updateEvent(event.id, edit));
-    expect(result.current.events[0]).toMatchObject({ symptom: 'Hairball', note: 'Corrected.' });
-    expect(JSON.parse((await mockedStorage.getItem(storageKey)) ?? '[]')[0]).toMatchObject({
-      symptom: 'Hairball',
+    const symptom = stored({
+      petId: 'kiwi',
+      type: 'symptom',
+      symptom: 'Asthma',
+      occurredAt: '2026-07-05T08:00:00.000Z',
     });
+    const stopped = stored({
+      petId: 'kiwi',
+      type: 'diet-change',
+      change: { type: 'remove', item: kibble },
+      occurredAt: '2026-07-10T08:00:00.000Z',
+    });
+    mockedLoad.mockResolvedValue([stopped, symptom, added]);
+    const { result } = await renderReady();
+    mockedUpdate
+      .mockImplementationOnce(async (event) => event)
+      .mockRejectedValueOnce(new Error('offline'));
 
-    const saved = result.current.events[0];
-    mockedStorage.setItem.mockRejectedValueOnce(new Error('disk full'));
     await act(async () => {
       await expect(
-        result.current.updateEvent(event.id, { ...edit, symptom: 'Nausea' }),
-      ).rejects.toBeInstanceOf(PetEventStorageError);
+        result.current.updateEvent(added.id, {
+          type: 'diet-change',
+          item: { productName: 'Royal Canin', foodType: 'dry-food' },
+          note: '',
+          occurredAt: added.occurredAt,
+        }),
+      ).rejects.toThrow('offline');
     });
-    expect(result.current.events[0]).toEqual(saved);
+
+    expect(mockedUpdate.mock.calls.map(([event]) => event.id)).toEqual([added.id, stopped.id]);
+    expect(result.current.events).toEqual([
+      stopped,
+      symptom,
+      expect.objectContaining({
+        id: added.id,
+        change: { type: 'add', item: { ...kibble, productName: 'Royal Canin' } },
+      }),
+    ]);
     expect(result.current.updatingEventId).toBeNull();
+  });
+
+  it('loads again for a different user instead of showing the previous events', async () => {
+    const event = stored({
+      petId: 'kiwi',
+      type: 'symptom',
+      symptom: 'Asthma',
+      occurredAt: '2026-07-16T09:30:00.000Z',
+    });
+    mockedLoad.mockResolvedValueOnce([event]).mockResolvedValueOnce([]);
+    const { result, rerender } = await renderReady();
+    expect(result.current.events).toEqual([event]);
+
+    signInAs('sam');
+    rerender({});
+
+    expect(result.current.loadStatus).toBe('loading');
+    expect(result.current.events).toEqual([]);
+    await waitFor(() => expect(result.current.loadStatus).toBe('ready'));
+    expect(mockedLoad).toHaveBeenCalledTimes(2);
+  });
+
+  it('reports a failed load and loads again on retry', async () => {
+    mockedLoad.mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce([]);
+    const { result } = renderHook(() => usePetEvents(), { wrapper });
+    await waitFor(() => expect(result.current.loadStatus).toBe('error'));
+
+    act(() => result.current.retryLoad());
+
+    await waitFor(() => expect(result.current.loadStatus).toBe('ready'));
   });
 });

@@ -13,7 +13,7 @@ import type {
   SavePetProfileResult,
 } from '@/modules/pets/profile/savePetProfile';
 
-type PetProfileInput = Omit<SavePetProfileInput, 'pets'>;
+type PetProfileInput = Omit<SavePetProfileInput, 'pets' | 'householdId'>;
 
 type UsePetProfileFormInput = {
   onSubmit: (input: PetProfileInput) => Promise<SavePetProfileResult>;

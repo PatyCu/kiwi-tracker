@@ -2,7 +2,7 @@ import { applyPetEventEdit } from '@/modules/pet-events/application/applyPetEven
 import { getCurrentDiet } from '@/modules/pet-events/model/getCurrentDiet';
 import { PetEvent } from '@/modules/pet-events/model/PetEvent';
 
-const recordedAt = '2026-07-01T08:00:00.000Z';
+const createdAt = '2026-07-01T08:00:00.000Z';
 const kibble = { id: 'item-1', productName: 'Royal Kanin', foodType: 'dry-food' as const };
 
 const events: PetEvent[] = [
@@ -13,7 +13,7 @@ const events: PetEvent[] = [
     symptom: 'Vomiting',
     note: 'After breakfast.',
     occurredAt: '2026-07-02T08:00:00.000Z',
-    recordedAt,
+    createdAt,
   },
   {
     id: 'other-1',
@@ -21,7 +21,7 @@ const events: PetEvent[] = [
     type: 'other',
     title: 'Moved house',
     occurredAt: '2026-07-03T08:00:00.000Z',
-    recordedAt,
+    createdAt,
   },
   {
     id: 'diet-add',
@@ -29,7 +29,7 @@ const events: PetEvent[] = [
     type: 'diet-change',
     change: { type: 'add', item: kibble },
     occurredAt: '2026-07-04T08:00:00.000Z',
-    recordedAt,
+    createdAt,
   },
   {
     id: 'diet-remove',
@@ -37,7 +37,7 @@ const events: PetEvent[] = [
     type: 'diet-change',
     change: { type: 'remove', item: kibble },
     occurredAt: '2026-07-10T08:00:00.000Z',
-    recordedAt,
+    createdAt,
   },
 ];
 
@@ -93,6 +93,20 @@ describe('applyPetEventEdit', () => {
     expect(getCurrentDiet(next, 'kiwi', new Date('2026-07-05T00:00:00.000Z'))).toEqual([corrected]);
   });
 
+  it('returns the events it did not change as the same objects', () => {
+    const next = applyPetEventEdit(events, 'diet-add', {
+      type: 'diet-change',
+      item: { productName: 'Royal Canin', foodType: 'dry-food' },
+      note: '',
+      occurredAt: events[2].occurredAt,
+    });
+
+    expect(next[0]).toBe(events[0]);
+    expect(next[1]).toBe(events[1]);
+    expect(next[2]).not.toBe(events[2]);
+    expect(next[3]).not.toBe(events[3]);
+  });
+
   it('keeps the stopped item fixed when editing a removal', () => {
     const next = applyPetEventEdit(events, 'diet-remove', {
       type: 'diet-change',
@@ -106,7 +120,7 @@ describe('applyPetEventEdit', () => {
   });
 
   it('rejects a missing event or an edit for another event type', () => {
-    const edit = { type: 'other' as const, title: 'X', note: '', occurredAt: recordedAt };
+    const edit = { type: 'other' as const, title: 'X', note: '', occurredAt: createdAt };
 
     expect(() => applyPetEventEdit(events, 'missing', edit)).toThrow('Pet event not found.');
     expect(() => applyPetEventEdit(events, 'symptom-1', edit)).toThrow();
