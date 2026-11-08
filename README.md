@@ -70,5 +70,6 @@ npm test
 - Trunk-based development: scoped changes go to `main` unless a branch is
   requested.
 - Bugs are P0 — fix open bugs before new feature work.
-- The roadmap and known issues live in the project's feature tracker, not in
-  GitHub Issues or Projects.
+- The roadmap and known issues live in
+  [Linear](https://linear.app/patycu-projects/project/kiwi-tracker-76056a1b09ae),
+  not in GitHub Issues or Projects.

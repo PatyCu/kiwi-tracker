@@ -1,97 +1,73 @@
 ---
 name: sync-feature-tracker
-description: Sync the Kiwi Tracker roadmap artifact (features by phase, plus bugs) with the current code. Use when AGENTS.md calls for a tracker sync or a bug to be logged, or when asked to "sync the feature tracker".
+description: Sync the Kiwi Tracker roadmap and bug list in Linear (features by phase, their tasks, and bugs) with the current code. Use when AGENTS.md calls for a tracker sync or a bug to be logged, when starting work on a feature, or when asked to "sync the feature tracker".
 ---
 
 # Sync the feature tracker
 
-The feature tracker is a claude.ai artifact and the project's only roadmap and bug list. GitHub Issues and GitHub Projects are not used.
+The feature tracker is Linear, and it's the project's only roadmap and bug list. GitHub Issues and GitHub Projects are not used.
 
-https://claude.ai/artifact/RjuCdkFiaYjE28hAKyUR3Z
+- Workspace **PatyCu Projects**, team **Kiwi Tracker** (key `KIW`), project **Kiwi Tracker**: https://linear.app/patycu-projects/project/kiwi-tracker-76056a1b09ae
+- Read and write it with the Linear connector tools (`list_issues`, `get_issue`, `save_issue`). Pass `team: "Kiwi Tracker"` and `project: "Kiwi Tracker"` on every new issue.
 
-Its records live in the artifact's database. Update them with the `ArtifactData` tool. Do not republish the page to change records.
+## How the tracker is organized
 
-## Data shape
+Every feature, task and bug is an issue in the Kiwi Tracker project.
 
-- Collection `features`, one document per feature:
-  `{ area, areaOrder, order, status, phase, priority?, name, note?, tasks? }`
-  - `note`: one or two sentences on what the feature is. Not a place for the work plan.
-  - `tasks`: the breakdown, as `[{ name, done }]` in delivery order. Give every feature that needs more than one piece of work a task list, and tick tasks off as they land. The page shows it as a checklist.
-  - `status`, in sort order within each phase (the page folds `done` rows into a collapsible "N done" group at the top of the phase):
-    - `"done"`: Done.
-    - `"in-progress"`: In progress. Work on it has started and isn't finished.
-    - `"partial"`: Ready for development. A placeholder or a partial version is already in the app.
-    - `"missing"`: To-do. Nothing in the app yet.
-  - `phase`: `"Engineering Roadmap"` (engineering work, shown in its own section after bugs), `"MVP - Foundation"`, `"MVP - UX Improvements"`, `"MVP - Free features"`, `"Premium v1"`, `"Premium v2"` or `"Unplanned"`.
-  - `priority`: `"P0"`, `"P1"` or `"P2"`; left out for Unplanned rows.
-  - Areas and their `areaOrder`: Pets 1, Event logging 2, Timeline 3, Health status 4, Care and scheduling 5, Insights and sharing 6, App and platform 7, Accounts and sharing 8, UX and UI 9 (MVP - UX Improvements rows), Engineering 10 (Engineering Roadmap rows). Add a new area with the next number only when no existing area fits.
-  - Document ids are kebab-case with an area prefix, for example `care-reminders`.
-- Collection `bugs`, one document per bug:
-  `{ title, status, reportedAt, fixedAt?, fixedIn?, note? }`
-  - `status`: `"open"` or `"fixed"`. Open bugs are always P0.
-  - `fixedIn` is the short commit hash of the fix.
-  - Document ids are kebab-case with a `bug-` prefix.
-- Document `meta/sync`: `{ commit, syncedAt }`.
-
-## Page colors
-
-Colors on the page carry meaning. Keep them consistent when changing the page or adding a new status, label or record type.
-
-| Color            | Meaning                    | Used for               |
-| ---------------- | -------------------------- | ---------------------- |
-| Green            | Finished, healthy          | Done; "No open bugs"   |
-| Dark solid (ink) | Active work                | In progress            |
-| Blue             | Neutral, ready to pick up  | Ready for development  |
-| Purple           | Neutral, not started       | To-do                  |
-| Red              | Critical, needs action now | Open bugs only         |
-| Orange-yellow    | Urgent or a warning        | Reserved; not used yet |
-
-- Red and orange-yellow are only for bugs and urgent or critical items. Never use them for normal roadmap statuses.
-- When something urgent is added later (for example an "urgent" priority, a blocker or a regression), use red if it needs action now and orange-yellow if it is a warning or needs attention soon.
-- Any other new state gets a color that isn't in this table, and a new row here.
-
-The page source isn't in this repo. To change the page, read the artifact with the `Artifact` tool (`action: "read"`), edit that version, and republish it to the same URL.
+- **Feature**: a top-level issue with the `Feature` label and one `Area` label.
+  - Title: the feature's name. Description: one or two sentences on what it is, not the work plan.
+  - Tasks: a feature that needs more than one piece of work gets one sub-issue per task, in delivery order, with the same milestone and priority as the feature. Sub-issues get no labels.
+- **Bug**: an issue with the `Bug` label, priority Urgent and no milestone. The description says what happens and, once fixed, `Fixed in <short commit hash>.`
+- **Phase**: the issue's milestone, in this order: Engineering Roadmap, MVP - Foundation, MVP - UX Improvements, MVP - Free features, Premium v1, Premium v2. A feature with no milestone is Unplanned.
+- **Area**: a label in the `Area` group: Pets, Event logging, Timeline, Health status, Care and scheduling, Insights and sharing, App and platform, Accounts and sharing, UX and UI (MVP - UX Improvements rows), Engineering (Engineering Roadmap rows). Add a new area label only when no existing one fits.
+- **Priority**: P0 is High, P1 is Medium, P2 is Low. Unplanned and MVP - UX Improvements rows have no priority until the developer sets one. Urgent is only for bugs.
+- **Status**:
+  - Done: finished.
+  - In Progress: work has started and isn't finished.
+  - Todo: ready for development; a placeholder or a partial version is already in the app.
+  - Backlog: nothing in the app yet.
+  - Canceled: deliberately dropped.
+- **Last sync**: the project description's `Last synced at commit <hash>.` line.
 
 ## Who owns which fields
 
-- **From the code** (the sync updates these): feature `status`, `note` and each task's `done`, and bug `status`, `fixedAt` and `fixedIn`.
-- **Set by the developer** (never changed by the sync unless the developer asks): `phase` and `priority`.
+- **From the code** (the sync updates these): status of features, tasks and bugs; feature descriptions; a bug's `Fixed in` line.
+- **Set by the developer** (never changed by the sync unless the developer asks): milestone and priority.
 
 ## Steps
 
-1. Read the current records: `ArtifactData` `list` on `features` and `bugs` (use `query.limit: 1000`), and `get` on `meta/sync`. Keep each document's `version`.
+1. Read the project's issues with `list_issues` (`project: "Kiwi Tracker"`, `limit: 250`, follow `cursor` while `hasNextPage`), and the last-synced commit from the project description (`get_project`).
 2. Work out what the code supports now. Look at:
    - Routes in `src/app` and screens in `src/modules/*/ui`
    - Domain models (`PetEvent.ts`, `Pet.ts`) and the operations exposed by the providers in `src/modules/*/state`
    - Remaining placeholders: `PlaceholderScreen`, `PlaceholderCard`, and "Coming soon" text
-   - `git log` since the commit in `meta/sync`
-3. Compare the code with the records:
-   - A feature that changed state gets a new `status`, its finished tasks ticked, and its `note` updated if needed.
-   - A new capability that matches no row gets a new row with `phase: "Unplanned"`. Ask the developer which phase and priority it belongs to.
-   - Never delete a row just because you didn't find its code. Delete it only when the feature was deliberately dropped, and say so.
-   - A bug fixed in this work gets `status: "fixed"`, `fixedAt` and `fixedIn`.
-4. Write every change in one `ArtifactData` `batch`. Pin each existing document with its `if_version`. Set `meta/sync` `commit` to `git rev-parse --short HEAD` and `syncedAt` to the current ISO time.
-5. Tell the developer in a short list what changed (rows added, status changes, rows removed, bugs fixed) and give the tracker link.
+   - `git log` since the last-synced commit
+3. Compare the code with the issues:
+   - A feature that changed state gets a new status, its finished tasks set to Done, and its description updated if needed.
+   - A new capability that matches no issue gets a new feature with no milestone and no priority. Ask the developer which phase and priority it belongs to.
+   - Never cancel an issue just because you didn't find its code. Cancel it only when the feature was deliberately dropped, and say so.
+   - A bug fixed in this work gets status Done and its `Fixed in` line.
+4. Make each change with `save_issue`, passing only the fields that change. Then set the project description's `Last synced at commit` line to `git rev-parse --short HEAD` with `save_project` (`patch`).
+5. Tell the developer in a short list what changed (issues added, status changes, issues canceled, bugs fixed) with their `KIW-` identifiers and the project link.
 
 ## Picking the next item
 
-The order the page shows rows in is the priority order. Open bugs come first. After that, the next item is the first unfinished row in the earliest phase (Engineering Roadmap, MVP - Foundation, MVP - UX Improvements, MVP - Free features, Premium v1, Premium v2), where rows are sorted by:
+Open bugs come first. After that, the next item is the first unfinished feature in the earliest milestone (Engineering Roadmap before the product phases), sorted by:
 
-1. `priority` (P0 before P1 before P2)
-2. `status` in page order: `in-progress`, `partial`, `missing`
-3. `areaOrder`
-4. `order`
+1. Priority (High, then Medium, then Low)
+2. Status: In Progress, then Todo, then Backlog
+3. Issue number (lowest first)
 
-Don't suggest Unplanned rows unless the developer asks. When the developer names a different item, do that one.
+Don't suggest Unplanned features unless the developer asks. When the developer names a different item, do that one.
 
 ## Starting work on a feature
 
-When you start building a feature, set its row to `"in-progress"`. When the work is finished, the sync sets it to `"done"`, or back to `"partial"` if only part of it landed.
+When you start building a feature, set it to In Progress. When the work is finished, the sync sets it to Done, or to Todo if only part of it landed.
 
 ## Logging a bug
 
-When a bug is found, add it to `bugs` right away with `status: "open"` and `reportedAt` set to now, unless the fix lands in the same change (then add it as fixed). The developer can also log bugs and mark them fixed from the page, and add MVP - UX Improvements items from that phase's form (they arrive as To-do with no priority).
+When a bug is found, create it right away: `Bug` label, priority Urgent, status Todo, title saying what goes wrong, description with what happens and where it was found. If the fix lands in the same change, create it as Done with its `Fixed in` line. The developer also logs bugs and new items directly in Linear; treat those like any other issue.
 
 ## When the tracker can't be updated
 
-If this environment has no `ArtifactData` tool, or the write fails, don't block the work. Tell the developer that the tracker is out of date and which records should change.
+If this environment has no Linear connector, or a write fails, don't block the work. Tell the developer that the tracker is out of date and which issues should change.

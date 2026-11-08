@@ -9,9 +9,9 @@ Writes the prompt for the agent that picks up the next task. The developer revie
 
 ## 1. Find the next task
 
-Read the tracker records with `ArtifactData` `list` on `features` and `bugs` (see `.claude/skills/sync-feature-tracker/SKILL.md` for the tracker and its data shape). Don't change any records.
+Read the tracker's issues in Linear (see `.claude/skills/sync-feature-tracker/SKILL.md` for how it's organized). Don't change any issues.
 
-- If this session worked on a feature that still has unchecked tasks, the next task is its first unchecked one. Skip tasks this session already finished, even if the tracker hasn't been synced yet.
+- If this session worked on a feature that still has unfinished task sub-issues, the next task is its first unfinished one. Skip tasks this session already finished, even if the tracker hasn't been synced yet.
 - Otherwise, pick the next item as "Picking the next item" in the tracker skill describes.
 
 If the work from this session isn't on `main` yet (an unmerged PR or uncommitted changes), say so to the developer above the prompt.
