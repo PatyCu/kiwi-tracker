@@ -27,11 +27,18 @@
 
 ## Data
 
-- The app remains local-first.
-- Persisted schemas and storage keys remain backward-compatible.
-- Storage modules expose typed inputs, outputs, and failures.
+- The app is online-only: pets, events, and pet photos live in Supabase, shared per household. Data from the earlier on-device version was not imported.
+- The device keeps only the Supabase session (AsyncStorage, localStorage on web) and, on iOS, a cache of pet photos for the signed-in account that sign-out clears.
+- Schema changes go through migrations and keep existing rows readable.
+- Persistence modules expose typed inputs, outputs, and failures.
 - Storage failures must not silently discard user data.
 - Only persistence modules use the Supabase client (`src/shared/supabase`); lint enforces this.
+
+## Loading data
+
+- The root layout (`src/app/_layout.tsx`) waits for the household: it shows a loading screen while the household loads, and an error with Retry if that fails. That Retry also reloads any pets or events that failed with it.
+- Screens with household data show `LoadState` (`src/shared/ui/LoadState.tsx`) until their data is ready.
+- Screens that show both pets and events use `usePetsAndEventsLoad` (`src/modules/pet-events/state/usePetsAndEventsLoad.ts`); its Retry reloads only what failed.
 
 ## Navigation and product scope
 

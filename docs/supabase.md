@@ -1,10 +1,9 @@
 # Supabase backend
 
-Kiwi Tracker has a [Supabase](https://supabase.com) backend schema in which
-each household shares its pets, events and pet photos. The app uses Supabase
-Auth to sign in and shows the signed-in user's household alias on Today, Pets
-and Settings, plus its members by name in Settings, but pets and events are
-still stored on the device.
+Kiwi Tracker stores its data in [Supabase](https://supabase.com): each
+household shares its pets, events and pet photos. The app uses Supabase Auth to
+sign in and shows the signed-in user's household alias on Today, Pets and
+Settings, plus its members by name in Settings.
 
 The schema lives in `supabase/migrations/` and is the source of truth. You
 develop against a local Supabase stack. The shared cloud project

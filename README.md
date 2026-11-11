@@ -4,21 +4,21 @@ A mobile-first pet care and health tracker for iOS and web. Log symptoms, diet
 changes and other events per pet, and see an at-a-glance health status across
 all your pets.
 
-> Status: prototype (local-first).
+> Status: prototype (online-only).
 
 ## Tech stack
 
 Expo, React Native, TypeScript and Expo Router, with strict TypeScript and the
 `@/` import alias. People sign in with an email and password through Supabase
-Auth; pets and events are still stored on the device, not per account.
+Auth, and each household's pets, events and pet photos are stored in Supabase.
+The app needs a connection to load or save them.
 
 ## Project structure
 
 - `src/app` — Expo Router routes and layouts only.
 - `src/modules` — product capabilities, grouped by domain.
 - `src/shared` — cross-module UI, theme, dates and platform adapters.
-- `supabase` — backend schema and local stack configuration. The app signs in
-  with Supabase but doesn't store data there yet; see
+- `supabase` — backend schema, seed and local stack configuration; see
   [docs/supabase.md](docs/supabase.md).
 
 Dependency direction is `app → modules → shared`. See

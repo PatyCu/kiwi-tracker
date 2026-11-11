@@ -9,7 +9,7 @@
 ## Project context
 
 - This is a mobile-first pet health tracker built with Expo, React Native, TypeScript, and Expo Router.
-- Keep the app local-first unless a task explicitly introduces accounts, sharing, or multi-device sync.
+- The app is online-only: each household's pets, events, and photos live in Supabase (see `docs/supabase.md`).
 - Preserve strict TypeScript and the existing `@/` import alias.
 
 ## Engineering principles
