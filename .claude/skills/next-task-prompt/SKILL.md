@@ -26,7 +26,7 @@ Write in first person, as the developer ("I want to…", "We decided…"). Keep 
 - What was deliberately left for this task or for later, so it isn't redone or pulled in early.
 - Pointers to the relevant files, docs or artifacts instead of copying their content.
 
-This session's context is why the prompt is written here, so pass on what the next task needs from it, and only that: for each line, ask whether the next agent would do something different without it. Leave out context that only mattered for this session's task, such as pitfalls or exclusions about work the next task doesn't touch. Base "done" on the tracker issue; if you think it needs more scope than the issue says, tell the developer outside the prompt.
+This session's context is why the prompt is written here, so pass on what the next task needs from it, and only that: for each line, ask whether the next agent would lose real time or go the wrong way without it. Leave out context that only mattered for this session's task, such as pitfalls or exclusions about work the next task doesn't touch. Base "done" on the tracker issue; if you think it needs more scope than the issue says, tell the developer outside the prompt.
 
 Leave out anything the next agent does anyway: reading `AGENTS.md`, following repo rules, running checks, syncing the tracker. The prompt carries the developer's approval, so write requested actions as approved and never add "ask me first" for something the prompt asks for. Add a stop-and-ask only for a decision the prompt really leaves open.
 
