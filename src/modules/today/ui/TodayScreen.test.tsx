@@ -1,4 +1,4 @@
-import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import { ReactNode } from 'react';
 import { StyleSheet } from 'react-native';
 
@@ -118,6 +118,33 @@ describe('Today screen', () => {
     expect(screen.queryByText('Last 24 hours')).toBeNull();
     expect(screen.queryByText('Recent updates')).toBeNull();
     expect(screen.queryByLabelText('Quick log')).toBeNull();
+  });
+
+  it('shows a loading state, not the empty state, until pets and events have loaded', async () => {
+    let finishEvents: (events: PetEvent[]) => void = () => undefined;
+    mockedLoadEvents.mockReturnValue(new Promise((resolve) => (finishEvents = resolve)));
+    mockedLoadPets.mockResolvedValue([]);
+
+    const screen = render(<TodayScreen />, { wrapper: Providers });
+
+    await waitFor(() => expect(mockedLoadPets).toHaveBeenCalled());
+    expect(screen.getByLabelText('Loading')).toBeTruthy();
+    expect(screen.queryByText('No pets yet')).toBeNull();
+    await act(async () => finishEvents([]));
+    expect(screen.getByText('No pets yet')).toBeTruthy();
+  });
+
+  it('shows an error after a failed load and retries only what failed', async () => {
+    mockedLoadEvents.mockRejectedValueOnce(new Error('offline'));
+
+    const screen = render(<TodayScreen />, { wrapper: Providers });
+
+    await waitFor(() => expect(screen.getByText('Could not load your data')).toBeTruthy());
+    fireEvent.press(screen.getByText('Retry'));
+
+    await waitFor(() => expect(screen.getByText('Today with Kiwi')).toBeTruthy());
+    expect(mockedLoadEvents).toHaveBeenCalledTimes(2);
+    expect(mockedLoadPets).toHaveBeenCalledTimes(1);
   });
 
   it('adds the first pet from the empty state when the household has none yet', async () => {

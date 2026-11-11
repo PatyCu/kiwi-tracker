@@ -27,12 +27,17 @@ const HouseholdContext = createContext<HouseholdContextValue | null>(null);
 // One shared object, so the context value only changes when the state does.
 const LOADING: HouseholdState = { status: 'loading' };
 
-/** Loads the signed-in user's household once, and again when a different user signs in. */
+/** Loads the signed-in user's household when they sign in, and again for each new user or retry. */
 export function HouseholdProvider({ children }: { children: ReactNode }) {
   const { session } = useSession();
   const userId = session.status === 'signed-in' ? session.user.id : null;
-  const [loaded, setLoaded] = useState<{ userId: string; household: HouseholdState } | null>(null);
   const [attempt, setAttempt] = useState(0);
+  // Keyed by user and attempt, so a new user or a retry shows loading, never stale data.
+  const [loaded, setLoaded] = useState<{
+    userId: string;
+    attempt: number;
+    household: HouseholdState;
+  } | null>(null);
 
   useEffect(() => {
     if (!userId) return;
@@ -44,14 +49,15 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
         (): HouseholdState => ({ status: 'error' }),
       )
       .then((household) => {
-        if (current) setLoaded({ userId, household });
+        if (current) setLoaded({ userId, attempt, household });
       });
     return () => {
       current = false;
     };
   }, [userId, attempt]);
 
-  const household: HouseholdState = loaded && loaded.userId === userId ? loaded.household : LOADING;
+  const household: HouseholdState =
+    loaded && loaded.userId === userId && loaded.attempt === attempt ? loaded.household : LOADING;
   const retryLoad = useCallback(() => setAttempt((count) => count + 1), []);
   const value = useMemo(() => ({ household, retryLoad }), [household, retryLoad]);
 

@@ -66,6 +66,19 @@ describe('HouseholdProvider', () => {
     );
   });
 
+  it('shows loading again while a retry after a failed load runs', async () => {
+    mockedLoad.mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce(alexsHome);
+    const { result } = renderHook(() => useHousehold(), { wrapper });
+    await waitFor(() => expect(result.current.household).toEqual({ status: 'error' }));
+
+    act(() => result.current.retryLoad());
+
+    expect(result.current.household).toEqual({ status: 'loading' });
+    await waitFor(() =>
+      expect(result.current.household).toEqual({ status: 'ready', ...alexsHome }),
+    );
+  });
+
   it('loads again for a different user instead of showing the previous household', async () => {
     mockedLoad
       .mockResolvedValueOnce(alexsHome)

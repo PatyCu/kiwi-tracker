@@ -7,6 +7,7 @@ import { usePets } from '@/modules/pets/state/PetsProvider';
 import { usePetProfileForms } from '@/modules/pets/state/PetProfileFormsProvider';
 import { PetAvatar } from '@/modules/pets/ui/PetAvatar';
 import { Palette } from '@/shared/theme/palette';
+import { LoadState } from '@/shared/ui/LoadState';
 import { PlaceholderCard } from '@/shared/ui/PlaceholderCard';
 import { Screen } from '@/shared/ui/Screen';
 import { ScreenHeader } from '@/shared/ui/ScreenHeader';
@@ -15,9 +16,16 @@ export function PetProfileScreen() {
   const { petId } = useLocalSearchParams<{ petId: string }>();
   const { colors } = useAppearance();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { pets } = usePets();
+  const { pets, loadStatus, retryLoad } = usePets();
   const { editPet } = usePetProfileForms();
   const pet = pets.find((item) => item.id === petId);
+  if (loadStatus !== 'ready')
+    return (
+      <Screen>
+        <ScreenHeader title="Profile" onBack={() => router.back()} />
+        <LoadState status={loadStatus} onRetry={retryLoad} />
+      </Screen>
+    );
   if (!pet)
     return (
       <Screen>

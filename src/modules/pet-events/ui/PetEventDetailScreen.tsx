@@ -6,10 +6,12 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAppearance } from '@/shared/theme/AppearanceProvider';
 import { usePetEventForms } from '@/modules/pet-events/state/PetEventFormsProvider';
 import { usePetEvents } from '@/modules/pet-events/state/PetEventsProvider';
+import { usePetsAndEventsLoad } from '@/modules/pet-events/state/usePetsAndEventsLoad';
 import { toTimelineEntries } from '@/modules/pet-events/timeline/toTimelineEntries';
 import { usePets } from '@/modules/pets/state/PetsProvider';
 import { PetAvatar } from '@/modules/pets/ui/PetAvatar';
 import { Palette } from '@/shared/theme/palette';
+import { LoadState } from '@/shared/ui/LoadState';
 import { PlaceholderCard } from '@/shared/ui/PlaceholderCard';
 import { Screen } from '@/shared/ui/Screen';
 import { ScreenHeader } from '@/shared/ui/ScreenHeader';
@@ -20,6 +22,7 @@ export function PetEventDetailScreen() {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { pets } = usePets();
   const { events } = usePetEvents();
+  const { loadStatus, retryLoad } = usePetsAndEventsLoad();
   const forms = usePetEventForms();
   const pet = pets.find((item) => item.id === petId);
   const entry = toTimelineEntries(
@@ -30,6 +33,13 @@ export function PetEventDetailScreen() {
     colors.muted,
     new Date(),
   ).find((item) => item.id === recordId);
+  if (loadStatus !== 'ready')
+    return (
+      <Screen>
+        <ScreenHeader title="Event detail" onBack={() => router.back()} />
+        <LoadState status={loadStatus} onRetry={retryLoad} />
+      </Screen>
+    );
   if (!pet || !entry)
     return (
       <Screen>

@@ -4,37 +4,31 @@ import { StyleSheet, View } from 'react-native';
 import { useAppearance } from '@/shared/theme/AppearanceProvider';
 import { useHouseholdAlias } from '@/modules/households/state/useHouseholdAlias';
 import { usePetEvents } from '@/modules/pet-events/state/PetEventsProvider';
+import { usePetsAndEventsLoad } from '@/modules/pet-events/state/usePetsAndEventsLoad';
 import { usePets } from '@/modules/pets/state/PetsProvider';
 import { NoPetsCard } from '@/modules/pets/ui/NoPetsCard';
 import { buildTodayViewModel } from '@/modules/today/buildTodayViewModel';
 import { TodayCard } from '@/modules/today/ui/TodayCard';
 import { TodayQuickLogCard } from '@/modules/today/ui/TodayQuickLogCard';
-import { LoadError } from '@/shared/ui/LoadState';
+import { LoadState } from '@/shared/ui/LoadState';
 import { PlaceholderCard } from '@/shared/ui/PlaceholderCard';
 import { Screen } from '@/shared/ui/Screen';
 import { SectionHeader } from '@/shared/ui/SectionHeader';
 
 export function TodayScreen() {
   const { colors } = useAppearance();
-  const { pets, loadStatus: petsStatus, retryLoad: retryPets } = usePets();
-  const { events, loadStatus: eventsStatus, retryLoad: retryEvents } = usePetEvents();
+  const { pets } = usePets();
+  const { events } = usePetEvents();
+  const { loadStatus, retryLoad } = usePetsAndEventsLoad();
   const householdAlias = useHouseholdAlias();
 
-  if (petsStatus === 'error' || eventsStatus === 'error') {
+  if (loadStatus !== 'ready') {
     return (
       <Screen>
-        <LoadError
-          onRetry={() => {
-            retryPets();
-            retryEvents();
-          }}
-        />
+        <LoadState status={loadStatus} onRetry={retryLoad} />
       </Screen>
     );
   }
-
-  // Until both have loaded, an empty screen avoids showing "No pets yet" to a household with pets.
-  if (petsStatus === 'loading' || eventsStatus === 'loading') return <Screen>{null}</Screen>;
 
   if (pets.length === 0) {
     return (

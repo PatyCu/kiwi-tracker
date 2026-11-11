@@ -2,9 +2,11 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useAppearance } from '@/shared/theme/AppearanceProvider';
 import { usePetEventForms } from '@/modules/pet-events/state/PetEventFormsProvider';
 import { usePetEvents } from '@/modules/pet-events/state/PetEventsProvider';
+import { usePetsAndEventsLoad } from '@/modules/pet-events/state/usePetsAndEventsLoad';
 import { toTimelineEntries } from '@/modules/pet-events/timeline/toTimelineEntries';
 import { PetActivityCard } from '@/modules/pet-events/ui/PetActivityCard';
 import { usePets } from '@/modules/pets/state/PetsProvider';
+import { LoadState } from '@/shared/ui/LoadState';
 import { PlaceholderCard } from '@/shared/ui/PlaceholderCard';
 import { Screen } from '@/shared/ui/Screen';
 import { ScreenHeader } from '@/shared/ui/ScreenHeader';
@@ -14,8 +16,16 @@ export function PetTimelineScreen() {
   const { colors } = useAppearance();
   const { pets } = usePets();
   const { events, deletingEventId, updatingEventId } = usePetEvents();
+  const { loadStatus, retryLoad } = usePetsAndEventsLoad();
   const forms = usePetEventForms();
   const pet = pets.find((item) => item.id === petId);
+  if (loadStatus !== 'ready')
+    return (
+      <Screen>
+        <ScreenHeader title="Timeline" onBack={() => router.back()} />
+        <LoadState status={loadStatus} onRetry={retryLoad} />
+      </Screen>
+    );
   if (!pet)
     return (
       <Screen>

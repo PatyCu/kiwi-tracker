@@ -5,25 +5,21 @@ import { StyleSheet, View } from 'react-native';
 import { useAppearance } from '@/shared/theme/AppearanceProvider';
 import { usePetEventForms } from '@/modules/pet-events/state/PetEventFormsProvider';
 import { usePetEvents } from '@/modules/pet-events/state/PetEventsProvider';
+import { usePetsAndEventsLoad } from '@/modules/pet-events/state/usePetsAndEventsLoad';
 import { toGlobalTimelineEntries } from '@/modules/pet-events/timeline/toTimelineEntries';
 import { TimelineEvents } from '@/modules/pet-events/ui/TimelineEvents';
 import { usePets } from '@/modules/pets/state/PetsProvider';
 import { NoPetsCard } from '@/modules/pets/ui/NoPetsCard';
 import { Palette } from '@/shared/theme/palette';
-import { LoadError } from '@/shared/ui/LoadState';
+import { LoadState } from '@/shared/ui/LoadState';
 import { Screen } from '@/shared/ui/Screen';
 
 export function GlobalTimelineScreen() {
   const { colors } = useAppearance();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { pets, loadStatus: petsStatus, retryLoad: retryPets } = usePets();
-  const {
-    events,
-    loadStatus: eventsStatus,
-    deletingEventId,
-    updatingEventId,
-    retryLoad: retryEvents,
-  } = usePetEvents();
+  const { pets } = usePets();
+  const { events, deletingEventId, updatingEventId } = usePetEvents();
+  const { loadStatus, retryLoad } = usePetsAndEventsLoad();
   const forms = usePetEventForms();
   const now = new Date();
   const entries = toGlobalTimelineEntries(
@@ -35,21 +31,13 @@ export function GlobalTimelineScreen() {
     now,
   );
 
-  if (petsStatus === 'error' || eventsStatus === 'error') {
+  if (loadStatus !== 'ready') {
     return (
       <Screen>
-        <LoadError
-          onRetry={() => {
-            retryPets();
-            retryEvents();
-          }}
-        />
+        <LoadState status={loadStatus} onRetry={retryLoad} />
       </Screen>
     );
   }
-
-  // Until both have loaded, an empty screen avoids showing "No pets yet" to a household with pets.
-  if (petsStatus === 'loading' || eventsStatus === 'loading') return <Screen>{null}</Screen>;
 
   if (pets.length === 0) {
     return (

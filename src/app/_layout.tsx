@@ -1,6 +1,6 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AppearanceProvider, useAppearance } from '@/shared/theme/AppearanceProvider';
@@ -10,8 +10,10 @@ import { HouseholdProvider, useHousehold } from '@/modules/households/state/Hous
 import { NoHouseholdScreen } from '@/modules/households/ui/NoHouseholdScreen';
 import { PetEventFormsProvider } from '@/modules/pet-events/state/PetEventFormsProvider';
 import { PetEventsProvider } from '@/modules/pet-events/state/PetEventsProvider';
+import { usePetsAndEventsLoad } from '@/modules/pet-events/state/usePetsAndEventsLoad';
 import { PetProfileFormsProvider } from '@/modules/pets/state/PetProfileFormsProvider';
 import { PetsProvider } from '@/modules/pets/state/PetsProvider';
+import { LoadError, Loading } from '@/shared/ui/LoadState';
 
 export default function RootLayout() {
   return (
@@ -38,7 +40,8 @@ export default function RootLayout() {
 function RootStack() {
   const { colors, isDark } = useAppearance();
   const { session } = useSession();
-  const { household } = useHousehold();
+  const { household, retryLoad: retryHousehold } = useHousehold();
+  const { retryLoad: retryPetsAndEvents } = usePetsAndEventsLoad();
   const signedIn = session.status === 'signed-in';
 
   let content;
@@ -47,9 +50,27 @@ function RootStack() {
     content = <View style={{ flex: 1, backgroundColor: colors.bg }} />;
   } else if (session.status === 'unavailable') {
     content = <SignInUnavailableScreen message={session.message} />;
+  } else if (signedIn && household.status === 'loading') {
+    // Saving pets and the screen titles need the household, so wait for it.
+    content = (
+      <View style={[styles.centered, { backgroundColor: colors.bg }]}>
+        <Loading />
+      </View>
+    );
+  } else if (signedIn && household.status === 'error') {
+    content = (
+      <View style={[styles.centered, { backgroundColor: colors.bg }]}>
+        <LoadError
+          onRetry={() => {
+            // Whatever failed alongside the household loads again too, so one
+            // Retry is enough to open the app.
+            retryHousehold();
+            retryPetsAndEvents();
+          }}
+        />
+      </View>
+    );
   } else if (signedIn && household.status === 'missing') {
-    // Every account should belong to a household; while loading or after a
-    // network error the app opens and labels fall back to pet names.
     content = <NoHouseholdScreen />;
   } else {
     content = (
@@ -71,3 +92,7 @@ function RootStack() {
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  centered: { flex: 1, justifyContent: 'center', padding: 24 },
+});

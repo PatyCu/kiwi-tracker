@@ -1,9 +1,9 @@
 import { useHousehold } from '@/modules/households/state/HouseholdProvider';
 
 /**
- * The signed-in user's household alias for labels, or null while it loads or
- * when it can't be loaded; callers show a fallback then. Accounts without a
- * household never reach these screens (see NoHouseholdScreen).
+ * The signed-in user's household alias for labels, or null when there is no
+ * loaded household; callers show a fallback then. The app's screens only open
+ * once the household has loaded (see the root layout).
  */
 export function useHouseholdAlias(): string | null {
   const { household } = useHousehold();
