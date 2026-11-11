@@ -1,4 +1,5 @@
-import { useMemo, useRef } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -12,6 +13,7 @@ export function SignInScreen() {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const form = usePasswordSignInForm();
   const passwordInput = useRef<TextInput>(null);
+  const [passwordVisible, setPasswordVisible] = useState(false);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -42,21 +44,38 @@ export function SignInScreen() {
             style={styles.input}
           />
           <Text style={styles.label}>PASSWORD</Text>
-          <TextInput
-            ref={passwordInput}
-            accessibilityLabel="Password"
-            value={form.password}
-            onChangeText={form.setPassword}
-            onSubmitEditing={() => void form.submit()}
-            autoCapitalize="none"
-            autoComplete="current-password"
-            autoCorrect={false}
-            editable={!form.signingIn}
-            returnKeyType="go"
-            secureTextEntry
-            textContentType="password"
-            style={styles.input}
-          />
+          <View style={styles.passwordField}>
+            <TextInput
+              ref={passwordInput}
+              accessibilityLabel="Password"
+              value={form.password}
+              onChangeText={form.setPassword}
+              onSubmitEditing={() => void form.submit()}
+              autoCapitalize="none"
+              autoComplete="current-password"
+              autoCorrect={false}
+              editable={!form.signingIn}
+              returnKeyType="go"
+              secureTextEntry={!passwordVisible}
+              textContentType="password"
+              style={styles.passwordInput}
+            />
+            {/* The icon shows the current state: an open, tinted eye while the password is visible. */}
+            <Pressable
+              accessibilityLabel="Show password"
+              accessibilityRole="switch"
+              accessibilityState={{ checked: passwordVisible }}
+              hitSlop={8}
+              onPress={() => setPasswordVisible((visible) => !visible)}
+              style={styles.passwordToggle}
+            >
+              <Ionicons
+                name={passwordVisible ? 'eye-outline' : 'eye-off-outline'}
+                size={20}
+                color={passwordVisible ? colors.kiwi : colors.muted}
+              />
+            </Pressable>
+          </View>
           {form.error && (
             <Text accessibilityRole="alert" style={styles.error}>
               {form.error}
@@ -102,6 +121,17 @@ const makeStyles = (colors: Palette) =>
       color: colors.text,
       fontSize: 16,
     },
+    passwordField: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.surface2,
+      borderWidth: 1,
+      borderColor: colors.line,
+      borderRadius: 14,
+      minHeight: 50,
+    },
+    passwordInput: { flex: 1, padding: 14, color: colors.text, fontSize: 16 },
+    passwordToggle: { paddingHorizontal: 14, alignSelf: 'stretch', justifyContent: 'center' },
     error: { color: colors.coral, fontSize: 14, lineHeight: 20, marginTop: 12 },
     primaryButton: {
       backgroundColor: colors.kiwi,
