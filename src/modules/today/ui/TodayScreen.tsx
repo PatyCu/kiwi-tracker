@@ -4,8 +4,8 @@ import { StyleSheet, View } from 'react-native';
 import { useAppearance } from '@/shared/theme/AppearanceProvider';
 import { useHouseholdAlias } from '@/modules/households/state/useHouseholdAlias';
 import { usePetEvents } from '@/modules/pet-events/state/PetEventsProvider';
-import { usePetProfileForms } from '@/modules/pets/state/PetProfileFormsProvider';
 import { usePets } from '@/modules/pets/state/PetsProvider';
+import { NoPetsCard } from '@/modules/pets/ui/NoPetsCard';
 import { buildTodayViewModel } from '@/modules/today/buildTodayViewModel';
 import { TodayCard } from '@/modules/today/ui/TodayCard';
 import { TodayQuickLogCard } from '@/modules/today/ui/TodayQuickLogCard';
@@ -18,7 +18,6 @@ export function TodayScreen() {
   const { colors } = useAppearance();
   const { pets, loadStatus: petsStatus, retryLoad: retryPets } = usePets();
   const { events, loadStatus: eventsStatus, retryLoad: retryEvents } = usePetEvents();
-  const { addPet } = usePetProfileForms();
   const householdAlias = useHouseholdAlias();
 
   if (petsStatus === 'error' || eventsStatus === 'error') {
@@ -40,17 +39,10 @@ export function TodayScreen() {
   if (pets.length === 0) {
     return (
       <Screen>
-        <SectionHeader
-          compact
-          title={householdAlias ? `Today in ${householdAlias}` : 'Today'}
-          actionLabel="Add pet"
-          onAction={addPet}
-        />
-        <PlaceholderCard
-          title="No pets yet"
-          description="Add a pet to start tracking their care."
-          icon="paw-outline"
-        />
+        <View style={styles.contentStack}>
+          <SectionHeader compact title={householdAlias ? `Today in ${householdAlias}` : 'Today'} />
+          <NoPetsCard description="Add a pet to see how they're doing today and log what happens." />
+        </View>
       </Screen>
     );
   }

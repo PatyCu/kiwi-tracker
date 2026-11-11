@@ -2,8 +2,9 @@
 -- Never run this against the shared project.
 --
 -- Shaped like the shared project: two accounts share one household, and a
--- third account in its own household checks that outsiders see nothing. Each
--- household has one pet, so access can be checked both ways.
+-- third account in its own household checks that outsiders see nothing. Those
+-- two households have one pet each, so access can be checked both ways. A
+-- fourth account's household has no pets yet, like a new account's.
 --
 -- Sign in locally with any of these accounts:
 --
@@ -11,6 +12,7 @@
 --   alex@kiwi.test    kiwi-local-dev  Alex    Alex's home  aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa  Kiwi (cat, one hairball event)
 --   jordan@kiwi.test  kiwi-local-dev  Jordan  Alex's home  aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa  Kiwi (cat, one hairball event)
 --   sam@kiwi.test     kiwi-local-dev  Sam     Sam's home   bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb  Biscuit (dog, no events)
+--   riley@kiwi.test   kiwi-local-dev  Riley   Riley's home eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee  No pets
 
 -- Auth users ------------------------------------------------------------------
 
@@ -52,7 +54,8 @@ from (
   values
     ('11111111-1111-4111-8111-111111111111'::uuid, 'alex@kiwi.test'),
     ('22222222-2222-4222-8222-222222222222'::uuid, 'sam@kiwi.test'),
-    ('33333333-3333-4333-8333-333333333333'::uuid, 'jordan@kiwi.test')
+    ('33333333-3333-4333-8333-333333333333'::uuid, 'jordan@kiwi.test'),
+    ('44444444-4444-4444-8444-444444444444'::uuid, 'riley@kiwi.test')
 ) as seed (id, email);
 
 -- Email sign-in needs a matching identity per user.
@@ -76,20 +79,22 @@ select
   now(),
   now()
 from auth.users as users
-where users.email in ('alex@kiwi.test', 'sam@kiwi.test', 'jordan@kiwi.test');
+where users.email in ('alex@kiwi.test', 'sam@kiwi.test', 'jordan@kiwi.test', 'riley@kiwi.test');
 
 -- Households --------------------------------------------------------------------
 
 insert into public.households (id, alias)
 values
   ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'Alex''s home'),
-  ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'Sam''s home');
+  ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'Sam''s home'),
+  ('eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee', 'Riley''s home');
 
 insert into public.household_members (user_id, household_id, display_name)
 values
   ('11111111-1111-4111-8111-111111111111', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'Alex'),
   ('22222222-2222-4222-8222-222222222222', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'Sam'),
-  ('33333333-3333-4333-8333-333333333333', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'Jordan');
+  ('33333333-3333-4333-8333-333333333333', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'Jordan'),
+  ('44444444-4444-4444-8444-444444444444', 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee', 'Riley');
 
 -- Pets and events ---------------------------------------------------------------
 

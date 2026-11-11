@@ -8,6 +8,8 @@ import { Palette } from '@/shared/theme/palette';
 type TimelineEventsProps = {
   entries: TimelineEntry[];
   petName: string;
+  /** Where to log the first event, shown when there are none. */
+  emptyHint?: string;
   colors: Palette;
   deletingEventId: string | null;
   updatingEventId: string | null;
@@ -19,6 +21,7 @@ type TimelineEventsProps = {
 export function TimelineEvents({
   entries,
   petName,
+  emptyHint = 'Use an add button above to log the first observation.',
   colors,
   deletingEventId,
   updatingEventId,
@@ -33,7 +36,7 @@ export function TimelineEvents({
       <View style={styles.empty}>
         <Ionicons name="journal-outline" size={25} color={colors.muted} />
         <Text style={styles.emptyTitle}>No events for {petName}</Text>
-        <Text style={styles.emptyBody}>Use an add button above to log the first observation.</Text>
+        <Text style={styles.emptyBody}>{emptyHint}</Text>
       </View>
     );
   }

@@ -1,13 +1,14 @@
 import { router, useLocalSearchParams } from 'expo-router';
+import { StyleSheet, View } from 'react-native';
 
 import { useAppearance } from '@/shared/theme/AppearanceProvider';
 import { useHouseholdAlias } from '@/modules/households/state/useHouseholdAlias';
 import { usePets } from '@/modules/pets/state/PetsProvider';
 import { usePetProfileForms } from '@/modules/pets/state/PetProfileFormsProvider';
+import { NoPetsCard } from '@/modules/pets/ui/NoPetsCard';
 import { PetOverview } from '@/modules/pets/ui/PetOverview';
 import { PetSelector } from '@/modules/pets/ui/PetSelector';
 import { LoadError } from '@/shared/ui/LoadState';
-import { PlaceholderCard } from '@/shared/ui/PlaceholderCard';
 import { Screen } from '@/shared/ui/Screen';
 import { SectionHeader } from '@/shared/ui/SectionHeader';
 
@@ -35,12 +36,10 @@ export function PetsScreen() {
   if (!selectedPet) {
     return (
       <Screen>
-        <SectionHeader compact title={title} actionLabel="Add pet" onAction={addPet} />
-        <PlaceholderCard
-          title="No pets yet"
-          description="Add a pet to start tracking their care."
-          icon="paw-outline"
-        />
+        <View style={styles.contentStack}>
+          <SectionHeader compact title={title} />
+          <NoPetsCard description="Add a pet to keep their profile, photo and health history together." />
+        </View>
       </Screen>
     );
   }
@@ -60,3 +59,7 @@ export function PetsScreen() {
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  contentStack: { gap: 24 },
+});

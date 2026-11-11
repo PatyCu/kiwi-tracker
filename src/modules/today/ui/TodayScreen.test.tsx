@@ -9,7 +9,7 @@ import { PetEventFormsProvider } from '@/modules/pet-events/state/PetEventFormsP
 import { PetEventsProvider } from '@/modules/pet-events/state/PetEventsProvider';
 import { PetProfileFormsProvider } from '@/modules/pets/state/PetProfileFormsProvider';
 import { Pet } from '@/modules/pets/model/Pet';
-import { loadPets } from '@/modules/pets/persistence/petStore';
+import { insertPet, loadPets } from '@/modules/pets/persistence/petStore';
 import { PetsProvider } from '@/modules/pets/state/PetsProvider';
 import { useHouseholdAlias } from '@/modules/households/state/useHouseholdAlias';
 import { TodayScreen } from '@/modules/today/ui/TodayScreen';
@@ -120,15 +120,25 @@ describe('Today screen', () => {
     expect(screen.queryByLabelText('Quick log')).toBeNull();
   });
 
-  it('offers to add a pet when the household has none yet', async () => {
+  it('adds the first pet from the empty state when the household has none yet', async () => {
     mockedLoadPets.mockResolvedValue([]);
+    jest.mocked(insertPet).mockResolvedValue({ id: 'miso', name: 'Miso', species: 'Cat' });
 
     const screen = render(<TodayScreen />, { wrapper: Providers });
 
     await waitFor(() => expect(screen.getByText('No pets yet')).toBeTruthy());
     expect(screen.queryByText('Add event')).toBeNull();
+    fireEvent.press(screen.getByText('Add your first pet'));
+    fireEvent.changeText(screen.getByPlaceholderText('e.g. Miso'), 'Miso');
     fireEvent.press(screen.getByText('Add pet'));
-    expect(screen.getByTestId('pet-profile-modal')).toBeTruthy();
+
+    await waitFor(() => expect(screen.getByText('Today with Miso')).toBeTruthy());
+    expect(insertPet).toHaveBeenCalledWith(
+      'alexs-home',
+      expect.objectContaining({ name: 'Miso', species: 'Cat' }),
+    );
+    expect(screen.queryByText('No pets yet')).toBeNull();
+    expect(screen.getByText('Add event')).toBeTruthy();
   });
 
   it('names the household in the summary card once its alias loads', async () => {
