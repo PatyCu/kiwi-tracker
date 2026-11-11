@@ -10,7 +10,12 @@ import {
 
 import { useSession } from '@/modules/auth/state/SessionProvider';
 import { useHousehold } from '@/modules/households/state/HouseholdProvider';
+import { clearCachedPetPhotos } from '@/modules/pets/media/petPhotoCache';
 import { Pet } from '@/modules/pets/model/Pet';
+import {
+  PET_PHOTO_LINK_LIFETIME_SECONDS,
+  withPhotoLinks,
+} from '@/modules/pets/persistence/petPhotoStore';
 import { loadPets } from '@/modules/pets/persistence/petStore';
 import {
   SavePetProfileInput,
@@ -30,7 +35,17 @@ type PetsContextValue = {
 
 /** Which load the pets belong to, so a new user or a retry never shows stale pets. */
 type LoadKey = { userId: string; attempt: number };
-type LoadedPets = LoadKey & ({ status: 'ready'; pets: Pet[] } | { status: 'error' });
+type ReadyPets = {
+  status: 'ready';
+  pets: Pet[];
+  /** When to sign the photo links again, as a Date.now() time. */
+  photoLinksRefreshAt: number;
+};
+type LoadedPets = LoadKey & (ReadyPets | { status: 'error' });
+
+/** Photo links are signed again 10 minutes before they expire, or a minute after a failure. */
+const PHOTO_LINK_REFRESH_MS = (PET_PHOTO_LINK_LIFETIME_SECONDS - 10 * 60) * 1000;
+const PHOTO_LINK_RETRY_MS = 60 * 1000;
 
 const PetsContext = createContext<PetsContextValue | null>(null);
 const NO_PETS: Pet[] = [];
@@ -43,14 +58,22 @@ export function PetsProvider({ children }: { children: ReactNode }) {
   const householdId = household.status === 'ready' ? household.id : null;
   const [attempt, setAttempt] = useState(0);
   const [loaded, setLoaded] = useState<LoadedPets | null>(null);
+  const signedOut = session.status === 'signed-out';
+
+  // Photos stay cached on this device for the account that loaded them; clear
+  // them on sign-out so the next account doesn't see another household's pets.
+  useEffect(() => {
+    if (signedOut) void clearCachedPetPhotos().catch(() => undefined);
+  }, [signedOut]);
 
   useEffect(() => {
     if (!userId) return;
     let current = true;
     const key = { userId, attempt };
     loadPets()
+      .then(signPhotoLinks)
       .then(
-        (pets): LoadedPets => ({ ...key, status: 'ready', pets }),
+        (ready): LoadedPets => ({ ...key, ...ready }),
         (): LoadedPets => ({ ...key, status: 'error' }),
       )
       .then((result) => {
@@ -64,6 +87,40 @@ export function PetsProvider({ children }: { children: ReactNode }) {
   const current = loaded && loaded.userId === userId && loaded.attempt === attempt ? loaded : null;
   const loadStatus: LoadStatus = current?.status ?? 'loading';
   const pets = current?.status === 'ready' ? current.pets : NO_PETS;
+  const photoLinksRefreshAt = current?.status === 'ready' ? current.photoLinksRefreshAt : null;
+  const hasPhotos = pets.some((pet) => pet.photoPath);
+
+  // Signed photo links expire, so sign them again while the pets are shown. The
+  // refresh time is absolute, so saving a pet restarts the timer without delaying it.
+  useEffect(() => {
+    if (photoLinksRefreshAt === null || !hasPhotos) return;
+    const delay = Math.max(0, photoLinksRefreshAt - Date.now());
+    let active = true;
+    const timer = setTimeout(() => {
+      void signPhotoLinks(pets).then((signed) => {
+        if (!active) return;
+        setLoaded((previous) => {
+          if (previous?.status !== 'ready' || previous.userId !== userId) return previous;
+          // A pet whose photo changed while signing keeps the photo it shows now.
+          const signedPets = new Map(signed.pets.map((pet) => [pet.id, pet]));
+          return {
+            ...previous,
+            photoLinksRefreshAt: signed.photoLinksRefreshAt,
+            pets: previous.pets.map((pet) => {
+              const signedPet = signedPets.get(pet.id);
+              return signedPet && signedPet.photoPath === pet.photoPath && signedPet.photoUri
+                ? { ...pet, photoUri: signedPet.photoUri }
+                : pet;
+            }),
+          };
+        });
+      });
+    }, delay);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [hasPhotos, pets, photoLinksRefreshAt, userId]);
 
   const saveProfile = useCallback(
     async (input: PetProfileInput): Promise<SavePetProfileResult> => {
@@ -91,6 +148,24 @@ export function PetsProvider({ children }: { children: ReactNode }) {
   );
 
   return <PetsContext.Provider value={value}>{children}</PetsContext.Provider>;
+}
+
+/**
+ * Signs the pets' photo links and says when to sign them again. When signing
+ * fails the pets keep the links they had, none after a load, and it's retried
+ * a minute later.
+ */
+async function signPhotoLinks(pets: Pet[]): Promise<ReadyPets> {
+  try {
+    const signed = await withPhotoLinks(pets);
+    return {
+      status: 'ready',
+      pets: signed,
+      photoLinksRefreshAt: Date.now() + PHOTO_LINK_REFRESH_MS,
+    };
+  } catch {
+    return { status: 'ready', pets, photoLinksRefreshAt: Date.now() + PHOTO_LINK_RETRY_MS };
+  }
 }
 
 export function usePets(): PetsContextValue {

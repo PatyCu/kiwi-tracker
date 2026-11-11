@@ -2,6 +2,7 @@ import {
   insertPet,
   loadPets,
   PetStorageError,
+  setPetPhotoPath,
   updatePet,
 } from '@/modules/pets/persistence/petStore';
 import { getSupabaseClient } from '@/shared/supabase/supabaseClient';
@@ -32,6 +33,7 @@ const kiwiRow = {
   species: 'Cat',
   breed: 'European Shorthair',
   birth_date: '2021-04-12',
+  photo_path: 'kiwi-id/photo',
 };
 
 describe('pet storage', () => {
@@ -41,7 +43,14 @@ describe('pet storage', () => {
     const { from, query } = mockQuery({
       data: [
         kiwiRow,
-        { id: 'murri-id', name: 'Murri', species: 'Cat', breed: null, birth_date: null },
+        {
+          id: 'murri-id',
+          name: 'Murri',
+          species: 'Cat',
+          breed: null,
+          birth_date: null,
+          photo_path: null,
+        },
       ],
       error: null,
     });
@@ -53,6 +62,7 @@ describe('pet storage', () => {
         species: 'Cat',
         breed: 'European Shorthair',
         birthDate: '2021-04-12',
+        photoPath: 'kiwi-id/photo',
       },
       { id: 'murri-id', name: 'Murri', species: 'Cat' },
     ]);
@@ -98,7 +108,10 @@ describe('pet storage', () => {
   });
 
   it('saves one pet by id and clears fields left empty', async () => {
-    const { query } = mockQuery({ data: { ...kiwiRow, breed: null }, error: null });
+    const { query } = mockQuery({
+      data: { ...kiwiRow, breed: null, photo_path: null },
+      error: null,
+    });
 
     await expect(updatePet('kiwi-id', { name: 'Kiwi', species: 'Cat' })).resolves.toEqual({
       id: 'kiwi-id',
@@ -112,6 +125,17 @@ describe('pet storage', () => {
       breed: null,
       birth_date: null,
     });
+    expect(query.eq).toHaveBeenCalledWith('id', 'kiwi-id');
+  });
+
+  it('records where a pet photo is stored and touches nothing else', async () => {
+    const { query } = mockQuery({ data: kiwiRow, error: null });
+
+    await expect(setPetPhotoPath('kiwi-id', 'kiwi-id/photo')).resolves.toMatchObject({
+      id: 'kiwi-id',
+      photoPath: 'kiwi-id/photo',
+    });
+    expect(query.update).toHaveBeenCalledWith({ photo_path: 'kiwi-id/photo' });
     expect(query.eq).toHaveBeenCalledWith('id', 'kiwi-id');
   });
 

@@ -1,7 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useMemo, useState } from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image } from 'expo-image';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { petPhotoSource } from '@/modules/pets/media/petPhotoCache';
 import { Pet } from '@/modules/pets/model/Pet';
 import { Palette } from '@/shared/theme/palette';
 
@@ -21,6 +23,7 @@ export function PetSelectorCard({
   onEditProfile,
 }: PetSelectorCardProps) {
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const photoSource = petPhotoSource(pet);
   const [editActive, setEditActive] = useState(false);
 
   return (
@@ -32,10 +35,10 @@ export function PetSelectorCard({
         onPress={onPress}
         style={styles.selectPet}
       >
-        {pet.photoUri ? (
+        {photoSource ? (
           <Image
             accessibilityLabel={`${pet.name} photo`}
-            source={{ uri: pet.photoUri }}
+            source={photoSource}
             style={styles.photo}
           />
         ) : (

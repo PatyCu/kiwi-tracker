@@ -1,6 +1,6 @@
 import * as ImagePicker from 'expo-image-picker';
 
-import { SelectedPetPhoto } from '@/modules/pets/media/petImageStore';
+import { SelectedPetPhoto } from '@/modules/pets/media/preparePetPhotoUpload';
 
 type PetPhotoPickResult =
   | { status: 'selected'; photo: SelectedPetPhoto }
@@ -16,14 +16,13 @@ export async function pickPetPhoto(): Promise<PetPhotoPickResult> {
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.7,
-      base64: true,
     });
     if (result.canceled) return { status: 'cancelled' };
 
     const asset = result.assets[0];
     return {
       status: 'selected',
-      photo: { uri: asset.uri, base64: asset.base64, mimeType: asset.mimeType },
+      photo: { uri: asset.uri, width: asset.width, height: asset.height },
     };
   } catch {
     return { status: 'failed' };

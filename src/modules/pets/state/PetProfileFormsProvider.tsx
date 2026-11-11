@@ -38,8 +38,11 @@ export function PetProfileFormsProvider({ children }: { children: ReactNode }) {
         form.editing ? 'Pet not updated' : 'Pet not added',
         'The profile could not be confirmed as saved. Reopen the app before trying again.',
       );
-    } else if (result.status === 'saved' && result.result.previousPhotoCleanupFailed) {
-      showMessage('Pet saved', 'The previous photo could not be removed from device storage.');
+    } else if (result.status === 'saved' && result.result.photoSaveFailed) {
+      showMessage(
+        'Photo not saved',
+        `${result.result.pet.name} was saved, but the photo could not be uploaded. Edit the pet to try again.`,
+      );
     }
   };
 
@@ -58,7 +61,7 @@ export function PetProfileFormsProvider({ children }: { children: ReactNode }) {
         species={form.species}
         breed={form.breed}
         birthDate={form.birthDate}
-        photoUri={form.photoUri}
+        photo={form.photo}
         birthDateIsValid={form.birthDateIsValid}
         isSaving={form.isSaving}
         colors={colors}

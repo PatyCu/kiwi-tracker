@@ -26,6 +26,17 @@ People outside the household see none of it, and signed-out users have no
 access. Members can read their household and everyone's membership in it, but
 only the dashboard can create households or change memberships.
 
+Each pet has at most one photo. The app scales photos down to a 512px JPEG
+before uploading, stores each new one under its own name,
+`<pet_id>/<timestamp>.jpg`, saves that path in `pets.photo_path`, and then
+deletes the file it replaced. Because the bucket is private, the app shows
+photos through signed links that work for one hour and signs new ones 10
+minutes before they expire. Anyone holding a link can open the photo until
+then, so removing someone from a household cuts off its photos within the
+hour, not at once. On iOS the app caches each photo under its path, so a new
+link reuses the copy on the device and only a new photo is downloaded; signing
+out clears that cache. Web relies on the browser's cache, which goes by link.
+
 Pet rules check `household_id` with `private.is_household_member()`. Event and
 photo rules go through `private.accessible_pet_ids()`, which returns the pets in
 the signed-in user's household, so changing who can reach a pet changes that

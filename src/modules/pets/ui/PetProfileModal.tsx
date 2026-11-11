@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useMemo } from 'react';
-import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, ImageSource } from 'expo-image';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { Pet } from '@/modules/pets/model/Pet';
 import { DateTimePickerField } from '@/shared/ui/date-time/DateTimePickerField';
@@ -14,7 +15,7 @@ type PetProfileModalProps = {
   species: Pet['species'];
   breed: string;
   birthDate: string;
-  photoUri?: string;
+  photo: ImageSource | null;
   birthDateIsValid: boolean;
   isSaving: boolean;
   colors: Palette;
@@ -36,7 +37,7 @@ export function PetProfileModal({
   species,
   breed,
   birthDate,
-  photoUri,
+  photo,
   birthDateIsValid,
   isSaving,
   colors,
@@ -59,14 +60,14 @@ export function PetProfileModal({
       onClose={onClose}
     >
       <Pressable onPress={onPickPhoto} style={styles.photoPicker}>
-        {photoUri ? (
-          <Image source={{ uri: photoUri }} style={styles.photoPreview} />
+        {photo ? (
+          <Image source={photo} style={styles.photoPreview} />
         ) : (
           <View style={[styles.photoPreview, styles.photoFallback]}>
             <Ionicons name="camera-outline" size={29} color={colors.kiwi} />
           </View>
         )}
-        <Text style={styles.photoPickerText}>{photoUri ? 'Change photo' : 'Add photo'}</Text>
+        <Text style={styles.photoPickerText}>{photo ? 'Change photo' : 'Add photo'}</Text>
       </Pressable>
       <Text style={styles.label}>NAME</Text>
       <TextInput

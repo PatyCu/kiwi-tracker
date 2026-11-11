@@ -27,24 +27,12 @@ describe('pet photo picker', () => {
     } as Awaited<ReturnType<typeof ImagePicker.requestMediaLibraryPermissionsAsync>>);
     mockedImagePicker.launchImageLibraryAsync.mockResolvedValue({
       canceled: false,
-      assets: [
-        {
-          uri: 'file:///selected.jpg',
-          base64: 'encoded-photo',
-          mimeType: 'image/jpeg',
-          width: 100,
-          height: 100,
-        },
-      ],
+      assets: [{ uri: 'file:///selected.jpg', mimeType: 'image/jpeg', width: 1200, height: 900 }],
     });
 
     await expect(pickPetPhoto()).resolves.toEqual({
       status: 'selected',
-      photo: {
-        uri: 'file:///selected.jpg',
-        base64: 'encoded-photo',
-        mimeType: 'image/jpeg',
-      },
+      photo: { uri: 'file:///selected.jpg', width: 1200, height: 900 },
     });
   });
 

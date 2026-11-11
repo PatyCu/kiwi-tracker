@@ -19,7 +19,7 @@ describe('usePetProfileForm', () => {
     };
     const onSubmit = jest.fn().mockResolvedValue({
       pet: savedPet,
-      previousPhotoCleanupFailed: false,
+      photoSaveFailed: false,
     });
     const { result } = renderHook(() => usePetProfileForm({ onSubmit }));
 

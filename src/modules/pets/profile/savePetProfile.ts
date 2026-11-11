@@ -1,10 +1,11 @@
 import {
-  deletePersistedPetPhoto,
-  persistPetPhoto,
+  PreparedPetPhoto,
+  preparePetPhotoUpload,
   SelectedPetPhoto,
-} from '@/modules/pets/media/petImageStore';
+} from '@/modules/pets/media/preparePetPhotoUpload';
 import { Pet, PetProfile } from '@/modules/pets/model/Pet';
-import { insertPet, updatePet } from '@/modules/pets/persistence/petStore';
+import { removePetPhoto, uploadPetPhoto } from '@/modules/pets/persistence/petPhotoStore';
+import { insertPet, setPetPhotoPath, updatePet } from '@/modules/pets/persistence/petStore';
 
 export type SavePetProfileInput = {
   pets: Pet[];
@@ -20,27 +21,28 @@ export type SavePetProfileInput = {
 
 export type SavePetProfileResult = {
   pet: Pet;
-  previousPhotoCleanupFailed: boolean;
+  /** The profile was saved but the new photo wasn't, so the pet keeps its previous one. */
+  photoSaveFailed: boolean;
 };
 
 export class PetProfileSaveError extends Error {
   readonly cause: unknown;
-  readonly retainedPhotoUri?: string;
 
-  constructor(message: string, cause: unknown, retainedPhotoUri?: string) {
+  constructor(message: string, cause: unknown) {
     super(message);
     this.name = 'PetProfileSaveError';
     this.cause = cause;
-    this.retainedPhotoUri = retainedPhotoUri;
   }
 }
 
 /**
- * Adds a pet to the household or saves an existing one, as one record.
+ * Adds a pet to the household or saves an existing one, then stores its new
+ * photo, if one was picked, in the household's photo bucket and deletes the
+ * file it replaces.
  *
- * Photos are still kept on this device only and aren't stored with the pet, so
- * a chosen photo shows until the app reloads. Storing them in the household's
- * photo bucket is a separate step.
+ * The photo is stored after the profile because the bucket only accepts photos
+ * of pets that already exist. When only the photo fails, the saved profile is
+ * still returned, so the caller keeps it and never adds the pet twice.
  */
 export async function savePetProfile(input: SavePetProfileInput): Promise<SavePetProfileResult> {
   const existing = input.pets.find((pet) => pet.id === input.editingPetId);
@@ -48,13 +50,11 @@ export async function savePetProfile(input: SavePetProfileInput): Promise<SavePe
     throw new PetProfileSaveError('The pet being edited no longer exists.', undefined);
   }
 
-  let createdPhotoUri: string | undefined;
+  let photo: PreparedPetPhoto | undefined;
   try {
-    if (input.selectedPhoto) {
-      createdPhotoUri = await persistPetPhoto(input.selectedPhoto, existing?.id ?? 'new-pet');
-    }
+    if (input.selectedPhoto) photo = await preparePetPhotoUpload(input.selectedPhoto);
   } catch (error) {
-    throw new PetProfileSaveError('Could not persist the selected pet photo.', error);
+    throw new PetProfileSaveError('Could not read the selected pet photo.', error);
   }
 
   const profile: PetProfile = {
@@ -70,37 +70,47 @@ export async function savePetProfile(input: SavePetProfileInput): Promise<SavePe
       ? await updatePet(existing.id, profile)
       : await insertPet(input.householdId, profile);
   } catch (error) {
-    const retainedPhotoUri = createdPhotoUri
-      ? await cleanUpUncommittedPhoto(createdPhotoUri)
-      : undefined;
-    throw new PetProfileSaveError('Could not save the pet profile.', error, retainedPhotoUri);
+    throw new PetProfileSaveError('Could not save the pet profile.', error);
   }
 
-  const photoUri = createdPhotoUri ?? existing?.photoUri;
-  const pet: Pet = photoUri ? { ...stored, photoUri } : stored;
-  const previousPhotoCleanupFailed = await cleanUpPreviousPhoto(existing?.photoUri, photoUri);
+  const keptPet = keepPhotoLink(stored, existing);
+  if (!photo) return { pet: keptPet, photoSaveFailed: false };
 
-  return { pet, previousPhotoCleanupFailed };
+  let photoPath: string;
+  try {
+    photoPath = await uploadPetPhoto(stored.id, photo.upload);
+  } catch {
+    return { pet: keptPet, photoSaveFailed: true };
+  }
+
+  let withPhoto: Pet;
+  try {
+    withPhoto = await setPetPhotoPath(stored.id, photoPath);
+  } catch {
+    await removeUnusedPhoto(photoPath);
+    return { pet: keptPet, photoSaveFailed: true };
+  }
+
+  if (stored.photoPath) await removeUnusedPhoto(stored.photoPath);
+  // Show the scaled-down photo already on this device until a signed link replaces it.
+  return { pet: { ...withPhoto, photoUri: photo.previewUri }, photoSaveFailed: false };
 }
 
-async function cleanUpUncommittedPhoto(photoUri: string): Promise<string | undefined> {
+/**
+ * Deletes a photo file no pet points to. A file this fails to delete is left
+ * unused in the bucket; nobody sees it and no data is lost, so it isn't reported.
+ */
+async function removeUnusedPhoto(path: string): Promise<void> {
   try {
-    await deletePersistedPetPhoto(photoUri);
-    return undefined;
+    await removePetPhoto(path);
   } catch {
-    return photoUri;
+    // Left for a later cleanup.
   }
 }
 
-async function cleanUpPreviousPhoto(
-  previousPhotoUri: string | undefined,
-  currentPhotoUri: string | undefined,
-): Promise<boolean> {
-  if (!previousPhotoUri || previousPhotoUri === currentPhotoUri) return false;
-  try {
-    await deletePersistedPetPhoto(previousPhotoUri);
-    return false;
-  } catch {
-    return true;
-  }
+/** Keeps the link already shown for the pet's stored photo, if it has one. */
+function keepPhotoLink(stored: Pet, existing: Pet | undefined): Pet {
+  const photoUri =
+    existing?.photoUri && existing.photoPath === stored.photoPath ? existing.photoUri : undefined;
+  return photoUri ? { ...stored, photoUri } : stored;
 }

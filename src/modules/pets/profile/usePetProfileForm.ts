@@ -1,3 +1,4 @@
+import type { ImageSource } from 'expo-image';
 import { useCallback, useMemo, useState } from 'react';
 
 import {
@@ -5,7 +6,8 @@ import {
   toDisplayedBirthDate,
   toStoredBirthDate,
 } from '@/shared/dates/dateTime';
-import { SelectedPetPhoto } from '@/modules/pets/media/petImageStore';
+import { petPhotoSource } from '@/modules/pets/media/petPhotoCache';
+import { SelectedPetPhoto } from '@/modules/pets/media/preparePetPhotoUpload';
 import { pickPetPhoto as pickPetPhotoFromLibrary } from '@/modules/pets/media/pickPetPhoto';
 import { Pet } from '@/modules/pets/model/Pet';
 import type {
@@ -30,7 +32,7 @@ export function usePetProfileForm({ onSubmit }: UsePetProfileFormInput) {
   const [species, setSpecies] = useState<Pet['species']>('Cat');
   const [breed, setBreed] = useState('');
   const [birthDate, setBirthDate] = useState('');
-  const [photoUri, setPhotoUri] = useState<string>();
+  const [photo, setPhoto] = useState<ImageSource | null>(null);
   const [selectedPhoto, setSelectedPhoto] = useState<SelectedPetPhoto>();
   const [isSaving, setIsSaving] = useState(false);
 
@@ -43,7 +45,7 @@ export function usePetProfileForm({ onSubmit }: UsePetProfileFormInput) {
     setSpecies(pet?.species ?? 'Cat');
     setBreed(pet?.breed ?? '');
     setBirthDate(toDisplayedBirthDate(pet?.birthDate));
-    setPhotoUri(pet?.photoUri);
+    setPhoto(pet ? petPhotoSource(pet) : null);
     setSelectedPhoto(undefined);
     setVisible(true);
   }, []);
@@ -53,7 +55,7 @@ export function usePetProfileForm({ onSubmit }: UsePetProfileFormInput) {
   const pickPhoto = useCallback(async (): Promise<PhotoPickResult> => {
     const result = await pickPetPhotoFromLibrary();
     if (result.status === 'selected') {
-      setPhotoUri(result.photo.uri);
+      setPhoto({ uri: result.photo.uri });
       setSelectedPhoto(result.photo);
     }
     return result.status;
@@ -89,7 +91,7 @@ export function usePetProfileForm({ onSubmit }: UsePetProfileFormInput) {
     species,
     breed,
     birthDate,
-    photoUri,
+    photo,
     birthDateIsValid,
     isSaving,
     setName,

@@ -52,6 +52,10 @@ jest.mock('@/modules/pets/persistence/petStore', () => ({
   insertPet: jest.fn(),
   updatePet: jest.fn(),
 }));
+jest.mock('@/modules/pets/persistence/petPhotoStore', () => ({
+  PET_PHOTO_LINK_LIFETIME_SECONDS: 3600,
+  withPhotoLinks: jest.fn(async (pets: unknown) => pets),
+}));
 jest.mock('@/modules/pet-events/persistence/petEventStore', () => ({
   loadPetEvents: jest.fn(),
   insertPetEvent: jest.fn(),

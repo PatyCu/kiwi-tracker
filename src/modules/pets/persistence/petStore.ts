@@ -2,9 +2,12 @@ import { Pet, PET_SPECIES, PetProfile } from '@/modules/pets/model/Pet';
 import type { Tables } from '@/shared/supabase/database.types';
 import { getSupabaseClient } from '@/shared/supabase/supabaseClient';
 
-type PetRow = Pick<Tables<'pets'>, 'id' | 'name' | 'species' | 'breed' | 'birth_date'>;
+type PetRow = Pick<
+  Tables<'pets'>,
+  'id' | 'name' | 'species' | 'breed' | 'birth_date' | 'photo_path'
+>;
 
-const PET_COLUMNS = 'id, name, species, breed, birth_date';
+const PET_COLUMNS = 'id, name, species, breed, birth_date, photo_path';
 
 type PetStorageErrorCode = 'READ_FAILED' | 'INVALID_DATA' | 'WRITE_FAILED';
 
@@ -22,8 +25,8 @@ export class PetStorageError extends Error {
 
 /**
  * Returns the pets of the signed-in user's household, by name. Access
- * rules only return that household's pets. Photos aren't stored yet, so loaded
- * pets have no photoUri.
+ * rules only return that household's pets. Loaded pets carry their photoPath
+ * but no photoUri; petPhotoStore signs the links.
  */
 export async function loadPets(): Promise<Pet[]> {
   const { data, error } = await getSupabaseClient()
@@ -61,6 +64,18 @@ export async function updatePet(petId: string, profile: PetProfile): Promise<Pet
   return toPet(data);
 }
 
+/** Records where the pet's photo is stored and returns the stored pet. */
+export async function setPetPhotoPath(petId: string, photoPath: string): Promise<Pet> {
+  const { data, error } = await getSupabaseClient()
+    .from('pets')
+    .update({ photo_path: photoPath })
+    .eq('id', petId)
+    .select(PET_COLUMNS)
+    .single();
+  if (error) throw new PetStorageError('WRITE_FAILED', 'Could not save the pet photo.', error);
+  return toPet(data);
+}
+
 function toPetColumns(profile: PetProfile) {
   return {
     name: profile.name,
@@ -81,5 +96,6 @@ function toPet(row: PetRow): Pet {
     species,
     ...(row.breed ? { breed: row.breed } : {}),
     ...(row.birth_date ? { birthDate: row.birth_date } : {}),
+    ...(row.photo_path ? { photoPath: row.photo_path } : {}),
   };
 }
