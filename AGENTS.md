@@ -42,6 +42,7 @@
 - Use `npm`, which is the package manager established by `package-lock.json`; do not add another lockfile.
 - Ask for confirmation before adding a new production dependency.
 - After code changes, run `npm run typecheck` and the relevant Expo check or build. Validate each affected platform when behavior or configuration is cross-platform.
+- When validating on iOS, open the in-app simulator panel before building or launching, so the developer can watch and check the app there.
 - Validate changes on the local Supabase stack, never by experimenting on the shared project; the developer checks the shared project manually after each wrap-up.
 - Keep `supabase/seed.sql` able to exercise what the shared project has, such as a household with several members and an account outside it.
 - Run lint and tests when corresponding project scripts exist. If a relevant check is unavailable, state that clearly instead of claiming it passed.
