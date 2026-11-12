@@ -74,12 +74,6 @@ export function PetOverview({ pet }: PetOverviewProps) {
         }
       />
       <PetSectionLink
-        label="Care"
-        description="Placeholder until care is implemented"
-        icon="medkit-outline"
-        onPress={() => router.push({ pathname: '/pets/[petId]/care', params: { petId: pet.id } })}
-      />
-      <PetSectionLink
         label="Profile"
         description="View and edit pet details"
         icon="paw-outline"
