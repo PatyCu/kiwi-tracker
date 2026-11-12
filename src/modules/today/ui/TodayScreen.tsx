@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
 import { useAppearance } from '@/shared/theme/AppearanceProvider';
+import { useCalendarEventForms } from '@/modules/calendar-events/state/CalendarEventFormsProvider';
 import { useHouseholdAlias } from '@/modules/households/state/useHouseholdAlias';
 import { usePetEvents } from '@/modules/pet-events/state/PetEventsProvider';
 import { usePetsAndEventsLoad } from '@/modules/pet-events/state/usePetsAndEventsLoad';
@@ -21,6 +22,7 @@ export function TodayScreen() {
   const { events } = usePetEvents();
   const { loadStatus, retryLoad } = usePetsAndEventsLoad();
   const householdAlias = useHouseholdAlias();
+  const calendarEventForms = useCalendarEventForms();
 
   if (loadStatus !== 'ready') {
     return (
@@ -58,10 +60,20 @@ export function TodayScreen() {
           }
         />
         <View style={styles.section}>
-          <SectionHeader compact title="Upcoming (next 7 days)" />
+          <SectionHeader
+            compact
+            title="Upcoming (next 7 days)"
+            action={{
+              label: 'Schedule',
+              accessibilityLabel: 'Schedule calendar event',
+              icon: 'add',
+              onPress: () =>
+                calendarEventForms.openAddCalendarEvent(pets.length === 1 ? pets[0].id : undefined),
+            }}
+          />
           <PlaceholderCard
-            title="No calendar events yet"
-            description="Upcoming care will appear here when calendar events are implemented."
+            title="Calendar events aren't shown yet"
+            description="Events you add are saved and will appear here once upcoming care is ready."
           />
         </View>
 

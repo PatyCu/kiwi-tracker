@@ -6,6 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppearanceProvider, useAppearance } from '@/shared/theme/AppearanceProvider';
 import { SessionProvider, useSession } from '@/modules/auth/state/SessionProvider';
 import { SignInUnavailableScreen } from '@/modules/auth/ui/SignInUnavailableScreen';
+import { CalendarEventFormsProvider } from '@/modules/calendar-events/state/CalendarEventFormsProvider';
 import { HouseholdProvider, useHousehold } from '@/modules/households/state/HouseholdProvider';
 import { NoHouseholdScreen } from '@/modules/households/ui/NoHouseholdScreen';
 import { PetEventFormsProvider } from '@/modules/pet-events/state/PetEventFormsProvider';
@@ -25,7 +26,9 @@ export default function RootLayout() {
               <PetEventsProvider>
                 <PetProfileFormsProvider>
                   <PetEventFormsProvider>
-                    <RootStack />
+                    <CalendarEventFormsProvider>
+                      <RootStack />
+                    </CalendarEventFormsProvider>
                   </PetEventFormsProvider>
                 </PetProfileFormsProvider>
               </PetEventsProvider>

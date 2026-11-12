@@ -2,6 +2,7 @@ import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import { ReactNode } from 'react';
 
 import { loadPetEvents } from '@/modules/pet-events/persistence/petEventStore';
+import { CalendarEventFormsProvider } from '@/modules/calendar-events/state/CalendarEventFormsProvider';
 import { PetEventFormsProvider } from '@/modules/pet-events/state/PetEventFormsProvider';
 import { PetEventsProvider } from '@/modules/pet-events/state/PetEventsProvider';
 import { loadPets } from '@/modules/pets/persistence/petStore';
@@ -53,13 +54,19 @@ jest.mock('@/modules/pet-events/persistence/petEventStore', () => ({
   deletePetEvent: jest.fn(),
 }));
 
+jest.mock('@/modules/calendar-events/persistence/calendarEventStore', () => ({
+  insertCalendarEvent: jest.fn(),
+}));
+
 function Providers({ children }: { children: ReactNode }) {
   return (
     <AppearanceProvider>
       <PetsProvider>
         <PetEventsProvider>
           <PetProfileFormsProvider>
-            <PetEventFormsProvider>{children}</PetEventFormsProvider>
+            <PetEventFormsProvider>
+              <CalendarEventFormsProvider>{children}</CalendarEventFormsProvider>
+            </PetEventFormsProvider>
           </PetProfileFormsProvider>
         </PetEventsProvider>
       </PetsProvider>

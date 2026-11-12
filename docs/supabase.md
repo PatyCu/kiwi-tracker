@@ -17,10 +17,12 @@ develop against a local Supabase stack. The shared cloud project
 | `household_members` | Which household each Supabase Auth user belongs to (one each), and the `display_name` they go by in it. |
 | `pets`              | Pets, each in one household (`household_id`).                                                           |
 | `pet_events`        | Symptoms, diet changes and other events for a pet.                                                      |
+| `calendar_events`   | Planned care for a pet, such as a vet visit, with a start and end time on one day.                      |
 | `pet-photos`        | Private storage bucket, files under `<pet_id>/<file>`.                                                  |
 
 Every member of a household can read, add, edit and delete its pets, and those
-pets' events and photos. A pet can't be moved to a household the user isn't in.
+pets' events and photos, and can read and add those pets' calendar events. A
+pet can't be moved to a household the user isn't in.
 People outside the household see none of it, and signed-out users have no
 access. Members can read their household and everyone's membership in it, but
 only the dashboard can create households or change memberships.
@@ -36,10 +38,10 @@ hour, not at once. On iOS the app caches each photo under its path, so a new
 link reuses the copy on the device and only a new photo is downloaded; signing
 out clears that cache. Web relies on the browser's cache, which goes by link.
 
-Pet rules check `household_id` with `private.is_household_member()`. Event and
-photo rules go through `private.accessible_pet_ids()`, which returns the pets in
-the signed-in user's household, so changing who can reach a pet changes that
-function, not the stored rows or photo paths.
+Pet rules check `household_id` with `private.is_household_member()`. Event,
+calendar event and photo rules go through `private.accessible_pet_ids()`, which
+returns the pets in the signed-in user's household, so changing who can reach a
+pet changes that function, not the stored rows or photo paths.
 
 ## Schema conventions
 
@@ -52,7 +54,7 @@ function, not the stored rows or photo paths.
   an event was logged, as opposed to `occurred_at`, when it happened.
 - Every table has row-level security enabled, with access limited to the
   signed-in user's household: `private.is_household_member()` on `pets`,
-  `private.accessible_pet_ids()` for events and photos.
+  `private.accessible_pet_ids()` for events, calendar events and photos.
 - After a migration reaches the shared project, check **Advisors → Security
   Advisor** in the dashboard for new warnings.
 

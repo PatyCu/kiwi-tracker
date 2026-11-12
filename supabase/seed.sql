@@ -9,8 +9,8 @@
 -- Sign in locally with any of these accounts:
 --
 --   Email             Password        Name    Household (alias, id)                              Sees
---   alex@kiwi.test    kiwi-local-dev  Alex    Alex's home  aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa  Kiwi (cat, one hairball event)
---   jordan@kiwi.test  kiwi-local-dev  Jordan  Alex's home  aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa  Kiwi (cat, one hairball event)
+--   alex@kiwi.test    kiwi-local-dev  Alex    Alex's home  aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa  Kiwi (cat, one hairball event, one vet visit planned)
+--   jordan@kiwi.test  kiwi-local-dev  Jordan  Alex's home  aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa  Kiwi (cat, one hairball event, one vet visit planned)
 --   sam@kiwi.test     kiwi-local-dev  Sam     Sam's home   bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb  Biscuit (dog, no events)
 --   riley@kiwi.test   kiwi-local-dev  Riley   Riley's home eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee  No pets
 
@@ -124,4 +124,14 @@ values (
   now() - interval '1 day',
   'Hairball',
   'After breakfast.'
+);
+
+insert into public.calendar_events (pet_id, title, starts_at, ends_at, location, description)
+values (
+  'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+  'Annual vaccines',
+  date_trunc('hour', now()) + interval '3 days',
+  date_trunc('hour', now()) + interval '3 days 1 hour',
+  'Riverside Vet Clinic',
+  'Bring the vaccination card.'
 );

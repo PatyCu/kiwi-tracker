@@ -3,6 +3,8 @@ import { ReactNode } from 'react';
 import { StyleSheet } from 'react-native';
 
 import { AppearanceProvider } from '@/shared/theme/AppearanceProvider';
+import { insertCalendarEvent } from '@/modules/calendar-events/persistence/calendarEventStore';
+import { CalendarEventFormsProvider } from '@/modules/calendar-events/state/CalendarEventFormsProvider';
 import { PetEvent } from '@/modules/pet-events/model/PetEvent';
 import { insertPetEvent, loadPetEvents } from '@/modules/pet-events/persistence/petEventStore';
 import { PetEventFormsProvider } from '@/modules/pet-events/state/PetEventFormsProvider';
@@ -67,13 +69,19 @@ const mockedLoadPets = jest.mocked(loadPets);
 const mockedLoadEvents = jest.mocked(loadPetEvents);
 const mockedInsertEvent = jest.mocked(insertPetEvent);
 
+jest.mock('@/modules/calendar-events/persistence/calendarEventStore', () => ({
+  insertCalendarEvent: jest.fn(),
+}));
+
 function Providers({ children }: { children: ReactNode }) {
   return (
     <AppearanceProvider>
       <PetsProvider>
         <PetEventsProvider>
           <PetProfileFormsProvider>
-            <PetEventFormsProvider>{children}</PetEventFormsProvider>
+            <PetEventFormsProvider>
+              <CalendarEventFormsProvider>{children}</CalendarEventFormsProvider>
+            </PetEventFormsProvider>
           </PetProfileFormsProvider>
         </PetEventsProvider>
       </PetsProvider>
@@ -107,7 +115,7 @@ describe('Today screen', () => {
     });
     expect(screen.getByLabelText('Kiwi avatar')).toBeTruthy();
     expect(screen.getByText('All good, nothing to see here.')).toBeTruthy();
-    expect(screen.getByText('No calendar events yet')).toBeTruthy();
+    expect(screen.getByText("Calendar events aren't shown yet")).toBeTruthy();
     expect(screen.getByText('No overdue items')).toBeTruthy();
     expect(screen.getByText('Add event')).toBeTruthy();
     expect(screen.queryByText('Needs attention')).toBeNull();
@@ -309,5 +317,45 @@ describe('Today screen', () => {
     );
     expect(consoleError.mock.calls.flat().join(' ')).not.toContain('same key');
     consoleError.mockRestore();
+  });
+
+  it('adds a calendar event for the pet chosen in the form', async () => {
+    mockedLoadPets.mockResolvedValue([kiwi, luna]);
+    jest.mocked(insertCalendarEvent).mockImplementation(async (event) => ({
+      ...event,
+      id: 'calendar-1',
+      createdAt: new Date().toISOString(),
+    }));
+
+    const screen = render(<TodayScreen />, { wrapper: Providers });
+    await waitFor(() => expect(screen.getByText('Today with Kiwi and Luna')).toBeTruthy());
+
+    fireEvent.press(screen.getByLabelText('Schedule calendar event'));
+    expect(screen.getByText('PET')).toBeTruthy();
+    fireEvent.press(screen.getByLabelText('Select Luna'));
+    fireEvent.changeText(screen.getByLabelText('Calendar event title'), 'Annual vaccines');
+    fireEvent.changeText(screen.getByLabelText('Calendar event location'), ' Riverside Vet ');
+    fireEvent.press(screen.getByText('Save event'));
+
+    await waitFor(() =>
+      expect(insertCalendarEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          petId: 'luna',
+          title: 'Annual vaccines',
+          location: 'Riverside Vet',
+        }),
+      ),
+    );
+    await waitFor(() => expect(screen.queryByLabelText('Calendar event title')).toBeNull());
+  });
+
+  it('adds a calendar event for the only pet without asking which one', async () => {
+    const screen = render(<TodayScreen />, { wrapper: Providers });
+    await waitFor(() => expect(screen.getByText('Today with Kiwi')).toBeTruthy());
+
+    fireEvent.press(screen.getByLabelText('Schedule calendar event'));
+
+    expect(screen.getByLabelText('Calendar event title')).toBeTruthy();
+    expect(screen.queryByText('PET')).toBeNull();
   });
 });

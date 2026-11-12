@@ -2,6 +2,8 @@ import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import { ReactNode } from 'react';
 import { StyleSheet } from 'react-native';
 
+import { insertCalendarEvent } from '@/modules/calendar-events/persistence/calendarEventStore';
+import { CalendarEventFormsProvider } from '@/modules/calendar-events/state/CalendarEventFormsProvider';
 import { PetEvent } from '@/modules/pet-events/model/PetEvent';
 import { loadPetEvents } from '@/modules/pet-events/persistence/petEventStore';
 import { PetEventFormsProvider } from '@/modules/pet-events/state/PetEventFormsProvider';
@@ -65,13 +67,19 @@ jest.mock('@/modules/pet-events/persistence/petEventStore', () => ({
 
 const mockedLoadEvents = jest.mocked(loadPetEvents);
 
+jest.mock('@/modules/calendar-events/persistence/calendarEventStore', () => ({
+  insertCalendarEvent: jest.fn(),
+}));
+
 function Providers({ children }: { children: ReactNode }) {
   return (
     <AppearanceProvider>
       <PetsProvider>
         <PetEventsProvider>
           <PetProfileFormsProvider>
-            <PetEventFormsProvider>{children}</PetEventFormsProvider>
+            <PetEventFormsProvider>
+              <CalendarEventFormsProvider>{children}</CalendarEventFormsProvider>
+            </PetEventFormsProvider>
           </PetProfileFormsProvider>
         </PetEventsProvider>
       </PetsProvider>
@@ -209,5 +217,26 @@ describe('Pets screen', () => {
     expect(screen.getByText('Second')).toBeTruthy();
     expect(screen.getByText('Third')).toBeTruthy();
     expect(screen.getByText('Fourth')).toBeTruthy();
+  });
+
+  it('adds a calendar event from Up next for the pet whose page it is', async () => {
+    jest.mocked(insertCalendarEvent).mockImplementation(async (event) => ({
+      ...event,
+      id: 'calendar-1',
+      createdAt: new Date().toISOString(),
+    }));
+    const screen = render(<PetsScreen />, { wrapper: Providers });
+    await waitFor(() => expect(screen.getByText('Up next')).toBeTruthy());
+
+    fireEvent.press(screen.getByLabelText('Schedule calendar event'));
+    expect(screen.queryByText('PET')).toBeNull();
+    fireEvent.changeText(screen.getByLabelText('Calendar event title'), 'Deworming');
+    fireEvent.press(screen.getByText('Save event'));
+
+    await waitFor(() =>
+      expect(insertCalendarEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ petId: 'luna', title: 'Deworming' }),
+      ),
+    );
   });
 });

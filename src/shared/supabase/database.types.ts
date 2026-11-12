@@ -3,6 +3,48 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 export type Database = {
   public: {
     Tables: {
+      calendar_events: {
+        Row: {
+          created_at: string;
+          description: string | null;
+          ends_at: string;
+          id: string;
+          location: string | null;
+          pet_id: string;
+          starts_at: string;
+          title: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          description?: string | null;
+          ends_at: string;
+          id?: string;
+          location?: string | null;
+          pet_id: string;
+          starts_at: string;
+          title: string;
+        };
+        Update: {
+          created_at?: string;
+          description?: string | null;
+          ends_at?: string;
+          id?: string;
+          location?: string | null;
+          pet_id?: string;
+          starts_at?: string;
+          title?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'calendar_events_pet_id_fkey';
+            columns: ['pet_id'];
+            isOneToOne: false;
+            referencedRelation: 'pets';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       household_members: {
         Row: {
           display_name: string;

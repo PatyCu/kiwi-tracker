@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { useCalendarEventForms } from '@/modules/calendar-events/state/CalendarEventFormsProvider';
 import { usePetEventForms } from '@/modules/pet-events/state/PetEventFormsProvider';
 import { usePetEvents } from '@/modules/pet-events/state/PetEventsProvider';
 import { toTimelineEntries } from '@/modules/pet-events/timeline/toTimelineEntries';
@@ -23,6 +24,7 @@ export function PetOverview({ pet }: PetOverviewProps) {
   const styles = useMemo(() => StyleSheet.create({ summary: { gap: 12 } }), []);
   const { events, deletingEventId, updatingEventId } = usePetEvents();
   const forms = usePetEventForms();
+  const calendarEventForms = useCalendarEventForms();
   const now = new Date();
   const petEvents = events.filter((event) => event.petId === pet.id);
   const status = getPetStatus(petEvents, now);
@@ -41,10 +43,18 @@ export function PetOverview({ pet }: PetOverviewProps) {
         <SectionHeader compact title="Overview" />
         <PetStatusCard pet={pet} status={status} wide={false} colors={colors} />
       </View>
-      <SectionHeader title="Up next" />
+      <SectionHeader
+        title="Up next"
+        action={{
+          label: 'Schedule',
+          accessibilityLabel: 'Schedule calendar event',
+          icon: 'add',
+          onPress: () => calendarEventForms.openAddCalendarEvent(pet.id),
+        }}
+      />
       <PlaceholderCard
-        title="No calendar events yet"
-        description="Upcoming care will appear here when calendar events are implemented."
+        title="Calendar events aren't shown yet"
+        description="Events you add are saved and will appear here once upcoming care is ready."
       />
       <PetActivityCard
         entries={entries}
