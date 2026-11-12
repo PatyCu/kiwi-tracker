@@ -182,13 +182,17 @@ else. The signed-in session is kept in AsyncStorage (localStorage on web).
 5. Check the change: `supabase db lint` for schema errors, and Studio or the
    seeded accounts for access rules. Update `supabase/seed.sql` if the new
    schema needs local data.
-6. Commit the migration with the regenerated types and get it reviewed.
+6. Apply it to the shared project (below) and have the developer check the
+   change there. Commit the migration with the regenerated types only once
+   they approve.
 
 ### Apply to the shared project
 
-Migrations are applied from `main` once they're pushed. An agent's wrap-up
-([`.claude/skills/wrap-up/SKILL.md`](../.claude/skills/wrap-up/SKILL.md)) does
-this automatically; to do it by hand, a maintainer runs the commands below.
+Migrations are applied before they're committed: once the change passes on the
+local stack, so the developer can check it on the shared project before it
+reaches `main`. Agents do this without asking for additive migrations and ask
+first for one that drops, renames or retypes existing data. To do it by hand, a
+maintainer runs the commands below.
 `supabase login` opens a browser to sign in; linking then uses that login.
 
 ```bash
