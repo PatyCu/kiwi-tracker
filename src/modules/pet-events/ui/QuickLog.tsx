@@ -42,7 +42,6 @@ export function QuickLog({ colors, onLogSymptom, onLogDietChange, onLogOther }: 
         <Pressable
           accessibilityLabel={`Add ${action.label.toLowerCase()} to timeline`}
           accessibilityRole="button"
-          accessibilityState={{ disabled: !action.onPress }}
           disabled={!action.onPress}
           key={action.label}
           onPress={action.onPress}

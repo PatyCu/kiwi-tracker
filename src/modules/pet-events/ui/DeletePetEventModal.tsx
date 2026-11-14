@@ -158,7 +158,7 @@ export function DeletePetEventModal({
             </Pressable>
             <Pressable
               accessibilityRole="button"
-              accessibilityState={{ busy: isDeleting, disabled: isDeleting }}
+              aria-busy={isDeleting}
               disabled={isDeleting}
               onPress={onConfirm}
               style={({ pressed }) => [

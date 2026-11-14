@@ -64,7 +64,7 @@ export function SignInScreen() {
             <Pressable
               accessibilityLabel="Show password"
               accessibilityRole="switch"
-              accessibilityState={{ checked: passwordVisible }}
+              aria-checked={passwordVisible}
               hitSlop={8}
               onPress={() => setPasswordVisible((visible) => !visible)}
               style={styles.passwordToggle}
@@ -83,7 +83,6 @@ export function SignInScreen() {
           )}
           <Pressable
             accessibilityRole="button"
-            accessibilityState={{ disabled: form.signingIn }}
             disabled={form.signingIn}
             onPress={() => void form.submit()}
             style={[styles.primaryButton, form.signingIn && styles.disabled]}

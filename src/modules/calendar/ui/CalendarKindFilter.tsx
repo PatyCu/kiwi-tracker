@@ -31,7 +31,7 @@ export function CalendarKindFilter({ kind, onKindChange }: CalendarKindFilterPro
             key={option.value}
             accessibilityLabel={CALENDAR_KIND_LABELS[option.value]}
             accessibilityRole="radio"
-            accessibilityState={{ checked: selected }}
+            aria-checked={selected}
             hitSlop={{ top: 6, bottom: 6 }}
             onPress={() => onKindChange(option.value)}
             style={({ pressed }) => [

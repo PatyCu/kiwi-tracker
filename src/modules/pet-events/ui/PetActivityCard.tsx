@@ -51,7 +51,7 @@ export function PetActivityCard({
       <View style={styles.separator} />
       <View style={styles.timelineHeader}>
         <Text style={styles.timelineTitle}>Recent timeline</Text>
-        <Text accessibilityState={{ disabled: true }} style={styles.placeholderLink}>
+        <Text aria-disabled style={styles.placeholderLink}>
           Export for vet · Coming soon
         </Text>
       </View>

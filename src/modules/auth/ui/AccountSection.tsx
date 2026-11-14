@@ -36,7 +36,6 @@ export function AccountSection() {
         </View>
         <Pressable
           accessibilityRole="button"
-          accessibilityState={{ disabled: signingOut }}
           disabled={signingOut}
           onPress={() => void handleSignOut()}
           style={[styles.row, styles.divider]}

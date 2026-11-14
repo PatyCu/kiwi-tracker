@@ -155,11 +155,15 @@ export function SymptomModal({
           <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
             {petField}
             <Text style={styles.label}>WHAT HAPPENED?</Text>
-            <View style={styles.choices}>
+            <View
+              accessibilityLabel="What happened?"
+              accessibilityRole="radiogroup"
+              style={styles.choices}
+            >
               {SYMPTOM_KINDS.map((option) => (
                 <Pressable
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: symptom === option }}
+                  accessibilityRole="radio"
+                  aria-checked={symptom === option}
                   key={option}
                   onPress={() => onSymptomChange(option)}
                   style={[styles.choice, symptom === option && styles.selectedChoice]}

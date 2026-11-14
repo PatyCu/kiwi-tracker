@@ -97,7 +97,7 @@ export function DateTimePickerField({
       <Pressable
         accessibilityLabel={accessibilityLabel}
         accessibilityRole="button"
-        accessibilityState={{ disabled, expanded: pickerVisible }}
+        aria-expanded={pickerVisible}
         accessibilityValue={{ text: value || `No ${mode} selected` }}
         disabled={disabled}
         onPress={openPicker}

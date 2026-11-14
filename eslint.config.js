@@ -37,5 +37,19 @@ module.exports = defineConfig([
       ],
     },
   },
+  {
+    // React Native Web drops accessibilityState, so web screen readers never hear it.
+    files: ['src/**/*.tsx'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'JSXAttribute[name.name="accessibilityState"]',
+          message:
+            'Use aria-selected, aria-checked, aria-expanded or aria-busy (and Pressable `disabled`), which reach both iOS and the web DOM.',
+        },
+      ],
+    },
+  },
   prettierConfig,
 ]);

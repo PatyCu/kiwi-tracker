@@ -31,7 +31,7 @@ export function PetSelectorCard({
       <Pressable
         accessibilityLabel={`${pet.name}${selected ? ', selected pet' : ''}`}
         accessibilityRole="tab"
-        accessibilityState={{ selected }}
+        aria-selected={selected}
         onPress={onPress}
         style={styles.selectPet}
       >

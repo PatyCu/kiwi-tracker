@@ -152,7 +152,11 @@ export function DietChangeModal({
             {editedChange ? (
               <Text style={styles.fixedChange}>{describeFixedChange(editedChange)}</Text>
             ) : (
-              <View style={styles.choices}>
+              <View
+                accessibilityLabel="What changed?"
+                accessibilityRole="radiogroup"
+                style={styles.choices}
+              >
                 {changeTypes.map((option) => (
                   <Choice
                     disabled={option === 'replace' && currentDiet.length === 0}
@@ -179,7 +183,13 @@ export function DietChangeModal({
                     No current diet items have been recorded yet.
                   </Text>
                 ) : (
-                  <View style={styles.choices}>
+                  <View
+                    accessibilityLabel={
+                      changeType === 'replace' ? 'What did this replace?' : 'What did you stop?'
+                    }
+                    accessibilityRole="radiogroup"
+                    style={styles.choices}
+                  >
                     {currentDiet.map((item) => (
                       <Choice
                         key={item.id}
@@ -213,7 +223,7 @@ export function DietChangeModal({
                   <Pressable
                     accessibilityLabel="Food type"
                     accessibilityRole="button"
-                    accessibilityState={{ expanded: foodTypeDropdownOpen }}
+                    aria-expanded={foodTypeDropdownOpen}
                     accessibilityValue={{ text: foodTypeLabels[foodType] }}
                     onPress={() => setFoodTypeDropdownOpen((open) => !open)}
                     style={styles.dropdownTrigger}
@@ -226,12 +236,16 @@ export function DietChangeModal({
                     />
                   </Pressable>
                   {foodTypeDropdownOpen && (
-                    <View accessibilityRole="menu" style={styles.dropdownOptions}>
+                    <View
+                      accessibilityLabel="Food type"
+                      accessibilityRole="radiogroup"
+                      style={styles.dropdownOptions}
+                    >
                       {DIET_ITEM_TYPES.map((option) => (
                         <Pressable
-                          accessibilityLabel={`Select ${foodTypeLabels[option]}`}
-                          accessibilityRole="menuitem"
-                          accessibilityState={{ selected: foodType === option }}
+                          accessibilityLabel={foodTypeLabels[option]}
+                          accessibilityRole="radio"
+                          aria-checked={foodType === option}
                           key={option}
                           onPress={() => {
                             onFoodTypeChange(option);
@@ -328,8 +342,8 @@ type ChoiceProps = {
 function Choice({ label, selected, disabled = false, styles, onPress }: ChoiceProps) {
   return (
     <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ disabled, selected }}
+      accessibilityRole="radio"
+      aria-checked={selected}
       disabled={disabled}
       onPress={onPress}
       style={[styles.choice, selected && styles.selectedChoice, disabled && styles.disabledChoice]}

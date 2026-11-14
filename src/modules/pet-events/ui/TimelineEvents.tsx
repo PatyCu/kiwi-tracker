@@ -100,7 +100,6 @@ function TimelineRow({
             accessibilityRole="button"
             accessibilityLabel={`Delete timeline event: ${entry.title}, ${entry.meta}`}
             accessibilityHint="Asks for confirmation before permanently deleting this event."
-            accessibilityState={{ disabled: actionsDisabled }}
             disabled={actionsDisabled}
             hitSlop={12}
             onPress={() => onDelete(entry)}
@@ -117,7 +116,6 @@ function TimelineRow({
           accessibilityRole="button"
           accessibilityLabel={`Edit date and time for ${entry.title}, currently ${entry.meta}`}
           accessibilityHint="Opens a form to change when this event occurred."
-          accessibilityState={{ disabled: actionsDisabled }}
           disabled={actionsDisabled}
           hitSlop={8}
           onBlur={() => setMetaActive(false)}

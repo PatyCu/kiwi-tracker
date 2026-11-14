@@ -55,8 +55,8 @@ export function CompactMonth({
                   day: 'numeric',
                   month: 'long',
                 })}${items.length > 0 ? `, ${items.length} ${items.length === 1 ? 'item' : 'items'}` : ''}`}
-                accessibilityRole="button"
-                accessibilityState={{ selected }}
+                accessibilityRole="radio"
+                aria-checked={selected}
                 onPress={() => onSelectDay(day)}
                 style={styles.day}
               >

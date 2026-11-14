@@ -63,7 +63,7 @@ function NavigationItem({ item, sidebar, styles }: NavigationItemProps) {
     <Pressable
       accessibilityLabel={item.label}
       accessibilityRole="tab"
-      accessibilityState={{ selected: item.selected }}
+      aria-selected={item.selected}
       onBlur={() => setFocused(false)}
       onFocus={() => setFocused(true)}
       onHoverIn={() => setHovered(true)}

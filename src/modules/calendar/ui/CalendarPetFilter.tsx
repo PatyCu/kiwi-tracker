@@ -46,7 +46,7 @@ export function CalendarPetFilter({
             key={pet.id}
             accessibilityLabel={pet.name}
             accessibilityRole="checkbox"
-            accessibilityState={{ checked: selected }}
+            aria-checked={selected}
             onPress={() => onTogglePet(pet.id)}
             style={({ pressed }) => [
               styles.toggle,

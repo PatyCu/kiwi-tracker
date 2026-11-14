@@ -18,7 +18,7 @@ export function AppearanceSection() {
           <Pressable
             key={option}
             accessibilityRole="radio"
-            accessibilityState={{ checked: appearance === option }}
+            aria-checked={appearance === option}
             onPress={() => setAppearance(option)}
             style={[styles.option, index > 0 && styles.divider]}
           >

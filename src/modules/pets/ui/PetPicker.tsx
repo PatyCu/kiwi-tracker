@@ -25,7 +25,7 @@ export function PetPicker({ pets, selectedPetId, onSelectPet }: PetPickerProps) 
             key={pet.id}
             accessibilityLabel={`Select ${pet.name}`}
             accessibilityRole="radio"
-            accessibilityState={{ checked: selected }}
+            aria-checked={selected}
             onPress={() => onSelectPet(pet.id)}
             style={[styles.option, selected && styles.selectedOption]}
           >
