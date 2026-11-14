@@ -36,14 +36,16 @@
 
 ## Loading data
 
-- The root layout (`src/app/_layout.tsx`) waits for the household: it shows a loading screen while the household loads, and an error with Retry if that fails. That Retry also reloads any pets or events that failed with it.
+- The root layout (`src/app/_layout.tsx`) waits for the household: it shows a loading screen while the household loads, and an error with Retry if that fails. That Retry also reloads any pets, events or calendar events that failed with it.
 - Screens with household data show `LoadState` (`src/shared/ui/LoadState.tsx`) until their data is ready.
-- Screens that show both pets and events use `usePetsAndEventsLoad` (`src/modules/pet-events/state/usePetsAndEventsLoad.ts`); its Retry reloads only what failed.
+- Screens that show both pets and events use `usePetsAndEventsLoad` (`src/modules/pet-events/state/usePetsAndEventsLoad.ts`); its Retry reloads only what failed. The Calendar also waits for calendar events (`CalendarEventsProvider`).
 
 ## Navigation and product scope
 
-- Global tabs cover cross-pet views: Today, Pets, Timeline, and Settings.
-- The Pets tab keeps its selected pet explicit in the `petId` route parameter.
+- Global tabs cover cross-pet views: Today, Pets, Calendar, and Settings.
+- The Pets tab keeps its selected pet explicit in the `petId` route parameter, and the Calendar keeps the pets it shows in `petIds` (none means every pet).
+- The Calendar shows a month grid on screens wider than `WIDE_CONTENT_BREAKPOINT`, and a compact month with the selected day's list on narrower ones. Its weeks start on Monday.
+- Pets and Calendar are stacks, so an event opened from either goes back to where it was opened.
 - Pet routes use `petId`; event routes also use `recordId`.
 - Today is a cross-pet overview; pet pages provide drill-down.
 - The green, amber, and red status rules and copy have one source of truth.

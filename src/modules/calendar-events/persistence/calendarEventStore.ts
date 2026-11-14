@@ -11,7 +11,7 @@ type CalendarEventColumns = Omit<TablesInsert<'calendar_events'>, 'id' | 'create
 
 const EVENT_COLUMNS = 'id, pet_id, title, starts_at, ends_at, location, description, created_at';
 
-type CalendarEventStorageErrorCode = 'INVALID_DATA' | 'WRITE_FAILED';
+type CalendarEventStorageErrorCode = 'READ_FAILED' | 'INVALID_DATA' | 'WRITE_FAILED';
 
 export class CalendarEventStorageError extends Error {
   readonly code: CalendarEventStorageErrorCode;
@@ -23,6 +23,22 @@ export class CalendarEventStorageError extends Error {
     this.code = code;
     this.cause = cause;
   }
+}
+
+/**
+ * Returns the calendar events of every pet in the signed-in user's household,
+ * in date order. Access rules only return that household's events.
+ */
+export async function loadCalendarEvents(): Promise<CalendarEvent[]> {
+  const { data, error } = await getSupabaseClient()
+    .from('calendar_events')
+    .select(EVENT_COLUMNS)
+    .order('starts_at', { ascending: true })
+    .order('created_at', { ascending: true });
+  if (error) {
+    throw new CalendarEventStorageError('READ_FAILED', 'Could not load calendar events.', error);
+  }
+  return data.map(toCalendarEvent);
 }
 
 /** Saves one calendar event and returns it with the id and createdAt storage gave it. */

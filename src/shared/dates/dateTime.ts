@@ -8,7 +8,28 @@ export function formatEventTime(iso: string, now = new Date()): string {
       ? 'Yesterday'
       : date.toLocaleDateString([], { day: 'numeric', month: 'short' });
 
-  return `${day} · ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+  return `${day} · ${formatClockTime(iso)}`;
+}
+
+/**
+ * The time of day in as few characters as the device's format allows, such
+ * as 9:30am or 09:30, for tight spaces like a calendar cell.
+ */
+export function formatCompactClockTime(iso: string): string {
+  return new Intl.DateTimeFormat([], { hour: 'numeric', minute: '2-digit' })
+    .formatToParts(new Date(iso))
+    .map((part, index, parts) => {
+      if (part.type === 'dayPeriod') return part.value.toLowerCase().replace(/\./g, '');
+      // Drops the space before am/pm.
+      if (part.type === 'literal' && parts[index + 1]?.type === 'dayPeriod') return '';
+      return part.value;
+    })
+    .join('');
+}
+
+/** The time of day, such as 09:30, in the device's format. */
+export function formatClockTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
 type DisplayedEventDateTime = {

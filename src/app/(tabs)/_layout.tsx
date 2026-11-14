@@ -9,7 +9,7 @@ import { DESKTOP_NAV_BREAKPOINT } from '@/shared/ui/breakpoints';
 const primaryRoutes = [
   { name: 'index', label: 'Today', icon: 'home-outline', activeIcon: 'home' },
   { name: 'pets', label: 'Pets', icon: 'paw-outline', activeIcon: 'paw' },
-  { name: 'timeline', label: 'Timeline', icon: 'time-outline', activeIcon: 'time' },
+  { name: 'calendar', label: 'Calendar', icon: 'calendar-outline', activeIcon: 'calendar' },
   {
     name: 'settings',
     label: 'Settings',

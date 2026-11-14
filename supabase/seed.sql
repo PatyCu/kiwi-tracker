@@ -2,15 +2,16 @@
 -- Never run this against the shared project.
 --
 -- Shaped like the shared project: two accounts share one household, and a
--- third account in its own household checks that outsiders see nothing. Those
--- two households have one pet each, so access can be checked both ways. A
+-- third account in its own household checks that outsiders see nothing. The
+-- shared household has two pets, so views can show every pet or one, and the
+-- outsider's household has one, so access can be checked both ways. A
 -- fourth account's household has no pets yet, like a new account's.
 --
 -- Sign in locally with any of these accounts:
 --
 --   Email             Password        Name    Household (alias, id)                              Sees
---   alex@kiwi.test    kiwi-local-dev  Alex    Alex's home  aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa  Kiwi (cat, one hairball event, one vet visit planned)
---   jordan@kiwi.test  kiwi-local-dev  Jordan  Alex's home  aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa  Kiwi (cat, one hairball event, one vet visit planned)
+--   alex@kiwi.test    kiwi-local-dev  Alex    Alex's home  aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa  Kiwi (cat) and Luna (dog), with events and plans around today
+--   jordan@kiwi.test  kiwi-local-dev  Jordan  Alex's home  aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa  Kiwi (cat) and Luna (dog), with events and plans around today
 --   sam@kiwi.test     kiwi-local-dev  Sam     Sam's home   bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb  Biscuit (dog, no events)
 --   riley@kiwi.test   kiwi-local-dev  Riley   Riley's home eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee  No pets
 
@@ -109,6 +110,14 @@ values
     '2021-04-12'
   ),
   (
+    'ffffffff-ffff-4fff-8fff-ffffffffffff',
+    'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    'Luna',
+    'Dog',
+    'Beagle',
+    '2022-09-03'
+  ),
+  (
     'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
     'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
     'Biscuit',
@@ -118,20 +127,38 @@ values
   );
 
 insert into public.pet_events (pet_id, type, occurred_at, symptom, note)
-values (
-  'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
-  'symptom',
-  now() - interval '1 day',
-  'Hairball',
-  'After breakfast.'
-);
+values
+  (
+    'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+    'symptom',
+    now() - interval '1 day',
+    'Hairball',
+    'After breakfast.'
+  ),
+  ('ffffffff-ffff-4fff-8fff-ffffffffffff', 'symptom', now() - interval '2 hours', 'Vomiting', null);
+
+-- Several things on one day, so a calendar day has more than fit in its cell.
+insert into public.pet_events (pet_id, type, occurred_at, title)
+values
+  ('cccccccc-cccc-4ccc-8ccc-cccccccccccc', 'other', now() - interval '3 hours', 'Weigh-in'),
+  ('ffffffff-ffff-4fff-8fff-ffffffffffff', 'other', now() - interval '4 hours', 'Groomer'),
+  ('ffffffff-ffff-4fff-8fff-ffffffffffff', 'other', now() - interval '6 days', 'Long walk');
 
 insert into public.calendar_events (pet_id, title, starts_at, ends_at, location, description)
-values (
-  'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
-  'Annual vaccines',
-  date_trunc('hour', now()) + interval '3 days',
-  date_trunc('hour', now()) + interval '3 days 1 hour',
-  'Riverside Vet Clinic',
-  'Bring the vaccination card.'
-);
+values
+  (
+    'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+    'Annual vaccines',
+    date_trunc('hour', now()) + interval '3 days',
+    date_trunc('hour', now()) + interval '3 days 1 hour',
+    'Riverside Vet Clinic',
+    'Bring the vaccination card.'
+  ),
+  (
+    'ffffffff-ffff-4fff-8fff-ffffffffffff',
+    'Deworming',
+    date_trunc('hour', now()) + interval '1 hour',
+    date_trunc('hour', now()) + interval '90 minutes',
+    null,
+    null
+  );

@@ -5,6 +5,7 @@ import { StyleSheet } from 'react-native';
 import { AppearanceProvider } from '@/shared/theme/AppearanceProvider';
 import { insertCalendarEvent } from '@/modules/calendar-events/persistence/calendarEventStore';
 import { CalendarEventFormsProvider } from '@/modules/calendar-events/state/CalendarEventFormsProvider';
+import { CalendarEventsProvider } from '@/modules/calendar-events/state/CalendarEventsProvider';
 import { PetEvent } from '@/modules/pet-events/model/PetEvent';
 import { insertPetEvent, loadPetEvents } from '@/modules/pet-events/persistence/petEventStore';
 import { PetEventFormsProvider } from '@/modules/pet-events/state/PetEventFormsProvider';
@@ -70,6 +71,7 @@ const mockedLoadEvents = jest.mocked(loadPetEvents);
 const mockedInsertEvent = jest.mocked(insertPetEvent);
 
 jest.mock('@/modules/calendar-events/persistence/calendarEventStore', () => ({
+  loadCalendarEvents: jest.fn(async () => []),
   insertCalendarEvent: jest.fn(),
 }));
 
@@ -78,11 +80,13 @@ function Providers({ children }: { children: ReactNode }) {
     <AppearanceProvider>
       <PetsProvider>
         <PetEventsProvider>
-          <PetProfileFormsProvider>
-            <PetEventFormsProvider>
-              <CalendarEventFormsProvider>{children}</CalendarEventFormsProvider>
-            </PetEventFormsProvider>
-          </PetProfileFormsProvider>
+          <CalendarEventsProvider>
+            <PetProfileFormsProvider>
+              <PetEventFormsProvider>
+                <CalendarEventFormsProvider>{children}</CalendarEventFormsProvider>
+              </PetEventFormsProvider>
+            </PetProfileFormsProvider>
+          </CalendarEventsProvider>
         </PetEventsProvider>
       </PetsProvider>
     </AppearanceProvider>

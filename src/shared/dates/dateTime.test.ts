@@ -1,4 +1,5 @@
 import {
+  formatCompactClockTime,
   formatEventTime,
   isValidDisplayedBirthDate,
   toDisplayedBirthDate,
@@ -26,6 +27,11 @@ describe('date utilities', () => {
 
     expect(formatEventTime('2026-07-15T10:30:00.000Z', now)).toContain('Today ·');
     expect(formatEventTime('2026-07-14T10:30:00.000Z', now)).toContain('Yesterday ·');
+  });
+
+  it('formats a compact time of day without a space before am or pm', () => {
+    const time = formatCompactClockTime(new Date(2026, 10, 14, 21, 5).toISOString());
+    expect(time).toMatch(/^(9:05pm|21:05)$/);
   });
 
   it('converts editable local event date and time values to an ISO timestamp', () => {

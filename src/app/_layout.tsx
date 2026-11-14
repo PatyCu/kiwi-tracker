@@ -7,6 +7,10 @@ import { AppearanceProvider, useAppearance } from '@/shared/theme/AppearanceProv
 import { SessionProvider, useSession } from '@/modules/auth/state/SessionProvider';
 import { SignInUnavailableScreen } from '@/modules/auth/ui/SignInUnavailableScreen';
 import { CalendarEventFormsProvider } from '@/modules/calendar-events/state/CalendarEventFormsProvider';
+import {
+  CalendarEventsProvider,
+  useCalendarEvents,
+} from '@/modules/calendar-events/state/CalendarEventsProvider';
 import { HouseholdProvider, useHousehold } from '@/modules/households/state/HouseholdProvider';
 import { NoHouseholdScreen } from '@/modules/households/ui/NoHouseholdScreen';
 import { PetEventFormsProvider } from '@/modules/pet-events/state/PetEventFormsProvider';
@@ -24,13 +28,15 @@ export default function RootLayout() {
           <HouseholdProvider>
             <PetsProvider>
               <PetEventsProvider>
-                <PetProfileFormsProvider>
-                  <PetEventFormsProvider>
-                    <CalendarEventFormsProvider>
-                      <RootStack />
-                    </CalendarEventFormsProvider>
-                  </PetEventFormsProvider>
-                </PetProfileFormsProvider>
+                <CalendarEventsProvider>
+                  <PetProfileFormsProvider>
+                    <PetEventFormsProvider>
+                      <CalendarEventFormsProvider>
+                        <RootStack />
+                      </CalendarEventFormsProvider>
+                    </PetEventFormsProvider>
+                  </PetProfileFormsProvider>
+                </CalendarEventsProvider>
               </PetEventsProvider>
             </PetsProvider>
           </HouseholdProvider>
@@ -45,6 +51,7 @@ function RootStack() {
   const { session } = useSession();
   const { household, retryLoad: retryHousehold } = useHousehold();
   const { retryLoad: retryPetsAndEvents } = usePetsAndEventsLoad();
+  const { loadStatus: calendarEventsStatus, retryLoad: retryCalendarEvents } = useCalendarEvents();
   const signedIn = session.status === 'signed-in';
 
   let content;
@@ -69,6 +76,7 @@ function RootStack() {
             // Retry is enough to open the app.
             retryHousehold();
             retryPetsAndEvents();
+            if (calendarEventsStatus === 'error') retryCalendarEvents();
           }}
         />
       </View>

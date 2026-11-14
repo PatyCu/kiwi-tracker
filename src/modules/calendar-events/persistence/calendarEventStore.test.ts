@@ -1,6 +1,7 @@
 import {
   CalendarEventStorageError,
   insertCalendarEvent,
+  loadCalendarEvents,
 } from '@/modules/calendar-events/persistence/calendarEventStore';
 import { getSupabaseClient } from '@/shared/supabase/supabaseClient';
 
@@ -13,6 +14,21 @@ function mockInsert(result: Result) {
   query.insert = jest.fn(() => query);
   query.select = jest.fn(() => query);
   query.single = jest.fn(() => Promise.resolve(result));
+  const from = jest.fn(() => query);
+  jest
+    .mocked(getSupabaseClient)
+    .mockReturnValue({ from } as unknown as ReturnType<typeof getSupabaseClient>);
+  return { from, query };
+}
+
+function mockLoad(result: Result) {
+  const query: Record<string, jest.Mock> = {};
+  query.select = jest.fn(() => query);
+  let orders = 0;
+  query.order = jest.fn(() => {
+    orders += 1;
+    return orders === 2 ? Promise.resolve(result) : query;
+  });
   const from = jest.fn(() => query);
   jest
     .mocked(getSupabaseClient)
@@ -95,5 +111,36 @@ describe('calendar event storage', () => {
     const failure = insertCalendarEvent(newEvent);
     await expect(failure).rejects.toBeInstanceOf(CalendarEventStorageError);
     await expect(failure).rejects.toMatchObject({ code: 'WRITE_FAILED' });
+  });
+
+  it("loads the household's events in date order with ISO timestamps", async () => {
+    const { from, query } = mockLoad({
+      data: [savedRow, { ...savedRow, id: 'calendar-2', location: 'Riverside Vet' }],
+      error: null,
+    });
+
+    await expect(loadCalendarEvents()).resolves.toEqual([
+      { ...newEvent, id: 'calendar-1', createdAt: '2026-11-12T18:31:00.123Z' },
+      {
+        ...newEvent,
+        id: 'calendar-2',
+        location: 'Riverside Vet',
+        createdAt: '2026-11-12T18:31:00.123Z',
+      },
+    ]);
+    expect(from).toHaveBeenCalledWith('calendar_events');
+    expect(query.order).toHaveBeenNthCalledWith(1, 'starts_at', { ascending: true });
+  });
+
+  it('reports a failed read', async () => {
+    mockLoad({ data: null, error: { message: 'offline' } });
+
+    await expect(loadCalendarEvents()).rejects.toMatchObject({ code: 'READ_FAILED' });
+  });
+
+  it('rejects a stored event with an invalid format', async () => {
+    mockLoad({ data: [{ ...savedRow, title: '' }], error: null });
+
+    await expect(loadCalendarEvents()).rejects.toMatchObject({ code: 'INVALID_DATA' });
   });
 });

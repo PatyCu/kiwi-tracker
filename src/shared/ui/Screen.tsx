@@ -4,20 +4,24 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAppearance } from '@/shared/theme/AppearanceProvider';
 import { Palette } from '@/shared/theme/palette';
-import { DESKTOP_NAV_BREAKPOINT } from '@/shared/ui/breakpoints';
+import { DESKTOP_NAV_BREAKPOINT, WIDE_CONTENT_BREAKPOINT } from '@/shared/ui/breakpoints';
 
 type ScreenProps = {
   children: ReactNode;
   scroll?: boolean;
+  /** Uses the whole width on wide screens instead of a centered column. */
+  fullWidth?: boolean;
 };
 
-export function Screen({ children, scroll = true }: ScreenProps) {
+export function Screen({ children, scroll = true, fullWidth = false }: ScreenProps) {
   const { colors } = useAppearance();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const width = useWindowDimensions().width;
-  const wide = width > 780;
+  const wide = width > WIDE_CONTENT_BREAKPOINT;
   const desktopNavigation = width >= DESKTOP_NAV_BREAKPOINT;
-  const content = <View style={[styles.content, wide && styles.wideContent]}>{children}</View>;
+  const content = (
+    <View style={[styles.content, wide && !fullWidth && styles.wideContent]}>{children}</View>
+  );
 
   return (
     <SafeAreaView edges={desktopNavigation ? ['top', 'right'] : []} style={styles.safeArea}>

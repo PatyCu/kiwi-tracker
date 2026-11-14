@@ -4,6 +4,7 @@ import { StyleSheet } from 'react-native';
 
 import { insertCalendarEvent } from '@/modules/calendar-events/persistence/calendarEventStore';
 import { CalendarEventFormsProvider } from '@/modules/calendar-events/state/CalendarEventFormsProvider';
+import { CalendarEventsProvider } from '@/modules/calendar-events/state/CalendarEventsProvider';
 import { PetEvent } from '@/modules/pet-events/model/PetEvent';
 import { loadPetEvents } from '@/modules/pet-events/persistence/petEventStore';
 import { PetEventFormsProvider } from '@/modules/pet-events/state/PetEventFormsProvider';
@@ -27,7 +28,7 @@ jest.mock('@expo/vector-icons', () => {
 });
 
 jest.mock('expo-router', () => ({
-  router: { push: jest.fn(), back: jest.fn(), setParams: jest.fn() },
+  router: { push: jest.fn(), back: jest.fn(), setParams: jest.fn(), navigate: jest.fn() },
   useLocalSearchParams: () => ({ petId: mockPetId }),
 }));
 
@@ -68,6 +69,7 @@ jest.mock('@/modules/pet-events/persistence/petEventStore', () => ({
 const mockedLoadEvents = jest.mocked(loadPetEvents);
 
 jest.mock('@/modules/calendar-events/persistence/calendarEventStore', () => ({
+  loadCalendarEvents: jest.fn(async () => []),
   insertCalendarEvent: jest.fn(),
 }));
 
@@ -76,11 +78,13 @@ function Providers({ children }: { children: ReactNode }) {
     <AppearanceProvider>
       <PetsProvider>
         <PetEventsProvider>
-          <PetProfileFormsProvider>
-            <PetEventFormsProvider>
-              <CalendarEventFormsProvider>{children}</CalendarEventFormsProvider>
-            </PetEventFormsProvider>
-          </PetProfileFormsProvider>
+          <CalendarEventsProvider>
+            <PetProfileFormsProvider>
+              <PetEventFormsProvider>
+                <CalendarEventFormsProvider>{children}</CalendarEventFormsProvider>
+              </PetEventFormsProvider>
+            </PetProfileFormsProvider>
+          </CalendarEventsProvider>
         </PetEventsProvider>
       </PetsProvider>
     </AppearanceProvider>
@@ -133,7 +137,8 @@ describe('Pets screen', () => {
     fireEvent.press(screen.getByText('Dog'));
     fireEvent.press(screen.getByText('Add pet'));
 
-    await waitFor(() => expect(screen.queryByText('No pets yet')).toBeNull());
+    // Saving re-renders the whole pet page, which can take over a second on a busy test run.
+    await waitFor(() => expect(screen.queryByText('No pets yet')).toBeNull(), { timeout: 5000 });
     expect(screen.getAllByText('Miso').length).toBeGreaterThan(0);
   });
 
@@ -156,6 +161,18 @@ describe('Pets screen', () => {
       petId: 'kiwi',
     });
     expect(jest.requireMock('expo-router').router.push).not.toHaveBeenCalled();
+  });
+
+  it("opens the Calendar showing only the selected pet's events", async () => {
+    const screen = render(<PetsScreen />, { wrapper: Providers });
+    await waitFor(() => expect(screen.getByText('Today with Luna')).toBeTruthy());
+
+    fireEvent.press(screen.getByText('See everything logged and scheduled'));
+
+    expect(jest.requireMock('expo-router').router.navigate).toHaveBeenCalledWith({
+      pathname: '/calendar',
+      params: { petIds: 'luna' },
+    });
   });
 
   it('opens the existing profile modal from the pet selector card', async () => {

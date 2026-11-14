@@ -3,6 +3,7 @@ import { ReactNode } from 'react';
 
 import { loadPetEvents } from '@/modules/pet-events/persistence/petEventStore';
 import { CalendarEventFormsProvider } from '@/modules/calendar-events/state/CalendarEventFormsProvider';
+import { CalendarEventsProvider } from '@/modules/calendar-events/state/CalendarEventsProvider';
 import { PetEventFormsProvider } from '@/modules/pet-events/state/PetEventFormsProvider';
 import { PetEventsProvider } from '@/modules/pet-events/state/PetEventsProvider';
 import { loadPets } from '@/modules/pets/persistence/petStore';
@@ -55,6 +56,7 @@ jest.mock('@/modules/pet-events/persistence/petEventStore', () => ({
 }));
 
 jest.mock('@/modules/calendar-events/persistence/calendarEventStore', () => ({
+  loadCalendarEvents: jest.fn(async () => []),
   insertCalendarEvent: jest.fn(),
 }));
 
@@ -63,11 +65,13 @@ function Providers({ children }: { children: ReactNode }) {
     <AppearanceProvider>
       <PetsProvider>
         <PetEventsProvider>
-          <PetProfileFormsProvider>
-            <PetEventFormsProvider>
-              <CalendarEventFormsProvider>{children}</CalendarEventFormsProvider>
-            </PetEventFormsProvider>
-          </PetProfileFormsProvider>
+          <CalendarEventsProvider>
+            <PetProfileFormsProvider>
+              <PetEventFormsProvider>
+                <CalendarEventFormsProvider>{children}</CalendarEventFormsProvider>
+              </PetEventFormsProvider>
+            </PetProfileFormsProvider>
+          </CalendarEventsProvider>
         </PetEventsProvider>
       </PetsProvider>
     </AppearanceProvider>

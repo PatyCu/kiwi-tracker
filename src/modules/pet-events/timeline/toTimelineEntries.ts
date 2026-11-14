@@ -7,13 +7,10 @@ import {
   SymptomKind,
   PetEvent,
 } from '@/modules/pet-events/model/PetEvent';
-import { Pet } from '@/modules/pets/model/Pet';
 
 export type TimelineEntry = {
   id: string;
   petId: string;
-  petName?: string;
-  petPhotoUri?: string;
   icon: keyof typeof Ionicons.glyphMap;
   title: string;
   meta: string;
@@ -46,27 +43,8 @@ export function toTimelineEntries(
     .map((event) => toTimelineEntry(event, symptomColor, dietColor, otherColor, now));
 }
 
-export function toGlobalTimelineEntries(
-  events: readonly PetEvent[],
-  pets: readonly Pet[],
-  symptomColor: string,
-  dietColor: string,
-  otherColor: string,
-  now: Date,
-): TimelineEntry[] {
-  return [...events]
-    .sort((left, right) => Date.parse(right.occurredAt) - Date.parse(left.occurredAt))
-    .map((event) => {
-      const pet = pets.find((item) => item.id === event.petId);
-      return {
-        ...toTimelineEntry(event, symptomColor, dietColor, otherColor, now),
-        petName: pet?.name ?? 'Unknown pet',
-        petPhotoUri: pet?.photoUri,
-      };
-    });
-}
-
-function toTimelineEntry(
+/** How one event reads in a timeline or calendar: its icon, title, note and colour. */
+export function toTimelineEntry(
   event: PetEvent,
   symptomColor: string,
   dietColor: string,

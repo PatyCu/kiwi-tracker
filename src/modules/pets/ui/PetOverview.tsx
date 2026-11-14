@@ -76,12 +76,10 @@ export function PetOverview({ pet }: PetOverviewProps) {
       />
       <SectionHeader title="More" />
       <PetSectionLink
-        label="Timeline"
-        description="See the complete history"
-        icon="time-outline"
-        onPress={() =>
-          router.push({ pathname: '/pets/[petId]/timeline', params: { petId: pet.id } })
-        }
+        label="Calendar"
+        description="See everything logged and scheduled"
+        icon="calendar-outline"
+        onPress={() => router.navigate({ pathname: '/calendar', params: { petIds: pet.id } })}
       />
       <PetSectionLink
         label="Profile"

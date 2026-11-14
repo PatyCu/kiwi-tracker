@@ -1,7 +1,7 @@
 import { createContext, ReactNode, useCallback, useContext, useMemo, useState } from 'react';
 
 import { useCalendarEventForm } from '@/modules/calendar-events/forms/useCalendarEventForm';
-import { insertCalendarEvent } from '@/modules/calendar-events/persistence/calendarEventStore';
+import { useCalendarEvents } from '@/modules/calendar-events/state/CalendarEventsProvider';
 import { CalendarEventModal } from '@/modules/calendar-events/ui/CalendarEventModal';
 import { usePets } from '@/modules/pets/state/PetsProvider';
 import { confirmDiscardChanges, showMessage } from '@/shared/platform/dialogs';
@@ -17,13 +17,14 @@ const CalendarEventFormsContext = createContext<CalendarEventFormsContextValue |
 export function CalendarEventFormsProvider({ children }: { children: ReactNode }) {
   const { colors } = useAppearance();
   const { pets } = usePets();
+  const { addCalendarEvent } = useCalendarEvents();
   const [targetPetId, setTargetPetId] = useState<string | null>(null);
   const [showPetChoice, setShowPetChoice] = useState(false);
 
   const form = useCalendarEventForm({
     onSubmit: async (input) => {
       if (!targetPetId) throw new Error('A pet is required.');
-      await insertCalendarEvent({ ...input, petId: targetPetId });
+      await addCalendarEvent({ ...input, petId: targetPetId });
     },
   });
 

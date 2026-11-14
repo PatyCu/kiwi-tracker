@@ -89,7 +89,6 @@ function TimelineRow({
         {showConnector && <View style={styles.line} />}
       </View>
       <View style={styles.eventBody}>
-        {entry.petName && <Text style={styles.petName}>{entry.petName}</Text>}
         <View style={styles.eventTitleRow}>
           <Pressable
             accessibilityRole={onOpen ? 'button' : undefined}
@@ -183,7 +182,6 @@ const makeStyles = (colors: Palette) =>
     deleteButtonPressed: { backgroundColor: colors.surface2 },
     deleteButtonDisabled: { opacity: 0.45 },
     cardTitle: { fontSize: 15, color: colors.text, fontWeight: '700' },
-    petName: { fontSize: 11, color: colors.kiwi, fontWeight: '800', marginBottom: 3 },
     metaButton: {
       flexDirection: 'row',
       alignItems: 'center',

@@ -76,8 +76,9 @@ a household yet" instead of opening. In **Table Editor**, insert a row in
 `display_name`, the name the app shows for them instead of their email.
 
 Locally, `supabase/seed.sql` mirrors the shared project: two accounts share a
-household and a third has its own, each household with one pet, so you can check
-what members share and what outsiders can't see. The accounts and their password
+household with two pets, and a third has its own household with one pet, so you
+can check what members share, what outsiders can't see, and views that show every
+pet or one. The accounts and their password
 are listed at the top of that file. Accounts on the shared project don't exist
 locally, and `supabase db reset` removes any account added to the local stack by
 hand.
