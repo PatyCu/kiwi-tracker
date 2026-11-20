@@ -25,6 +25,7 @@ import {
   togglePetSelection,
   toPetSelectionParam,
 } from '@/modules/calendar/petSelection';
+import { AddCalendarEventButton } from '@/modules/calendar/ui/AddCalendarEventButton';
 import { CalendarFilter } from '@/modules/calendar/ui/CalendarFilter';
 import { CalendarToolbar } from '@/modules/calendar/ui/CalendarToolbar';
 import { CompactMonth } from '@/modules/calendar/ui/CompactMonth';
@@ -47,7 +48,8 @@ const WEEK_STARTS_ON: Weekday = 1;
 
 /**
  * The household's pet events and calendar events by month: a full grid on wide
- * screens, and a compact month with the selected day's list on narrow ones.
+ * screens, and a compact month with the selected day's list (if a day is
+ * selected) on narrow ones.
  * The pet selection lives in the route (?petIds=), so a pet's page can open it.
  */
 export function CalendarScreen() {
@@ -62,7 +64,7 @@ export function CalendarScreen() {
   const { loadStatus, retryLoad } = useCalendarDataLoad();
   const [kinds, setKinds] = useState<readonly CalendarItemKind[]>(CALENDAR_ITEM_KINDS);
   const [month, setMonth] = useState(() => monthOf(new Date()));
-  const [selectedDay, setSelectedDay] = useState(() => new Date());
+  const [selectedDay, setSelectedDay] = useState<Date | null>(() => new Date());
 
   const selectedPetIds = useMemo(() => readPetSelection(petIdsParam, pets), [petIdsParam, pets]);
   const itemsByDay = useMemo(() => {
@@ -112,7 +114,7 @@ export function CalendarScreen() {
     });
   };
   // One pet needs no picker; with several, the form asks which one.
-  const addEvent = (day: Date) =>
+  const addEvent = (day?: Date) =>
     openAddCalendarEvent(pets.length === 1 ? pets[0].id : undefined, day);
   const names = weekdayNames(WEEK_STARTS_ON);
   const filter = (
@@ -156,6 +158,13 @@ export function CalendarScreen() {
           />
         ) : (
           <>
+            <View style={styles.actions}>
+              <View style={styles.actionsStart}>{filter}</View>
+              <AddCalendarEventButton
+                day={selectedDay}
+                onPress={() => addEvent(selectedDay ?? undefined)}
+              />
+            </View>
             <CompactMonth
               weeks={weeks}
               weekdayNames={names}
@@ -163,16 +172,16 @@ export function CalendarScreen() {
               todayKey={todayKey}
               selectedDay={selectedDay}
               onSelectDay={setSelectedDay}
-              onAddEvent={() => addEvent(selectedDay)}
-              headerStart={filter}
             />
-            <DayAgenda
-              day={selectedDay}
-              items={itemsByDay.get(toDayKey(selectedDay)) ?? []}
-              kinds={kinds}
-              showPetNames={showPetNames}
-              onOpenItem={openItem}
-            />
+            {selectedDay && (
+              <DayAgenda
+                day={selectedDay}
+                items={itemsByDay.get(toDayKey(selectedDay)) ?? []}
+                kinds={kinds}
+                showPetNames={showPetNames}
+                onOpenItem={openItem}
+              />
+            )}
           </>
         )}
       </View>
@@ -183,4 +192,12 @@ export function CalendarScreen() {
 const styles = StyleSheet.create({
   content: { gap: 18 },
   fill: { flexGrow: 1 },
+  actions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginBottom: -6,
+  },
+  actionsStart: { flexShrink: 1 },
 });

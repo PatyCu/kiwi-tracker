@@ -288,6 +288,23 @@ describe('Calendar screen', () => {
     expect(screen.queryByText('Groomer')).toBeNull();
   });
 
+  it('deselects the selected day, hiding its list, and adds an event with no day then', async () => {
+    jest.mocked(loadPets).mockResolvedValue([kiwi]);
+    const screen = await renderCalendar();
+    const todayButton = screen.getByLabelText(new RegExp(`^${dayName(new Date())}`));
+    expect(todayButton.props.accessibilityState).toMatchObject({ selected: true });
+
+    fireEvent.press(todayButton);
+
+    expect(screen.queryByText('Vomiting logged')).toBeNull();
+    expect(screen.queryByRole('header', { name: /– All events$/ })).toBeNull();
+    expect(
+      screen.getByLabelText(new RegExp(`^${dayName(new Date())}`)).props.accessibilityState,
+    ).toMatchObject({ selected: false });
+    fireEvent.press(screen.getByLabelText('Add calendar event'));
+    expect(screen.getByLabelText('Calendar event title')).toBeTruthy();
+  });
+
   it('shows the month as a grid on wide screens, with the extra items counted', async () => {
     mockWindowWidth = 1280;
     jest

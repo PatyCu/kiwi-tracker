@@ -1,5 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
-import { ReactNode, useMemo } from 'react';
+import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { CalendarItem } from '@/modules/calendar/calendarItems';
@@ -14,18 +13,13 @@ type CompactMonthProps = {
   weekdayNames: string[];
   itemsByDay: Map<string, CalendarItem[]>;
   todayKey: string;
-  selectedDay: Date;
-  onSelectDay: (day: Date) => void;
-  /** Adds a calendar event on the selected day. */
-  onAddEvent: () => void;
-  /** Shown at the start of the card's header, across from the add button. */
-  headerStart?: ReactNode;
+  /** None when the user tapped the selected day again. */
+  selectedDay: Date | null;
+  /** Called with the tapped day, or with null when it was already selected. */
+  onSelectDay: (day: Date | null) => void;
 };
 
-/**
- * The month as a small grid where each day shows a dot per kind of item it has,
- * under a header with a button that adds a calendar event on the selected day.
- */
+/** The month as a small grid where each day shows a dot per kind of item it has. */
 export function CompactMonth({
   weeks,
   weekdayNames,
@@ -33,31 +27,13 @@ export function CompactMonth({
   todayKey,
   selectedDay,
   onSelectDay,
-  onAddEvent,
-  headerStart,
 }: CompactMonthProps) {
   const { colors } = useAppearance();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const selectedDayKey = toDayKey(selectedDay);
+  const selectedDayKey = selectedDay ? toDayKey(selectedDay) : null;
 
   return (
     <View style={styles.month}>
-      <View style={styles.header}>
-        <View style={styles.headerStart}>{headerStart}</View>
-        <Pressable
-          accessibilityLabel={`Add calendar event on ${selectedDay.toLocaleDateString([], {
-            weekday: 'long',
-            day: 'numeric',
-            month: 'long',
-          })}`}
-          accessibilityRole="button"
-          hitSlop={4}
-          onPress={onAddEvent}
-          style={({ pressed }) => [styles.add, pressed && styles.pressed]}
-        >
-          <Ionicons name="add" size={22} color={colors.ink} />
-        </Pressable>
-      </View>
       <View style={styles.week}>
         {weekdayNames.map((name) => (
           <Text key={name} style={styles.weekday}>
@@ -82,9 +58,9 @@ export function CompactMonth({
                   day: 'numeric',
                   month: 'long',
                 })}${items.length > 0 ? `, ${items.length} ${items.length === 1 ? 'item' : 'items'}` : ''}`}
-                accessibilityRole="radio"
-                aria-checked={selected}
-                onPress={() => onSelectDay(day)}
+                accessibilityRole="button"
+                aria-selected={selected}
+                onPress={() => onSelectDay(selected ? null : day)}
                 style={styles.day}
               >
                 <View
@@ -125,24 +101,6 @@ const makeStyles = (colors: Palette) =>
       borderRadius: 22,
       backgroundColor: colors.surface,
     },
-    header: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: 12,
-      paddingHorizontal: 6,
-      paddingBottom: 12,
-    },
-    headerStart: { flexShrink: 1 },
-    add: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
-      backgroundColor: colors.kiwi,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    pressed: { opacity: 0.7 },
     week: { flexDirection: 'row' },
     weekday: {
       flex: 1,

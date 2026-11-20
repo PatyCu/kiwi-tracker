@@ -8,7 +8,7 @@ import { Palette } from '@/shared/theme/palette';
 
 type CalendarToolbarProps = {
   month: CalendarMonth;
-  /** Groups the arrows with the month and puts `end` on the same line. */
+  /** Groups the arrows after the month and puts `end` on the same line; narrow puts them either side. */
   wide: boolean;
   onPreviousMonth: () => void;
   onNextMonth: () => void;
@@ -31,40 +31,47 @@ export function CalendarToolbar({
     year: 'numeric',
   });
 
-  const monthAndArrows = (
-    <>
-      <Text accessibilityRole="header" style={styles.title}>
-        {title}
-      </Text>
-      <View style={styles.arrows}>
-        <MonthArrow
-          icon="chevron-back"
-          label="Previous month"
-          onPress={onPreviousMonth}
-          styles={styles}
-        />
-        <MonthArrow
-          icon="chevron-forward"
-          label="Next month"
-          onPress={onNextMonth}
-          styles={styles}
-        />
-      </View>
-    </>
+  const header = (
+    <Text accessibilityRole="header" style={styles.title}>
+      {title}
+    </Text>
+  );
+  const previous = (
+    <MonthArrow
+      icon="chevron-back"
+      label="Previous month"
+      onPress={onPreviousMonth}
+      styles={styles}
+    />
+  );
+  const next = (
+    <MonthArrow icon="chevron-forward" label="Next month" onPress={onNextMonth} styles={styles} />
   );
 
   // Wide: the month and arrows on the left, `end` on the right.
   if (wide) {
     return (
       <View style={styles.toolbar}>
-        <View style={styles.wideStart}>{monthAndArrows}</View>
+        <View style={styles.wideStart}>
+          {header}
+          <View style={styles.arrows}>
+            {previous}
+            {next}
+          </View>
+        </View>
         {end}
       </View>
     );
   }
 
-  // Narrow: the month on the left, the arrows on the right.
-  return <View style={styles.toolbar}>{monthAndArrows}</View>;
+  // Narrow: the arrows at either side of the month.
+  return (
+    <View style={styles.toolbar}>
+      {previous}
+      <View style={styles.narrowTitle}>{header}</View>
+      {next}
+    </View>
+  );
 }
 
 type MonthArrowProps = {
@@ -98,6 +105,7 @@ const makeStyles = (colors: Palette) =>
       gap: 16,
     },
     wideStart: { flexDirection: 'row', alignItems: 'center', gap: 16, flexShrink: 1 },
+    narrowTitle: { flexShrink: 1, alignItems: 'center' },
     title: { color: colors.text, fontSize: 26, fontWeight: '800' },
     arrows: { flexDirection: 'row', gap: 8 },
     arrow: {
