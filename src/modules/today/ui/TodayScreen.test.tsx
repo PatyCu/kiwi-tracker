@@ -1,12 +1,10 @@
-import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, waitFor, within } from '@testing-library/react-native';
 import { ReactNode } from 'react';
 import { StyleSheet } from 'react-native';
 
 import { AppearanceProvider } from '@/shared/theme/AppearanceProvider';
-import {
-  insertCalendarEvent,
-  loadCalendarEvents,
-} from '@/modules/calendar-events/persistence/calendarEventStore';
+import { loadCalendarEvents } from '@/modules/calendar-events/persistence/calendarEventStore';
+import { CalendarEventDetailsProvider } from '@/modules/calendar-events/state/CalendarEventDetailsProvider';
 import { CalendarEventFormsProvider } from '@/modules/calendar-events/state/CalendarEventFormsProvider';
 import { CalendarEventsProvider } from '@/modules/calendar-events/state/CalendarEventsProvider';
 import { PetEvent } from '@/modules/pet-events/model/PetEvent';
@@ -19,6 +17,7 @@ import { insertPet, loadPets } from '@/modules/pets/persistence/petStore';
 import { PetsProvider } from '@/modules/pets/state/PetsProvider';
 import { useHouseholdAlias } from '@/modules/households/state/useHouseholdAlias';
 import { TodayScreen } from '@/modules/today/ui/TodayScreen';
+import { formatClockTime } from '@/shared/dates/dateTime';
 import { lightColors } from '@/shared/theme/palette';
 
 jest.mock('@expo/vector-icons', () => {
@@ -86,7 +85,9 @@ function Providers({ children }: { children: ReactNode }) {
           <CalendarEventsProvider>
             <PetProfileFormsProvider>
               <PetEventFormsProvider>
-                <CalendarEventFormsProvider>{children}</CalendarEventFormsProvider>
+                <CalendarEventFormsProvider>
+                  <CalendarEventDetailsProvider>{children}</CalendarEventDetailsProvider>
+                </CalendarEventFormsProvider>
               </PetEventFormsProvider>
             </PetProfileFormsProvider>
           </CalendarEventsProvider>
@@ -355,46 +356,54 @@ describe('Today screen', () => {
     expect(screen.getByText('Luna · Riverside Vet')).toBeTruthy();
     expect(screen.queryByText('Dental check')).toBeNull();
     expect(screen.queryByText('Nothing scheduled in the next 7 days')).toBeNull();
-    expect(screen.getByLabelText('Schedule calendar event')).toBeTruthy();
+    // Calendar events are scheduled from the Calendar tab or a pet's page.
+    expect(screen.queryByLabelText('Schedule calendar event')).toBeNull();
   });
 
-  it('adds a calendar event for the pet chosen in the form', async () => {
+  it('opens a calendar event with all its details and closes it again', async () => {
     mockedLoadPets.mockResolvedValue([kiwi, luna]);
-    jest.mocked(insertCalendarEvent).mockImplementation(async (event) => ({
-      ...event,
-      id: 'calendar-1',
-      createdAt: new Date().toISOString(),
-    }));
+    const inHours = (hours: number) => new Date(Date.now() + hours * 60 * 60 * 1000).toISOString();
+    const startsAt = inHours(2);
+    const endsAt = inHours(3);
+    jest.mocked(loadCalendarEvents).mockResolvedValue([
+      {
+        id: 'vaccines',
+        petId: 'luna',
+        title: 'Annual vaccines',
+        startsAt,
+        endsAt,
+        location: 'Riverside Vet',
+        description: 'Bring the vaccination booklet.',
+        createdAt: inHours(-24),
+      },
+    ]);
 
     const screen = render(<TodayScreen />, { wrapper: Providers });
-    await waitFor(() => expect(screen.getByText('Today with Kiwi and Luna')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText('Annual vaccines')).toBeTruthy());
+    expect(screen.queryByText('Bring the vaccination booklet.')).toBeNull();
 
-    fireEvent.press(screen.getByLabelText('Schedule calendar event'));
-    expect(screen.getByText('PET')).toBeTruthy();
-    fireEvent.press(screen.getByLabelText('Select Luna'));
-    fireEvent.changeText(screen.getByLabelText('Calendar event title'), 'Annual vaccines');
-    fireEvent.changeText(screen.getByLabelText('Calendar event location'), ' Riverside Vet ');
-    fireEvent.press(screen.getByText('Save event'));
+    fireEvent.press(screen.getByText('Annual vaccines'));
 
-    await waitFor(() =>
-      expect(insertCalendarEvent).toHaveBeenCalledWith(
-        expect.objectContaining({
-          petId: 'luna',
-          title: 'Annual vaccines',
-          location: 'Riverside Vet',
+    const details = within(screen.getByTestId('calendar-event-details'));
+    expect(details.getByText('Annual vaccines')).toBeTruthy();
+    expect(details.getByText('Luna')).toBeTruthy();
+    expect(
+      details.getByText(
+        new Date(startsAt).toLocaleDateString([], {
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
         }),
       ),
-    );
-    await waitFor(() => expect(screen.queryByLabelText('Calendar event title')).toBeNull());
-  });
+    ).toBeTruthy();
+    expect(
+      details.getByText(`${formatClockTime(startsAt)} – ${formatClockTime(endsAt)}`),
+    ).toBeTruthy();
+    expect(details.getByText('Riverside Vet')).toBeTruthy();
+    expect(details.getByText('Bring the vaccination booklet.')).toBeTruthy();
 
-  it('adds a calendar event for the only pet without asking which one', async () => {
-    const screen = render(<TodayScreen />, { wrapper: Providers });
-    await waitFor(() => expect(screen.getByText('Today with Kiwi')).toBeTruthy());
-
-    fireEvent.press(screen.getByLabelText('Schedule calendar event'));
-
-    expect(screen.getByLabelText('Calendar event title')).toBeTruthy();
-    expect(screen.queryByText('PET')).toBeNull();
+    fireEvent.press(details.getByLabelText('Close'));
+    expect(screen.queryByTestId('calendar-event-details')).toBeNull();
   });
 });

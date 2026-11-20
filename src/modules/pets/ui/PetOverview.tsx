@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { toUpcomingCareItems } from '@/modules/calendar/upcomingCare';
+import { scheduleAction } from '@/modules/calendar/ui/scheduleAction';
 import { UpcomingCareList } from '@/modules/calendar/ui/UpcomingCareList';
 import { useCalendarEvents } from '@/modules/calendar-events/state/CalendarEventsProvider';
 import { useCalendarEventForms } from '@/modules/calendar-events/state/CalendarEventFormsProvider';
@@ -49,12 +50,7 @@ export function PetOverview({ pet }: PetOverviewProps) {
       </View>
       <SectionHeader
         title="Up next"
-        action={{
-          label: 'Schedule',
-          accessibilityLabel: 'Schedule calendar event',
-          icon: 'add',
-          onPress: () => calendarEventForms.openAddCalendarEvent(pet.id),
-        }}
+        action={scheduleAction(() => calendarEventForms.openAddCalendarEvent(pet.id))}
       />
       <UpcomingCareList items={upcomingCare} now={now} showPetNames={false} emptyFor={pet.name} />
       <PetActivityCard

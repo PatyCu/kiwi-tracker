@@ -29,7 +29,10 @@ import { CalendarToolbar } from '@/modules/calendar/ui/CalendarToolbar';
 import { CompactMonth } from '@/modules/calendar/ui/CompactMonth';
 import { DayAgenda } from '@/modules/calendar/ui/DayAgenda';
 import { MonthGrid } from '@/modules/calendar/ui/MonthGrid';
+import { scheduleAction } from '@/modules/calendar/ui/scheduleAction';
 import { useCalendarDataLoad } from '@/modules/calendar/useCalendarDataLoad';
+import { useCalendarEventDetails } from '@/modules/calendar-events/state/CalendarEventDetailsProvider';
+import { useCalendarEventForms } from '@/modules/calendar-events/state/CalendarEventFormsProvider';
 import { useCalendarEvents } from '@/modules/calendar-events/state/CalendarEventsProvider';
 import { usePetEvents } from '@/modules/pet-events/state/PetEventsProvider';
 import { usePets } from '@/modules/pets/state/PetsProvider';
@@ -38,6 +41,7 @@ import { useAppearance } from '@/shared/theme/AppearanceProvider';
 import { WIDE_CONTENT_BREAKPOINT } from '@/shared/ui/breakpoints';
 import { LoadState } from '@/shared/ui/LoadState';
 import { Screen } from '@/shared/ui/Screen';
+import { SectionActionButton } from '@/shared/ui/SectionHeader';
 
 /** Monday; a user setting may choose another day later. */
 const WEEK_STARTS_ON: Weekday = 1;
@@ -54,6 +58,8 @@ export function CalendarScreen() {
   const { pets } = usePets();
   const { events } = usePetEvents();
   const { calendarEvents } = useCalendarEvents();
+  const { openCalendarEventDetails } = useCalendarEventDetails();
+  const { openAddCalendarEvent } = useCalendarEventForms();
   const { loadStatus, retryLoad } = useCalendarDataLoad();
   const [kind, setKind] = useState<CalendarKindChoice>('all');
   const [month, setMonth] = useState(() => monthOf(new Date()));
@@ -96,13 +102,19 @@ export function CalendarScreen() {
     setSelectedDay(isInMonth(today, next) ? today : new Date(next.year, next.month, 1));
   };
   const openItem = (item: CalendarItem) => {
-    if (item.kind !== 'pet-event') return;
+    if (item.kind === 'calendar-event') {
+      openCalendarEventDetails(item.id);
+      return;
+    }
     router.push({
       // Inside the Calendar tab, so going back returns here.
       pathname: '/calendar/[petId]/records/[recordId]',
       params: { petId: item.petId, recordId: item.id },
     });
   };
+  // One pet needs no picker; with several, the form asks which one.
+  const schedule = (day?: Date) =>
+    openAddCalendarEvent(pets.length === 1 ? pets[0].id : undefined, day);
   const names = weekdayNames(WEEK_STARTS_ON);
 
   return (
@@ -131,6 +143,7 @@ export function CalendarScreen() {
             )
           }
           kindFilter={<CalendarKindFilter kind={kind} onKindChange={setKind} />}
+          wideAction={wide && <SectionActionButton action={scheduleAction(() => schedule())} />}
         />
         {wide ? (
           <MonthGrid
@@ -157,6 +170,7 @@ export function CalendarScreen() {
               kind={kind}
               showPetNames={showPetNames}
               onOpenItem={openItem}
+              onSchedule={() => schedule(selectedDay)}
             />
           </>
         )}

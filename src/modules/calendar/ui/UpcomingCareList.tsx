@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { CalendarItem } from '@/modules/calendar/calendarItems';
 import { UPCOMING_CARE_DAYS } from '@/modules/calendar/upcomingCare';
+import { useCalendarEventDetails } from '@/modules/calendar-events/state/CalendarEventDetailsProvider';
 import { CalendarItemRow } from '@/modules/calendar/ui/CalendarItemRow';
 import { useAppearance } from '@/shared/theme/AppearanceProvider';
 import { Palette } from '@/shared/theme/palette';
@@ -17,16 +18,17 @@ type UpcomingCareListProps = {
   emptyFor?: string;
 };
 
-/** The calendar events of the next days, soonest first, or an empty state. */
+/** The calendar events of the next days, soonest first, each opening its details; or an empty state. */
 export function UpcomingCareList({ items, now, showPetNames, emptyFor }: UpcomingCareListProps) {
   const { colors } = useAppearance();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { openCalendarEventDetails } = useCalendarEventDetails();
 
   if (items.length === 0) {
     return (
       <PlaceholderCard
         title={`Nothing scheduled${emptyFor ? ` for ${emptyFor}` : ''} in the next ${UPCOMING_CARE_DAYS} days`}
-        description="Use Schedule to add a vet visit, vaccine or medicine."
+        description="Scheduled vet visits, vaccines and medicines will show here."
       />
     );
   }
@@ -40,6 +42,7 @@ export function UpcomingCareList({ items, now, showPetNames, emptyFor }: Upcomin
           showPetName={showPetNames}
           dayRelativeTo={now}
           divider={index > 0}
+          onOpen={() => openCalendarEventDetails(item.id)}
         />
       ))}
     </View>

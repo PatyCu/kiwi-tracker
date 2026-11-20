@@ -5,7 +5,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAppearance } from '@/shared/theme/AppearanceProvider';
 import { Palette } from '@/shared/theme/palette';
 
-type SectionAction = {
+export type SectionAction = {
   /** Short visible label, such as "Schedule". */
   label: string;
   /** What screen readers announce; it should contain the visible label. */
@@ -26,20 +26,27 @@ export function SectionHeader({ title, action, compact }: SectionHeaderProps) {
   return (
     <View style={[styles.header, compact && styles.compactHeader]}>
       <Text style={styles.title}>{title}</Text>
-      {action && (
-        <Pressable
-          accessibilityLabel={action.accessibilityLabel}
-          accessibilityRole="button"
-          // Keeps a 44pt touch target around the smaller pill.
-          hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
-          onPress={action.onPress}
-          style={({ pressed }) => [styles.action, pressed && styles.pressedAction]}
-        >
-          <Ionicons name={action.icon} size={16} color={colors.kiwi} />
-          <Text style={styles.actionText}>{action.label}</Text>
-        </Pressable>
-      )}
+      {action && <SectionActionButton action={action} />}
     </View>
+  );
+}
+
+/** A section's action as a small outlined pill, for headers that aren't a SectionHeader. */
+export function SectionActionButton({ action }: { action: SectionAction }) {
+  const { colors } = useAppearance();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  return (
+    <Pressable
+      accessibilityLabel={action.accessibilityLabel}
+      accessibilityRole="button"
+      // Keeps a 44pt touch target around the smaller pill.
+      hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
+      onPress={action.onPress}
+      style={({ pressed }) => [styles.action, pressed && styles.pressedAction]}
+    >
+      <Ionicons name={action.icon} size={16} color={colors.kiwi} />
+      <Text style={styles.actionText}>{action.label}</Text>
+    </Pressable>
   );
 }
 

@@ -5,7 +5,6 @@ import { useAppearance } from '@/shared/theme/AppearanceProvider';
 import { useCalendarDataLoad } from '@/modules/calendar/useCalendarDataLoad';
 import { UpcomingCareList } from '@/modules/calendar/ui/UpcomingCareList';
 import { useCalendarEvents } from '@/modules/calendar-events/state/CalendarEventsProvider';
-import { useCalendarEventForms } from '@/modules/calendar-events/state/CalendarEventFormsProvider';
 import { useHouseholdAlias } from '@/modules/households/state/useHouseholdAlias';
 import { usePetEvents } from '@/modules/pet-events/state/PetEventsProvider';
 import { usePets } from '@/modules/pets/state/PetsProvider';
@@ -25,7 +24,6 @@ export function TodayScreen() {
   const { calendarEvents } = useCalendarEvents();
   const { loadStatus, retryLoad } = useCalendarDataLoad();
   const householdAlias = useHouseholdAlias();
-  const calendarEventForms = useCalendarEventForms();
 
   if (loadStatus !== 'ready') {
     return (
@@ -71,17 +69,7 @@ export function TodayScreen() {
           }
         />
         <View style={styles.section}>
-          <SectionHeader
-            compact
-            title="Upcoming (next 7 days)"
-            action={{
-              label: 'Schedule',
-              accessibilityLabel: 'Schedule calendar event',
-              icon: 'add',
-              onPress: () =>
-                calendarEventForms.openAddCalendarEvent(pets.length === 1 ? pets[0].id : undefined),
-            }}
-          />
+          <SectionHeader compact title="Upcoming (next 7 days)" />
           <UpcomingCareList
             items={viewModel.upcomingCare}
             now={now}

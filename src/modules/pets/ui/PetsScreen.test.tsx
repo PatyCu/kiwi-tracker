@@ -3,6 +3,7 @@ import { ReactNode } from 'react';
 import { StyleSheet } from 'react-native';
 
 import { insertCalendarEvent } from '@/modules/calendar-events/persistence/calendarEventStore';
+import { CalendarEventDetailsProvider } from '@/modules/calendar-events/state/CalendarEventDetailsProvider';
 import { CalendarEventFormsProvider } from '@/modules/calendar-events/state/CalendarEventFormsProvider';
 import { CalendarEventsProvider } from '@/modules/calendar-events/state/CalendarEventsProvider';
 import { PetEvent } from '@/modules/pet-events/model/PetEvent';
@@ -81,7 +82,9 @@ function Providers({ children }: { children: ReactNode }) {
           <CalendarEventsProvider>
             <PetProfileFormsProvider>
               <PetEventFormsProvider>
-                <CalendarEventFormsProvider>{children}</CalendarEventFormsProvider>
+                <CalendarEventFormsProvider>
+                  <CalendarEventDetailsProvider>{children}</CalendarEventDetailsProvider>
+                </CalendarEventFormsProvider>
               </PetEventFormsProvider>
             </PetProfileFormsProvider>
           </CalendarEventsProvider>

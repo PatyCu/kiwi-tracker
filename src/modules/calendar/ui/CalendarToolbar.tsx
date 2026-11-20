@@ -16,6 +16,8 @@ type CalendarToolbarProps = {
   petFilter?: ReactNode;
   /** Which kinds of items are shown; always at the right end. */
   kindFilter: ReactNode;
+  /** Shown before the kind filter on wide screens only; narrow ones put it by the day. */
+  wideAction?: ReactNode;
 };
 
 /** The month being shown, the arrows to move between months, and the filters. */
@@ -26,6 +28,7 @@ export function CalendarToolbar({
   onNextMonth,
   petFilter,
   kindFilter,
+  wideAction,
 }: CalendarToolbarProps) {
   const { colors } = useAppearance();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -64,7 +67,10 @@ export function CalendarToolbar({
           {monthAndArrows}
           {petFilter}
         </View>
-        {kindFilter}
+        <View style={styles.wideEnd}>
+          {wideAction}
+          {kindFilter}
+        </View>
       </View>
     );
   }
@@ -113,6 +119,7 @@ const makeStyles = (colors: Palette) =>
       gap: 16,
     },
     wideStart: { flexDirection: 'row', alignItems: 'center', gap: 16, flexShrink: 1 },
+    wideEnd: { flexDirection: 'row', alignItems: 'center', gap: 16 },
     monthRow: {
       flexDirection: 'row',
       alignItems: 'center',

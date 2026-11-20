@@ -3,7 +3,12 @@ import { useLocalSearchParams } from 'expo-router';
 import { ReactNode } from 'react';
 
 import { CalendarEvent } from '@/modules/calendar-events/model/CalendarEvent';
-import { loadCalendarEvents } from '@/modules/calendar-events/persistence/calendarEventStore';
+import {
+  insertCalendarEvent,
+  loadCalendarEvents,
+} from '@/modules/calendar-events/persistence/calendarEventStore';
+import { CalendarEventFormsProvider } from '@/modules/calendar-events/state/CalendarEventFormsProvider';
+import { CalendarEventDetailsProvider } from '@/modules/calendar-events/state/CalendarEventDetailsProvider';
 import { CalendarEventsProvider } from '@/modules/calendar-events/state/CalendarEventsProvider';
 import { CalendarScreen } from '@/modules/calendar/ui/CalendarScreen';
 import { PetEvent } from '@/modules/pet-events/model/PetEvent';
@@ -113,7 +118,11 @@ function Providers({ children }: { children: ReactNode }) {
       <PetsProvider>
         <PetEventsProvider>
           <CalendarEventsProvider>
-            <PetProfileFormsProvider>{children}</PetProfileFormsProvider>
+            <PetProfileFormsProvider>
+              <CalendarEventFormsProvider>
+                <CalendarEventDetailsProvider>{children}</CalendarEventDetailsProvider>
+              </CalendarEventFormsProvider>
+            </PetProfileFormsProvider>
           </CalendarEventsProvider>
         </PetEventsProvider>
       </PetsProvider>
@@ -202,7 +211,7 @@ describe('Calendar screen', () => {
     expect(screen.queryByLabelText('Pets shown')).toBeNull();
   });
 
-  it('opens a pet event inside the Calendar tab, but not a calendar event', async () => {
+  it('opens a pet event inside the Calendar tab, and a calendar event in its details', async () => {
     const screen = await renderCalendar();
 
     fireEvent.press(screen.getByText('Groomer'));
@@ -214,6 +223,16 @@ describe('Calendar screen', () => {
     router.push.mockClear();
     fireEvent.press(screen.getByText('Vaccines'));
     expect(router.push).not.toHaveBeenCalled();
+    expect(screen.getByTestId('calendar-event-details')).toHaveTextContent(/Riverside Vet/);
+  });
+
+  it('opens a calendar event from the month grid on wide screens', async () => {
+    mockWindowWidth = 1280;
+    const screen = await renderCalendar();
+
+    fireEvent.press(screen.getByLabelText(`${formatCompactClockTime(today(15))} Vaccines · Luna`));
+
+    expect(screen.getByTestId('calendar-event-details')).toHaveTextContent(/Riverside Vet/);
   });
 
   it('shows another day, and says when nothing happened on it', async () => {
@@ -254,6 +273,55 @@ describe('Calendar screen', () => {
     await waitFor(() => expect(screen.getByText('Groomer')).toBeTruthy());
     expect(loadCalendarEvents).toHaveBeenCalledTimes(2);
     expect(loadPetEvents).toHaveBeenCalledTimes(1);
+  });
+
+  it('schedules a calendar event on the selected day for the pet chosen in the form', async () => {
+    jest.mocked(insertCalendarEvent).mockImplementation(async (event) => ({
+      ...event,
+      id: 'calendar-1',
+      createdAt,
+    }));
+    const screen = await renderCalendar();
+    // Moving a month selects its first day.
+    fireEvent.press(screen.getByLabelText('Next month'));
+    const now = new Date();
+    const firstOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1, 9);
+
+    fireEvent.press(screen.getByLabelText('Schedule calendar event'));
+    expect(screen.getByText('PET')).toBeTruthy();
+    fireEvent.press(screen.getByLabelText('Select Luna'));
+    fireEvent.changeText(screen.getByLabelText('Calendar event title'), 'Annual vaccines');
+    fireEvent.press(screen.getByText('Save event'));
+
+    await waitFor(() =>
+      expect(insertCalendarEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          petId: 'luna',
+          title: 'Annual vaccines',
+          startsAt: firstOfNextMonth.toISOString(),
+        }),
+      ),
+    );
+    await waitFor(() => expect(screen.queryByLabelText('Calendar event title')).toBeNull());
+  });
+
+  it('schedules for the only pet without asking which one', async () => {
+    jest.mocked(loadPets).mockResolvedValue([kiwi]);
+    const screen = await renderCalendar();
+
+    fireEvent.press(screen.getByLabelText('Schedule calendar event'));
+
+    expect(screen.getByLabelText('Calendar event title')).toBeTruthy();
+    expect(screen.queryByText('PET')).toBeNull();
+  });
+
+  it('offers Schedule in the toolbar on wide screens', async () => {
+    mockWindowWidth = 1280;
+    const screen = await renderCalendar();
+
+    fireEvent.press(screen.getByLabelText('Schedule calendar event'));
+
+    expect(screen.getByLabelText('Calendar event title')).toBeTruthy();
   });
 
   it('asks for a first pet when the household has none', async () => {

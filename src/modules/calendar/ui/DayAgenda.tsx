@@ -7,8 +7,10 @@ import {
   CalendarKindChoice,
 } from '@/modules/calendar/calendarItems';
 import { CalendarItemRow } from '@/modules/calendar/ui/CalendarItemRow';
+import { scheduleAction } from '@/modules/calendar/ui/scheduleAction';
 import { useAppearance } from '@/shared/theme/AppearanceProvider';
 import { Palette } from '@/shared/theme/palette';
+import { SectionActionButton } from '@/shared/ui/SectionHeader';
 
 type DayAgendaProps = {
   day: Date;
@@ -18,19 +20,31 @@ type DayAgendaProps = {
   /** Adds the pet's name to each item, for when several pets are shown. */
   showPetNames: boolean;
   onOpenItem: (item: CalendarItem) => void;
+  /** Adds a calendar event on this day. */
+  onSchedule: () => void;
 };
 
 /** Everything of the chosen kind on one day, earliest first. */
-export function DayAgenda({ day, items, kind, showPetNames, onOpenItem }: DayAgendaProps) {
+export function DayAgenda({
+  day,
+  items,
+  kind,
+  showPetNames,
+  onOpenItem,
+  onSchedule,
+}: DayAgendaProps) {
   const { colors } = useAppearance();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const date = day.toLocaleDateString([], { day: 'numeric', month: 'long' });
 
   return (
     <View style={styles.agenda}>
-      <Text accessibilityRole="header" style={styles.title}>
-        {date} – <Text style={styles.kind}>{CALENDAR_KIND_LABELS[kind]}</Text>
-      </Text>
+      <View style={styles.header}>
+        <Text accessibilityRole="header" style={styles.title}>
+          {date} – <Text style={styles.kind}>{CALENDAR_KIND_LABELS[kind]}</Text>
+        </Text>
+        <SectionActionButton action={scheduleAction(onSchedule)} />
+      </View>
       {items.length === 0 ? (
         <View style={styles.empty}>
           <Text style={styles.emptyText}>
@@ -59,7 +73,13 @@ export function DayAgenda({ day, items, kind, showPetNames, onOpenItem }: DayAge
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
     agenda: { gap: 10 },
-    title: { color: colors.text, fontSize: 18, fontWeight: '800' },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 12,
+    },
+    title: { flexShrink: 1, color: colors.text, fontSize: 18, fontWeight: '800' },
     kind: { color: colors.kiwi },
     card: {
       borderWidth: 1,

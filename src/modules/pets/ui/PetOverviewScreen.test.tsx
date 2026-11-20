@@ -3,6 +3,7 @@ import { ReactNode } from 'react';
 
 import { loadCalendarEvents } from '@/modules/calendar-events/persistence/calendarEventStore';
 import { loadPetEvents } from '@/modules/pet-events/persistence/petEventStore';
+import { CalendarEventDetailsProvider } from '@/modules/calendar-events/state/CalendarEventDetailsProvider';
 import { CalendarEventFormsProvider } from '@/modules/calendar-events/state/CalendarEventFormsProvider';
 import { CalendarEventsProvider } from '@/modules/calendar-events/state/CalendarEventsProvider';
 import { PetEventFormsProvider } from '@/modules/pet-events/state/PetEventFormsProvider';
@@ -69,7 +70,9 @@ function Providers({ children }: { children: ReactNode }) {
           <CalendarEventsProvider>
             <PetProfileFormsProvider>
               <PetEventFormsProvider>
-                <CalendarEventFormsProvider>{children}</CalendarEventFormsProvider>
+                <CalendarEventFormsProvider>
+                  <CalendarEventDetailsProvider>{children}</CalendarEventDetailsProvider>
+                </CalendarEventFormsProvider>
               </PetEventFormsProvider>
             </PetProfileFormsProvider>
           </CalendarEventsProvider>
@@ -142,6 +145,9 @@ describe('Pet overview screen', () => {
     await waitFor(() => expect(screen.getByText('Annual vaccines')).toBeTruthy());
     expect(screen.queryByText('Kiwi vet')).toBeNull();
     expect(screen.queryByText(/Nothing scheduled/)).toBeNull();
+
+    fireEvent.press(screen.getByText('Annual vaccines'));
+    expect(screen.getByTestId('calendar-event-details')).toHaveTextContent(/Annual vaccines/);
   });
 
   it('says when nothing is scheduled for the pet, and keeps Schedule', async () => {

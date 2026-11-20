@@ -13,7 +13,7 @@ type CalendarItemRowProps = {
   /** Names the day before the time, for lists that span several days. */
   dayRelativeTo?: Date;
   divider: boolean;
-  /** Pet events open their detail; calendar events don't open yet. */
+  /** Makes the row a button that opens the item. */
   onOpen?: (item: CalendarItem) => void;
 };
 
@@ -27,7 +27,7 @@ export function CalendarItemRow({
 }: CalendarItemRowProps) {
   const { colors } = useAppearance();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const opens = item.kind === 'pet-event' && onOpen !== undefined;
+  const opens = onOpen !== undefined;
   const clock = item.endsAt
     ? `${formatClockTime(item.startsAt)} – ${formatClockTime(item.endsAt)}`
     : formatClockTime(item.startsAt);

@@ -8,8 +8,11 @@ import { confirmDiscardChanges, showMessage } from '@/shared/platform/dialogs';
 import { useAppearance } from '@/shared/theme/AppearanceProvider';
 
 type CalendarEventFormsContextValue = {
-  /** Opens the form for a pet, or with a pet picker when none is given and there are several. */
-  openAddCalendarEvent: (petId?: string) => void;
+  /**
+   * Opens the form for a pet, or with a pet picker when none is given and there
+   * are several; on the given day, or today.
+   */
+  openAddCalendarEvent: (petId?: string, day?: Date) => void;
 };
 
 const CalendarEventFormsContext = createContext<CalendarEventFormsContextValue | null>(null);
@@ -30,12 +33,12 @@ export function CalendarEventFormsProvider({ children }: { children: ReactNode }
 
   const openForm = form.open;
   const openAddCalendarEvent = useCallback(
-    (petId?: string) => {
+    (petId?: string, day?: Date) => {
       const nextPetId = petId ?? pets[0]?.id ?? null;
       if (!nextPetId) return;
       setTargetPetId(nextPetId);
       setShowPetChoice(petId === undefined && pets.length > 1);
-      openForm();
+      openForm(day);
     },
     [openForm, pets],
   );

@@ -106,18 +106,16 @@ function GridItem({ item, showPetName, onOpen, styles }: GridItemProps) {
   const planned = item.kind === 'calendar-event';
   const time = formatCompactClockTime(item.startsAt);
   const label = showPetName ? `${item.title} · ${item.petName}` : item.title;
-  const opens = item.kind === 'pet-event';
 
   return (
     <Pressable
       accessibilityLabel={`${time} ${label}`}
-      accessibilityRole={opens ? 'button' : 'text'}
-      disabled={!opens}
+      accessibilityRole="button"
       onPress={() => onOpen(item)}
       style={({ pressed, hovered }) => [
         styles.item,
         planned && { backgroundColor: `${item.color}26` },
-        opens && (pressed || hovered) && styles.itemActive,
+        (pressed || hovered) && styles.itemActive,
       ]}
     >
       {!planned && <View style={[styles.itemDot, { backgroundColor: item.color }]} />}

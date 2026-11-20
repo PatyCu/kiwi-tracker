@@ -20,10 +20,21 @@ type CalendarEventFormValues = {
 
 const LAST_MINUTE_OF_DAY = 23 * 60 + 59;
 
-/** Starts at the next full hour and lasts an hour, ending by midnight. */
-function newCalendarEventValues(now = new Date()): CalendarEventFormValues {
+/** The hour a new event starts at on a day other than today. */
+const OTHER_DAY_START_HOUR = 9;
+
+/**
+ * Starts at the next full hour and lasts an hour, ending by midnight; or, on
+ * another chosen day, at 9:00.
+ */
+function newCalendarEventValues(now = new Date(), day?: Date): CalendarEventFormValues {
   const start = new Date(now);
-  start.setHours(start.getHours() + 1, 0, 0, 0);
+  if (day && day.toDateString() !== now.toDateString()) {
+    start.setFullYear(day.getFullYear(), day.getMonth(), day.getDate());
+    start.setHours(OTHER_DAY_START_HOUR, 0, 0, 0);
+  } else {
+    start.setHours(start.getHours() + 1, 0, 0, 0);
+  }
   const startValues = toDisplayedEventDateTime(start);
   const startMinutes = start.getHours() * 60;
   return {
@@ -38,7 +49,7 @@ function newCalendarEventValues(now = new Date()): CalendarEventFormValues {
 
 export function useCalendarEventForm({ onSubmit }: UseCalendarEventFormInput) {
   const [visible, setVisible] = useState(false);
-  const [values, setValues] = useState(newCalendarEventValues);
+  const [values, setValues] = useState(() => newCalendarEventValues());
   const [initialValues, setInitialValues] = useState(values);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -79,8 +90,9 @@ export function useCalendarEventForm({ onSubmit }: UseCalendarEventFormInput) {
     [],
   );
 
-  const open = useCallback(() => {
-    const next = newCalendarEventValues();
+  /** Opens a blank form for today, or for the given day. */
+  const open = useCallback((day?: Date) => {
+    const next = newCalendarEventValues(new Date(), day);
     setValues(next);
     setInitialValues(next);
     setVisible(true);

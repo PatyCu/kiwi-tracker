@@ -5,11 +5,11 @@ import { useCalendarEventForm } from '@/modules/calendar-events/forms/useCalenda
 describe('calendar event form', () => {
   afterEach(() => jest.useRealTimers());
 
-  function openForm(now: Date, onSubmit = jest.fn().mockResolvedValue(undefined)) {
+  function openForm(now: Date, onSubmit = jest.fn().mockResolvedValue(undefined), day?: Date) {
     jest.useFakeTimers();
     jest.setSystemTime(now);
     const hook = renderHook(() => useCalendarEventForm({ onSubmit }));
-    act(() => hook.result.current.open());
+    act(() => hook.result.current.open(day));
     return { ...hook, onSubmit };
   }
 
@@ -25,6 +25,20 @@ describe('calendar event form', () => {
       titleIsValid: false,
       endIsAfterStart: true,
       isDirty: false,
+    });
+  });
+
+  it('starts at 9:00 on another chosen day, and at the next hour when the day is today', () => {
+    const now = new Date(2026, 10, 12, 19, 25);
+    expect(openForm(now, undefined, new Date(2026, 10, 25)).result.current).toMatchObject({
+      date: '25-11-2026',
+      startTime: '09:00',
+      endTime: '10:00',
+      isDirty: false,
+    });
+    expect(openForm(now, undefined, new Date(2026, 10, 12)).result.current).toMatchObject({
+      date: '12-11-2026',
+      startTime: '20:00',
     });
   });
 
