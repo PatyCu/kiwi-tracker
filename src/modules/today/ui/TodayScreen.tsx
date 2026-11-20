@@ -2,10 +2,12 @@ import { router } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
 import { useAppearance } from '@/shared/theme/AppearanceProvider';
+import { useCalendarDataLoad } from '@/modules/calendar/useCalendarDataLoad';
+import { UpcomingCareList } from '@/modules/calendar/ui/UpcomingCareList';
+import { useCalendarEvents } from '@/modules/calendar-events/state/CalendarEventsProvider';
 import { useCalendarEventForms } from '@/modules/calendar-events/state/CalendarEventFormsProvider';
 import { useHouseholdAlias } from '@/modules/households/state/useHouseholdAlias';
 import { usePetEvents } from '@/modules/pet-events/state/PetEventsProvider';
-import { usePetsAndEventsLoad } from '@/modules/pet-events/state/usePetsAndEventsLoad';
 import { usePets } from '@/modules/pets/state/PetsProvider';
 import { NoPetsCard } from '@/modules/pets/ui/NoPetsCard';
 import { buildTodayViewModel } from '@/modules/today/buildTodayViewModel';
@@ -20,7 +22,8 @@ export function TodayScreen() {
   const { colors } = useAppearance();
   const { pets } = usePets();
   const { events } = usePetEvents();
-  const { loadStatus, retryLoad } = usePetsAndEventsLoad();
+  const { calendarEvents } = useCalendarEvents();
+  const { loadStatus, retryLoad } = useCalendarDataLoad();
   const householdAlias = useHouseholdAlias();
   const calendarEventForms = useCalendarEventForms();
 
@@ -43,7 +46,15 @@ export function TodayScreen() {
     );
   }
 
-  const viewModel = buildTodayViewModel(pets, events, new Date(), householdAlias);
+  const now = new Date();
+  const viewModel = buildTodayViewModel(
+    pets,
+    events,
+    calendarEvents,
+    now,
+    householdAlias,
+    colors.blue,
+  );
 
   return (
     <Screen>
@@ -71,9 +82,10 @@ export function TodayScreen() {
                 calendarEventForms.openAddCalendarEvent(pets.length === 1 ? pets[0].id : undefined),
             }}
           />
-          <PlaceholderCard
-            title="Calendar events aren't shown yet"
-            description="Events you add are saved and will appear here once upcoming care is ready."
+          <UpcomingCareList
+            items={viewModel.upcomingCare}
+            now={now}
+            showPetNames={pets.length > 1}
           />
         </View>
 

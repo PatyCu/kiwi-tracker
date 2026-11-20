@@ -29,12 +29,11 @@ import { CalendarToolbar } from '@/modules/calendar/ui/CalendarToolbar';
 import { CompactMonth } from '@/modules/calendar/ui/CompactMonth';
 import { DayAgenda } from '@/modules/calendar/ui/DayAgenda';
 import { MonthGrid } from '@/modules/calendar/ui/MonthGrid';
+import { useCalendarDataLoad } from '@/modules/calendar/useCalendarDataLoad';
 import { useCalendarEvents } from '@/modules/calendar-events/state/CalendarEventsProvider';
 import { usePetEvents } from '@/modules/pet-events/state/PetEventsProvider';
-import { usePetsAndEventsLoad } from '@/modules/pet-events/state/usePetsAndEventsLoad';
 import { usePets } from '@/modules/pets/state/PetsProvider';
 import { NoPetsCard } from '@/modules/pets/ui/NoPetsCard';
-import { combineLoadStatus } from '@/shared/state/LoadStatus';
 import { useAppearance } from '@/shared/theme/AppearanceProvider';
 import { WIDE_CONTENT_BREAKPOINT } from '@/shared/ui/breakpoints';
 import { LoadState } from '@/shared/ui/LoadState';
@@ -54,12 +53,8 @@ export function CalendarScreen() {
   const { petIds: petIdsParam } = useLocalSearchParams<{ petIds?: string }>();
   const { pets } = usePets();
   const { events } = usePetEvents();
-  const {
-    calendarEvents,
-    loadStatus: calendarStatus,
-    retryLoad: retryCalendar,
-  } = useCalendarEvents();
-  const { loadStatus: petsAndEventsStatus, retryLoad: retryPetsAndEvents } = usePetsAndEventsLoad();
+  const { calendarEvents } = useCalendarEvents();
+  const { loadStatus, retryLoad } = useCalendarDataLoad();
   const [kind, setKind] = useState<CalendarKindChoice>('all');
   const [month, setMonth] = useState(() => monthOf(new Date()));
   const [selectedDay, setSelectedDay] = useState(() => new Date());
@@ -76,17 +71,10 @@ export function CalendarScreen() {
   }, [calendarEvents, colors, events, kind, pets, selectedPetIds]);
   const weeks = useMemo(() => buildMonthGrid(month, WEEK_STARTS_ON), [month]);
 
-  const loadStatus = combineLoadStatus(petsAndEventsStatus, calendarStatus);
   if (loadStatus !== 'ready') {
     return (
       <Screen>
-        <LoadState
-          status={loadStatus}
-          onRetry={() => {
-            if (petsAndEventsStatus === 'error') retryPetsAndEvents();
-            if (calendarStatus === 'error') retryCalendar();
-          }}
-        />
+        <LoadState status={loadStatus} onRetry={retryLoad} />
       </Screen>
     );
   }

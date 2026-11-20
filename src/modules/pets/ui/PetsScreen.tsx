@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { useAppearance } from '@/shared/theme/AppearanceProvider';
 import { useHouseholdAlias } from '@/modules/households/state/useHouseholdAlias';
-import { usePetsAndEventsLoad } from '@/modules/pet-events/state/usePetsAndEventsLoad';
+import { useCalendarDataLoad } from '@/modules/calendar/useCalendarDataLoad';
 import { usePets } from '@/modules/pets/state/PetsProvider';
 import { usePetProfileForms } from '@/modules/pets/state/PetProfileFormsProvider';
 import { NoPetsCard } from '@/modules/pets/ui/NoPetsCard';
@@ -17,8 +17,8 @@ export function PetsScreen() {
   const { petId } = useLocalSearchParams<{ petId?: string }>();
   const { colors } = useAppearance();
   const { pets } = usePets();
-  // The overview shows the pet's events too, so wait for both.
-  const { loadStatus, retryLoad } = usePetsAndEventsLoad();
+  // The overview shows the pet's events and calendar events too, so wait for all.
+  const { loadStatus, retryLoad } = useCalendarDataLoad();
   const { addPet, editPet } = usePetProfileForms();
   const householdAlias = useHouseholdAlias();
   const title = householdAlias ? `Pets in ${householdAlias}` : 'Your pets';

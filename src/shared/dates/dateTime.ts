@@ -11,6 +11,16 @@ export function formatEventTime(iso: string, now = new Date()): string {
   return `${day} · ${formatClockTime(iso)}`;
 }
 
+/** The day of an upcoming time: Today, Tomorrow, or a short weekday and date such as Mon 16 Nov. */
+export function formatUpcomingDay(iso: string, now = new Date()): string {
+  const date = new Date(iso);
+  const tomorrow = new Date(now);
+  tomorrow.setDate(now.getDate() + 1);
+  if (isSameDay(date, now)) return 'Today';
+  if (isSameDay(date, tomorrow)) return 'Tomorrow';
+  return date.toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' });
+}
+
 /**
  * The time of day in as few characters as the device's format allows, such
  * as 9:30am or 09:30, for tight spaces like a calendar cell.

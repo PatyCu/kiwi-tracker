@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 
-import { usePetsAndEventsLoad } from '@/modules/pet-events/state/usePetsAndEventsLoad';
+import { useCalendarDataLoad } from '@/modules/calendar/useCalendarDataLoad';
 import { usePets } from '@/modules/pets/state/PetsProvider';
 import { usePetProfileForms } from '@/modules/pets/state/PetProfileFormsProvider';
 import { PetOverview } from '@/modules/pets/ui/PetOverview';
@@ -12,8 +12,8 @@ import { ScreenHeader } from '@/shared/ui/ScreenHeader';
 export function PetOverviewScreen() {
   const { petId } = useLocalSearchParams<{ petId: string }>();
   const { pets } = usePets();
-  // The overview shows the pet's events too, so wait for both.
-  const { loadStatus, retryLoad } = usePetsAndEventsLoad();
+  // The overview shows the pet's events and calendar events too, so wait for all.
+  const { loadStatus, retryLoad } = useCalendarDataLoad();
   const profiles = usePetProfileForms();
   const pet = pets.find((item) => item.id === petId);
 

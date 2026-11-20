@@ -22,6 +22,9 @@ export type CalendarItem = {
   location?: string;
 };
 
+/** Shown when an item's pet is no longer in the household's list. */
+export const UNKNOWN_PET_NAME = 'Unknown pet';
+
 export type CalendarKindChoice = 'all' | 'pet-events' | 'calendar-events';
 
 /** How each kind choice is named wherever the calendar shows or offers it. */
@@ -51,7 +54,7 @@ export function toCalendarItems(
   colors: CalendarItemColors,
 ): CalendarItem[] {
   const petNames = new Map(pets.map((pet) => [pet.id, pet.name]));
-  const petName = (petId: string) => petNames.get(petId) ?? 'Unknown pet';
+  const petName = (petId: string) => petNames.get(petId) ?? UNKNOWN_PET_NAME;
 
   const logged = petEvents.map((event): CalendarItem => {
     const entry = toTimelineEntry(event, colors.symptom, colors.diet, colors.other, new Date());
@@ -66,19 +69,30 @@ export function toCalendarItems(
       startsAt: event.occurredAt,
     };
   });
-  const planned = calendarEvents.map((event): CalendarItem => ({
+  const planned = calendarEvents.map((event) =>
+    toCalendarEventItem(event, petName(event.petId), colors.calendarEvent),
+  );
+  return [...logged, ...planned];
+}
+
+/** How a planned calendar event shows wherever it is listed. */
+export function toCalendarEventItem(
+  event: CalendarEvent,
+  petName: string,
+  color: string,
+): CalendarItem {
+  return {
     id: event.id,
     kind: 'calendar-event',
     petId: event.petId,
-    petName: petName(event.petId),
+    petName,
     title: event.title,
     icon: 'calendar-outline',
-    color: colors.calendarEvent,
+    color,
     startsAt: event.startsAt,
     endsAt: event.endsAt,
     ...(event.location ? { location: event.location } : {}),
-  }));
-  return [...logged, ...planned];
+  };
 }
 
 export function filterCalendarItems(

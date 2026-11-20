@@ -1,3 +1,6 @@
+import { CalendarItem } from '@/modules/calendar/calendarItems';
+import { toUpcomingCareItems } from '@/modules/calendar/upcomingCare';
+import { CalendarEvent } from '@/modules/calendar-events/model/CalendarEvent';
 import { PetEvent } from '@/modules/pet-events/model/PetEvent';
 import { Pet } from '@/modules/pets/model/Pet';
 import {
@@ -17,14 +20,18 @@ export type TodayStatusSummary = {
 type TodayViewModel = {
   statusSummary: TodayStatusSummary;
   insights: PetInsight[];
+  /** The household's calendar events of the next 7 days, soonest first. */
+  upcomingCare: CalendarItem[];
 };
 
 export function buildTodayViewModel(
   pets: readonly Pet[],
   events: readonly PetEvent[],
+  calendarEvents: readonly CalendarEvent[],
   now: Date,
   /** Labels the summary; without one it names the pets instead. */
   householdAlias: string | null,
+  calendarEventColor: string,
 ): TodayViewModel {
   const evaluations = pets.map((pet) => {
     const evaluation = evaluatePetStatus(
@@ -40,7 +47,8 @@ export function buildTodayViewModel(
   const insights = [...evaluations].sort(
     (left, right) => statusPriority(right.status) - statusPriority(left.status),
   );
-  return { statusSummary, insights };
+  const upcomingCare = toUpcomingCareItems(calendarEvents, pets, calendarEventColor, now);
+  return { statusSummary, insights, upcomingCare };
 }
 
 function buildStatusSummary(

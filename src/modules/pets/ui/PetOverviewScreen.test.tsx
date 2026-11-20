@@ -1,6 +1,7 @@
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import { ReactNode } from 'react';
 
+import { loadCalendarEvents } from '@/modules/calendar-events/persistence/calendarEventStore';
 import { loadPetEvents } from '@/modules/pet-events/persistence/petEventStore';
 import { CalendarEventFormsProvider } from '@/modules/calendar-events/state/CalendarEventFormsProvider';
 import { CalendarEventsProvider } from '@/modules/calendar-events/state/CalendarEventsProvider';
@@ -82,6 +83,7 @@ describe('Pet overview screen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.mocked(loadPetEvents).mockResolvedValue([]);
+    jest.mocked(loadCalendarEvents).mockResolvedValue([]);
   });
 
   it('shows a loading state, not "Pet not found", while a deep-linked pet loads', async () => {
@@ -107,5 +109,65 @@ describe('Pet overview screen', () => {
     fireEvent.press(screen.getByText('Retry'));
 
     await waitFor(() => expect(screen.getByText('Today with Luna')).toBeTruthy());
+  });
+
+  it("lists this pet's calendar events of the next 7 days in Up next", async () => {
+    jest.mocked(loadPets).mockResolvedValue([
+      { id: 'luna', name: 'Luna', species: 'Dog' },
+      { id: 'kiwi', name: 'Kiwi', species: 'Cat' },
+    ]);
+    const inHours = (hours: number) => new Date(Date.now() + hours * 60 * 60 * 1000).toISOString();
+    const createdAt = inHours(-24);
+    jest.mocked(loadCalendarEvents).mockResolvedValue([
+      {
+        id: 'vaccines',
+        petId: 'luna',
+        title: 'Annual vaccines',
+        startsAt: inHours(2),
+        endsAt: inHours(3),
+        createdAt,
+      },
+      {
+        id: 'kiwi-vet',
+        petId: 'kiwi',
+        title: 'Kiwi vet',
+        startsAt: inHours(4),
+        endsAt: inHours(5),
+        createdAt,
+      },
+    ]);
+
+    const screen = render(<PetOverviewScreen />, { wrapper: Providers });
+
+    await waitFor(() => expect(screen.getByText('Annual vaccines')).toBeTruthy());
+    expect(screen.queryByText('Kiwi vet')).toBeNull();
+    expect(screen.queryByText(/Nothing scheduled/)).toBeNull();
+  });
+
+  it('says when nothing is scheduled for the pet, and keeps Schedule', async () => {
+    jest.mocked(loadPets).mockResolvedValue([{ id: 'luna', name: 'Luna', species: 'Dog' }]);
+
+    const screen = render(<PetOverviewScreen />, { wrapper: Providers });
+
+    await waitFor(() =>
+      expect(screen.getByText('Nothing scheduled for Luna in the next 7 days')).toBeTruthy(),
+    );
+    expect(screen.getByLabelText('Schedule calendar event')).toBeTruthy();
+  });
+
+  it('retries only the calendar events when they fail to load', async () => {
+    jest.mocked(loadPets).mockResolvedValue([{ id: 'luna', name: 'Luna', species: 'Dog' }]);
+    jest.mocked(loadCalendarEvents).mockRejectedValueOnce(new Error('offline'));
+
+    const screen = render(<PetOverviewScreen />, { wrapper: Providers });
+
+    await waitFor(() => expect(screen.getByText('Could not load your data')).toBeTruthy());
+    fireEvent.press(screen.getByText('Retry'));
+
+    await waitFor(() =>
+      expect(screen.getByText('Nothing scheduled for Luna in the next 7 days')).toBeTruthy(),
+    );
+    expect(loadCalendarEvents).toHaveBeenCalledTimes(2);
+    expect(loadPets).toHaveBeenCalledTimes(1);
   });
 });

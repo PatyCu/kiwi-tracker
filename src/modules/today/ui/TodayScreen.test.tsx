@@ -3,7 +3,10 @@ import { ReactNode } from 'react';
 import { StyleSheet } from 'react-native';
 
 import { AppearanceProvider } from '@/shared/theme/AppearanceProvider';
-import { insertCalendarEvent } from '@/modules/calendar-events/persistence/calendarEventStore';
+import {
+  insertCalendarEvent,
+  loadCalendarEvents,
+} from '@/modules/calendar-events/persistence/calendarEventStore';
 import { CalendarEventFormsProvider } from '@/modules/calendar-events/state/CalendarEventFormsProvider';
 import { CalendarEventsProvider } from '@/modules/calendar-events/state/CalendarEventsProvider';
 import { PetEvent } from '@/modules/pet-events/model/PetEvent';
@@ -119,7 +122,7 @@ describe('Today screen', () => {
     });
     expect(screen.getByLabelText('Kiwi avatar')).toBeTruthy();
     expect(screen.getByText('All good, nothing to see here.')).toBeTruthy();
-    expect(screen.getByText("Calendar events aren't shown yet")).toBeTruthy();
+    expect(screen.getByText('Nothing scheduled in the next 7 days')).toBeTruthy();
     expect(screen.getByText('No overdue items')).toBeTruthy();
     expect(screen.getByText('Add event')).toBeTruthy();
     expect(screen.queryByText('Needs attention')).toBeNull();
@@ -321,6 +324,38 @@ describe('Today screen', () => {
     );
     expect(consoleError.mock.calls.flat().join(' ')).not.toContain('same key');
     consoleError.mockRestore();
+  });
+
+  it("lists the household's calendar events of the next 7 days with their pet", async () => {
+    mockedLoadPets.mockResolvedValue([kiwi, luna]);
+    const inHours = (hours: number) => new Date(Date.now() + hours * 60 * 60 * 1000).toISOString();
+    jest.mocked(loadCalendarEvents).mockResolvedValue([
+      {
+        id: 'vaccines',
+        petId: 'luna',
+        title: 'Annual vaccines',
+        startsAt: inHours(2),
+        endsAt: inHours(3),
+        location: 'Riverside Vet',
+        createdAt: inHours(-24),
+      },
+      {
+        id: 'next-month',
+        petId: 'kiwi',
+        title: 'Dental check',
+        startsAt: inHours(24 * 30),
+        endsAt: inHours(24 * 30 + 1),
+        createdAt: inHours(-24),
+      },
+    ]);
+
+    const screen = render(<TodayScreen />, { wrapper: Providers });
+
+    await waitFor(() => expect(screen.getByText('Annual vaccines')).toBeTruthy());
+    expect(screen.getByText('Luna · Riverside Vet')).toBeTruthy();
+    expect(screen.queryByText('Dental check')).toBeNull();
+    expect(screen.queryByText('Nothing scheduled in the next 7 days')).toBeNull();
+    expect(screen.getByLabelText('Schedule calendar event')).toBeTruthy();
   });
 
   it('adds a calendar event for the pet chosen in the form', async () => {

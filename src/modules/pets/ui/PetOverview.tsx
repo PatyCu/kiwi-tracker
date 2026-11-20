@@ -2,6 +2,9 @@ import { router } from 'expo-router';
 import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { toUpcomingCareItems } from '@/modules/calendar/upcomingCare';
+import { UpcomingCareList } from '@/modules/calendar/ui/UpcomingCareList';
+import { useCalendarEvents } from '@/modules/calendar-events/state/CalendarEventsProvider';
 import { useCalendarEventForms } from '@/modules/calendar-events/state/CalendarEventFormsProvider';
 import { usePetEventForms } from '@/modules/pet-events/state/PetEventFormsProvider';
 import { usePetEvents } from '@/modules/pet-events/state/PetEventsProvider';
@@ -12,7 +15,6 @@ import { PetStatusCard } from '@/modules/pet-status/ui/PetStatusCard';
 import { Pet } from '@/modules/pets/model/Pet';
 import { PetSectionLink } from '@/modules/pets/ui/PetSectionLink';
 import { useAppearance } from '@/shared/theme/AppearanceProvider';
-import { PlaceholderCard } from '@/shared/ui/PlaceholderCard';
 import { SectionHeader } from '@/shared/ui/SectionHeader';
 
 type PetOverviewProps = {
@@ -25,9 +27,11 @@ export function PetOverview({ pet }: PetOverviewProps) {
   const { events, deletingEventId, updatingEventId } = usePetEvents();
   const forms = usePetEventForms();
   const calendarEventForms = useCalendarEventForms();
+  const { calendarEvents } = useCalendarEvents();
   const now = new Date();
   const petEvents = events.filter((event) => event.petId === pet.id);
   const status = getPetStatus(petEvents, now);
+  const upcomingCare = toUpcomingCareItems(calendarEvents, [pet], colors.blue, now, pet.id);
   const entries = toTimelineEntries(
     petEvents,
     pet.id,
@@ -52,10 +56,7 @@ export function PetOverview({ pet }: PetOverviewProps) {
           onPress: () => calendarEventForms.openAddCalendarEvent(pet.id),
         }}
       />
-      <PlaceholderCard
-        title="Calendar events aren't shown yet"
-        description="Events you add are saved and will appear here once upcoming care is ready."
-      />
+      <UpcomingCareList items={upcomingCare} now={now} showPetNames={false} emptyFor={pet.name} />
       <PetActivityCard
         entries={entries}
         petName={pet.name}

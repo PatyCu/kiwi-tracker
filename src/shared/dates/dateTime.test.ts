@@ -1,6 +1,7 @@
 import {
   formatCompactClockTime,
   formatEventTime,
+  formatUpcomingDay,
   isValidDisplayedBirthDate,
   toDisplayedBirthDate,
   toDisplayedEventDateTime,
@@ -27,6 +28,14 @@ describe('date utilities', () => {
 
     expect(formatEventTime('2026-07-15T10:30:00.000Z', now)).toContain('Today ·');
     expect(formatEventTime('2026-07-14T10:30:00.000Z', now)).toContain('Yesterday ·');
+  });
+
+  it('names an upcoming day as today, tomorrow or its date', () => {
+    const now = new Date(2026, 10, 14, 23, 30);
+
+    expect(formatUpcomingDay(new Date(2026, 10, 14, 23, 45).toISOString(), now)).toBe('Today');
+    expect(formatUpcomingDay(new Date(2026, 10, 15, 0, 15).toISOString(), now)).toBe('Tomorrow');
+    expect(formatUpcomingDay(new Date(2026, 10, 16, 9).toISOString(), now)).toMatch(/16/);
   });
 
   it('formats a compact time of day without a space before am or pm', () => {

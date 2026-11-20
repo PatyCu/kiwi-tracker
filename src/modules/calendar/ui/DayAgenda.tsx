@@ -1,13 +1,12 @@
-import { Ionicons } from '@expo/vector-icons';
 import { useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import {
   CALENDAR_KIND_LABELS,
   CalendarItem,
   CalendarKindChoice,
 } from '@/modules/calendar/calendarItems';
-import { formatClockTime } from '@/shared/dates/dateTime';
+import { CalendarItemRow } from '@/modules/calendar/ui/CalendarItemRow';
 import { useAppearance } from '@/shared/theme/AppearanceProvider';
 import { Palette } from '@/shared/theme/palette';
 
@@ -43,54 +42,17 @@ export function DayAgenda({ day, items, kind, showPetNames, onOpenItem }: DayAge
       ) : (
         <View style={styles.card}>
           {items.map((item, index) => (
-            <AgendaRow
+            <CalendarItemRow
               key={`${item.kind}-${item.id}`}
               item={item}
               showPetName={showPetNames}
               divider={index > 0}
               onOpen={onOpenItem}
-              styles={styles}
             />
           ))}
         </View>
       )}
     </View>
-  );
-}
-
-type AgendaRowProps = {
-  item: CalendarItem;
-  showPetName: boolean;
-  divider: boolean;
-  onOpen: (item: CalendarItem) => void;
-  styles: ReturnType<typeof makeStyles>;
-};
-
-function AgendaRow({ item, showPetName, divider, onOpen, styles }: AgendaRowProps) {
-  const { colors } = useAppearance();
-  const opens = item.kind === 'pet-event';
-  const time = item.endsAt
-    ? `${formatClockTime(item.startsAt)} – ${formatClockTime(item.endsAt)}`
-    : formatClockTime(item.startsAt);
-  const details = [showPetName ? item.petName : null, item.location].filter(Boolean).join(' · ');
-
-  return (
-    <Pressable
-      accessibilityRole={opens ? 'button' : undefined}
-      disabled={!opens}
-      onPress={() => onOpen(item)}
-      style={({ pressed }) => [styles.row, divider && styles.divider, pressed && styles.pressed]}
-    >
-      <View style={[styles.icon, { borderColor: item.color }]}>
-        <Ionicons name={item.icon} size={16} color={item.color} />
-      </View>
-      <View style={styles.body}>
-        <Text style={styles.time}>{time}</Text>
-        <Text style={styles.itemTitle}>{item.title}</Text>
-        {details.length > 0 && <Text style={styles.details}>{details}</Text>}
-      </View>
-      {opens && <Ionicons name="chevron-forward" size={16} color={colors.muted} />}
-    </Pressable>
   );
 }
 
@@ -106,21 +68,6 @@ const makeStyles = (colors: Palette) =>
       backgroundColor: colors.surface,
       overflow: 'hidden',
     },
-    row: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
-    divider: { borderTopWidth: 1, borderTopColor: colors.line },
-    pressed: { backgroundColor: colors.surface2 },
-    icon: {
-      width: 34,
-      height: 34,
-      borderRadius: 17,
-      borderWidth: 1.5,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    body: { flex: 1, gap: 2 },
-    time: { color: colors.muted, fontSize: 12, fontWeight: '600' },
-    itemTitle: { color: colors.text, fontSize: 15, fontWeight: '700' },
-    details: { color: colors.muted, fontSize: 13 },
     empty: {
       borderWidth: 1,
       borderStyle: 'dashed',
