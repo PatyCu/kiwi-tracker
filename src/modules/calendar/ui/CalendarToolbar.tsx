@@ -8,27 +8,21 @@ import { Palette } from '@/shared/theme/palette';
 
 type CalendarToolbarProps = {
   month: CalendarMonth;
-  /** Puts the filters on the month's line instead of under it. */
+  /** Groups the arrows with the month and puts `end` on the same line. */
   wide: boolean;
   onPreviousMonth: () => void;
   onNextMonth: () => void;
-  /** Whose items are shown; left out when there is only one pet. */
-  petFilter?: ReactNode;
-  /** Which kinds of items are shown; always at the right end. */
-  kindFilter: ReactNode;
-  /** Shown before the kind filter on wide screens only; narrow ones put it by the day. */
-  wideAction?: ReactNode;
+  /** Shown at the right end on wide screens. */
+  end?: ReactNode;
 };
 
-/** The month being shown, the arrows to move between months, and the filters. */
+/** The month being shown and the arrows to move between months. */
 export function CalendarToolbar({
   month,
   wide,
   onPreviousMonth,
   onNextMonth,
-  petFilter,
-  kindFilter,
-  wideAction,
+  end,
 }: CalendarToolbarProps) {
   const { colors } = useAppearance();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -59,32 +53,18 @@ export function CalendarToolbar({
     </>
   );
 
-  // Wide: month, arrows and pets on the left, kinds on the right, all on one line.
+  // Wide: the month and arrows on the left, `end` on the right.
   if (wide) {
     return (
-      <View style={styles.wideToolbar}>
-        <View style={styles.wideStart}>
-          {monthAndArrows}
-          {petFilter}
-        </View>
-        <View style={styles.wideEnd}>
-          {wideAction}
-          {kindFilter}
-        </View>
+      <View style={styles.toolbar}>
+        <View style={styles.wideStart}>{monthAndArrows}</View>
+        {end}
       </View>
     );
   }
 
-  // Narrow: the month and arrows, then pets on the left and kinds on the right.
-  return (
-    <View style={styles.toolbar}>
-      <View style={styles.monthRow}>{monthAndArrows}</View>
-      <View style={styles.filters}>
-        <View style={styles.petFilter}>{petFilter}</View>
-        {kindFilter}
-      </View>
-    </View>
-  );
+  // Narrow: the month on the left, the arrows on the right.
+  return <View style={styles.toolbar}>{monthAndArrows}</View>;
 }
 
 type MonthArrowProps = {
@@ -111,21 +91,13 @@ function MonthArrow({ icon, label, onPress, styles }: MonthArrowProps) {
 
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
-    toolbar: { gap: 12 },
-    wideToolbar: {
+    toolbar: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
       gap: 16,
     },
     wideStart: { flexDirection: 'row', alignItems: 'center', gap: 16, flexShrink: 1 },
-    wideEnd: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-    monthRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: 16,
-    },
     title: { color: colors.text, fontSize: 26, fontWeight: '800' },
     arrows: { flexDirection: 'row', gap: 8 },
     arrow: {
@@ -139,6 +111,4 @@ const makeStyles = (colors: Palette) =>
       justifyContent: 'center',
     },
     pressed: { opacity: 0.7 },
-    filters: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-    petFilter: { flex: 1 },
   });

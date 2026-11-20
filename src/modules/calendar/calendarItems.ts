@@ -25,17 +25,20 @@ export type CalendarItem = {
 /** Shown when an item's pet is no longer in the household's list. */
 export const UNKNOWN_PET_NAME = 'Unknown pet';
 
-export type CalendarKindChoice = 'all' | 'pet-events' | 'calendar-events';
+export type CalendarItemKind = CalendarItem['kind'];
 
-/** How each kind choice is named wherever the calendar shows or offers it. */
-export const CALENDAR_KIND_LABELS: Record<CalendarKindChoice, string> = {
-  all: 'All events',
-  'pet-events': 'Pet events',
-  'calendar-events': 'Calendar events',
+/** Every kind of item, in the order the calendar offers them. */
+export const CALENDAR_ITEM_KINDS: readonly CalendarItemKind[] = ['calendar-event', 'pet-event'];
+
+/** How each kind is named wherever the calendar shows or offers it. */
+export const CALENDAR_ITEM_KIND_LABELS: Record<CalendarItemKind, string> = {
+  'calendar-event': 'Calendar events',
+  'pet-event': 'Pet events',
 };
 
 export type CalendarFilters = {
-  kind: CalendarKindChoice;
+  /** The kinds of items shown; all of them shows everything. */
+  kinds: readonly CalendarItemKind[];
   /** The pets whose items are shown. */
   petIds: readonly string[];
 };
@@ -97,14 +100,9 @@ export function toCalendarEventItem(
 
 export function filterCalendarItems(
   items: readonly CalendarItem[],
-  { kind, petIds }: CalendarFilters,
+  { kinds, petIds }: CalendarFilters,
 ): CalendarItem[] {
-  return items.filter(
-    (item) =>
-      (kind === 'all' ||
-        (kind === 'pet-events' ? item.kind === 'pet-event' : item.kind === 'calendar-event')) &&
-      petIds.includes(item.petId),
-  );
+  return items.filter((item) => kinds.includes(item.kind) && petIds.includes(item.petId));
 }
 
 /** The items of each local day (keyed by toDayKey), earliest first. */

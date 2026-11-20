@@ -11,16 +11,20 @@ type ScreenProps = {
   scroll?: boolean;
   /** Uses the whole width on wide screens instead of a centered column. */
   fullWidth?: boolean;
+  /** Stretches the content to at least the screen's height, so it can fill it. */
+  fill?: boolean;
 };
 
-export function Screen({ children, scroll = true, fullWidth = false }: ScreenProps) {
+export function Screen({ children, scroll = true, fullWidth = false, fill = false }: ScreenProps) {
   const { colors } = useAppearance();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const width = useWindowDimensions().width;
   const wide = width > WIDE_CONTENT_BREAKPOINT;
   const desktopNavigation = width >= DESKTOP_NAV_BREAKPOINT;
   const content = (
-    <View style={[styles.content, wide && !fullWidth && styles.wideContent]}>{children}</View>
+    <View style={[styles.content, wide && !fullWidth && styles.wideContent, fill && styles.fill]}>
+      {children}
+    </View>
   );
 
   return (
@@ -49,4 +53,5 @@ const makeStyles = (colors: Palette) =>
     desktopScrollContent: { paddingBottom: 40 },
     content: { width: '100%', paddingHorizontal: 20, paddingTop: 18 },
     wideContent: { maxWidth: 920, alignSelf: 'center' },
+    fill: { flexGrow: 1 },
   });

@@ -1,4 +1,5 @@
-import { useMemo } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { ReactNode, useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { CalendarItem } from '@/modules/calendar/calendarItems';
@@ -13,24 +14,50 @@ type CompactMonthProps = {
   weekdayNames: string[];
   itemsByDay: Map<string, CalendarItem[]>;
   todayKey: string;
-  selectedDayKey: string;
+  selectedDay: Date;
   onSelectDay: (day: Date) => void;
+  /** Adds a calendar event on the selected day. */
+  onAddEvent: () => void;
+  /** Shown at the start of the card's header, across from the add button. */
+  headerStart?: ReactNode;
 };
 
-/** The month as a small grid where each day shows a dot per kind of item it has. */
+/**
+ * The month as a small grid where each day shows a dot per kind of item it has,
+ * under a header with a button that adds a calendar event on the selected day.
+ */
 export function CompactMonth({
   weeks,
   weekdayNames,
   itemsByDay,
   todayKey,
-  selectedDayKey,
+  selectedDay,
   onSelectDay,
+  onAddEvent,
+  headerStart,
 }: CompactMonthProps) {
   const { colors } = useAppearance();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const selectedDayKey = toDayKey(selectedDay);
 
   return (
     <View style={styles.month}>
+      <View style={styles.header}>
+        <View style={styles.headerStart}>{headerStart}</View>
+        <Pressable
+          accessibilityLabel={`Add calendar event on ${selectedDay.toLocaleDateString([], {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+          })}`}
+          accessibilityRole="button"
+          hitSlop={4}
+          onPress={onAddEvent}
+          style={({ pressed }) => [styles.add, pressed && styles.pressed]}
+        >
+          <Ionicons name="add" size={22} color={colors.ink} />
+        </Pressable>
+      </View>
       <View style={styles.week}>
         {weekdayNames.map((name) => (
           <Text key={name} style={styles.weekday}>
@@ -90,13 +117,32 @@ export function CompactMonth({
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
     month: {
-      paddingVertical: 10,
+      paddingTop: 12,
+      paddingBottom: 10,
       paddingHorizontal: 6,
       borderWidth: 1,
       borderColor: colors.line,
       borderRadius: 22,
       backgroundColor: colors.surface,
     },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 12,
+      paddingHorizontal: 6,
+      paddingBottom: 12,
+    },
+    headerStart: { flexShrink: 1 },
+    add: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: colors.kiwi,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    pressed: { opacity: 0.7 },
     week: { flexDirection: 'row' },
     weekday: {
       flex: 1,

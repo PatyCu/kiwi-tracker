@@ -130,6 +130,11 @@ function Providers({ children }: { children: ReactNode }) {
   );
 }
 
+/** How a day is named in its "Add calendar event on …" button. */
+function dayName(date: Date): string {
+  return date.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' });
+}
+
 async function renderCalendar() {
   const screen = render(<CalendarScreen />, { wrapper: Providers });
   await waitFor(() => expect(screen.getByLabelText('Next month')).toBeTruthy());
@@ -157,28 +162,63 @@ describe('Calendar screen', () => {
     expect(screen.getByText('Kiwi')).toBeTruthy();
   });
 
-  it('filters by kind', async () => {
+  it('filters by event type from the Filter by sheet, and shows the filter is on', async () => {
     const screen = await renderCalendar();
+    fireEvent.press(screen.getByLabelText('Filter by'));
 
     const dayHeader = () => screen.getByRole('header', { name: /^\d+ \w+ – |^\w+ \d+ – / });
+    const checked = (label: string) => screen.getByLabelText(label).props.accessibilityState;
     expect(dayHeader()).toHaveTextContent(/– All events$/);
+    expect(checked('Calendar events')).toEqual({ checked: true });
+    expect(checked('Pet events')).toEqual({ checked: true });
+    expect(screen.queryByLabelText('All events')).toBeNull();
 
-    fireEvent.press(screen.getByLabelText('Calendar events'));
+    fireEvent.press(screen.getByLabelText('Pet events'));
     expect(screen.queryByText('Groomer')).toBeNull();
-    expect(dayHeader()).toHaveTextContent(/– Calendar events$/);
     expect(screen.getByText('Vaccines')).toBeTruthy();
+    expect(dayHeader()).toHaveTextContent(/– Calendar events$/);
+    expect(checked('Pet events')).toEqual({ checked: false });
+    expect(screen.getByLabelText('Filter by, Calendar events')).toHaveTextContent(/Filter by1$/);
+
+    // The last checked type stays on, so the calendar never empties by choice.
+    fireEvent.press(screen.getByLabelText('Calendar events'));
+    expect(checked('Calendar events')).toEqual({ checked: true });
 
     fireEvent.press(screen.getByLabelText('Pet events'));
     expect(screen.getByText('Groomer')).toBeTruthy();
-    expect(screen.queryByText('Vaccines')).toBeNull();
-    expect(screen.getByLabelText('Pet events').props.accessibilityState).toEqual({ checked: true });
+    expect(screen.getByLabelText('Filter by')).toBeTruthy();
+  });
 
-    fireEvent.press(screen.getByLabelText('All events'));
-    expect(screen.getByText('Vaccines')).toBeTruthy();
+  it('clears the filters from the Filter by sheet', async () => {
+    jest.mocked(useLocalSearchParams).mockReturnValue({ petIds: 'luna' });
+    const screen = await renderCalendar();
+    fireEvent.press(screen.getByLabelText('Filter by, Luna'));
+    fireEvent.press(screen.getByLabelText('Calendar events'));
+    expect(screen.getByLabelText('Filter by, Luna; Pet events')).toHaveTextContent(/Filter by2$/);
+
+    fireEvent.press(screen.getByText('Clear filters'));
+
+    expect(router.setParams).toHaveBeenCalledWith({ petIds: undefined });
+    expect(screen.getByLabelText('Calendar events').props.accessibilityState).toEqual({
+      checked: true,
+    });
+  });
+
+  it('opens the filter as a popover on wide screens', async () => {
+    mockWindowWidth = 1280;
+    const screen = await renderCalendar();
+
+    fireEvent.press(screen.getByLabelText('Filter by'));
+
+    expect(screen.getByTestId('calendar-filter')).toBeTruthy();
+    expect(screen.queryByText('Done')).toBeNull();
+    fireEvent.press(screen.getByLabelText('Kiwi'));
+    expect(router.setParams).toHaveBeenCalledWith({ petIds: 'luna' });
   });
 
   it('selects every pet by default and turns one off through the route', async () => {
     const screen = await renderCalendar();
+    fireEvent.press(screen.getByLabelText('Filter by'));
 
     expect(screen.getByLabelText('Kiwi').props.accessibilityState).toEqual({ checked: true });
     expect(screen.getByLabelText('Luna').props.accessibilityState).toEqual({ checked: true });
@@ -194,6 +234,7 @@ describe('Calendar screen', () => {
     expect(screen.queryByText('Vomiting logged')).toBeNull();
     expect(screen.getByText('Groomer')).toBeTruthy();
     expect(screen.getByText('Riverside Vet')).toBeTruthy();
+    fireEvent.press(screen.getByLabelText('Filter by, Luna'));
     expect(screen.getByLabelText('Kiwi').props.accessibilityState).toEqual({ checked: false });
 
     fireEvent.press(screen.getByLabelText('Kiwi'));
@@ -204,11 +245,14 @@ describe('Calendar screen', () => {
     expect(router.setParams).toHaveBeenCalledWith({ petIds: 'luna' });
   });
 
-  it('hides the pet switch when the household has one pet', async () => {
+  it('offers only the event types in the filter when the household has one pet', async () => {
     jest.mocked(loadPets).mockResolvedValue([kiwi]);
     const screen = await renderCalendar();
+    fireEvent.press(screen.getByLabelText('Filter by'));
 
-    expect(screen.queryByLabelText('Pets shown')).toBeNull();
+    expect(screen.queryByText('PET')).toBeNull();
+    expect(screen.queryByLabelText('Kiwi')).toBeNull();
+    expect(screen.getByLabelText('Pet events')).toBeTruthy();
   });
 
   it('opens a pet event inside the Calendar tab, and a calendar event in its details', async () => {
@@ -275,7 +319,7 @@ describe('Calendar screen', () => {
     expect(loadPetEvents).toHaveBeenCalledTimes(1);
   });
 
-  it('schedules a calendar event on the selected day for the pet chosen in the form', async () => {
+  it('adds a calendar event on the selected day for the pet chosen in the form', async () => {
     jest.mocked(insertCalendarEvent).mockImplementation(async (event) => ({
       ...event,
       id: 'calendar-1',
@@ -287,7 +331,7 @@ describe('Calendar screen', () => {
     const now = new Date();
     const firstOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1, 9);
 
-    fireEvent.press(screen.getByLabelText('Schedule calendar event'));
+    fireEvent.press(screen.getByLabelText(`Add calendar event on ${dayName(firstOfNextMonth)}`));
     expect(screen.getByText('PET')).toBeTruthy();
     fireEvent.press(screen.getByLabelText('Select Luna'));
     fireEvent.changeText(screen.getByLabelText('Calendar event title'), 'Annual vaccines');
@@ -305,23 +349,38 @@ describe('Calendar screen', () => {
     await waitFor(() => expect(screen.queryByLabelText('Calendar event title')).toBeNull());
   });
 
-  it('schedules for the only pet without asking which one', async () => {
+  it('adds for the only pet without asking which one', async () => {
     jest.mocked(loadPets).mockResolvedValue([kiwi]);
     const screen = await renderCalendar();
 
-    fireEvent.press(screen.getByLabelText('Schedule calendar event'));
+    fireEvent.press(screen.getByLabelText(`Add calendar event on ${dayName(new Date())}`));
 
     expect(screen.getByLabelText('Calendar event title')).toBeTruthy();
     expect(screen.queryByText('PET')).toBeNull();
   });
 
-  it('offers Schedule in the toolbar on wide screens', async () => {
+  it('adds a calendar event on the day clicked in the grid on wide screens', async () => {
+    jest.mocked(loadPets).mockResolvedValue([kiwi]);
+    jest.mocked(insertCalendarEvent).mockImplementation(async (event) => ({
+      ...event,
+      id: 'calendar-1',
+      createdAt,
+    }));
     mockWindowWidth = 1280;
     const screen = await renderCalendar();
+    const now = new Date();
+    const second = new Date(now.getFullYear(), now.getMonth(), 2, 9);
+    expect(screen.queryByLabelText('Schedule calendar event')).toBeNull();
 
-    fireEvent.press(screen.getByLabelText('Schedule calendar event'));
+    fireEvent.press(screen.getByLabelText(`Add calendar event on ${dayName(second)}`));
+    fireEvent.changeText(screen.getByLabelText('Calendar event title'), 'Checkup');
+    fireEvent.press(screen.getByText('Save event'));
 
-    expect(screen.getByLabelText('Calendar event title')).toBeTruthy();
+    await waitFor(() =>
+      expect(insertCalendarEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ petId: 'kiwi', startsAt: second.toISOString() }),
+      ),
+    );
   });
 
   it('asks for a first pet when the household has none', async () => {

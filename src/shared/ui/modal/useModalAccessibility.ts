@@ -4,7 +4,8 @@ import { Platform } from 'react-native';
 type ModalAccessibilityOptions = {
   visible: boolean;
   sheetTestID: string;
-  closeButtonTestID: string;
+  /** Focused when it opens; without one, its first control is. */
+  closeButtonTestID?: string;
   onClose: () => void;
 };
 
@@ -32,8 +33,19 @@ export function useModalAccessibility({
 
     const previouslyFocused = document.activeElement as HTMLElement | null;
     const sheet = document.querySelector<HTMLElement>(`[data-testid="${sheetTestID}"]`);
-    const closeButton = document.querySelector<HTMLElement>(`[data-testid="${closeButtonTestID}"]`);
-    const focusFrame = window.requestAnimationFrame(() => closeButton?.focus());
+    const focusableIn = (element: HTMLElement) =>
+      Array.from(
+        element.querySelectorAll<HTMLElement>(
+          'button, [href], input, textarea, select, [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter(
+        (focusable) =>
+          !focusable.hasAttribute('disabled') && focusable.getAttribute('aria-disabled') !== 'true',
+      );
+    const initialFocus = closeButtonTestID
+      ? document.querySelector<HTMLElement>(`[data-testid="${closeButtonTestID}"]`)
+      : sheet && focusableIn(sheet)[0];
+    const focusFrame = window.requestAnimationFrame(() => initialFocus?.focus());
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -43,14 +55,7 @@ export function useModalAccessibility({
       }
 
       if (event.key !== 'Tab' || !sheet) return;
-      const focusableElements = Array.from(
-        sheet.querySelectorAll<HTMLElement>(
-          'button, [href], input, textarea, select, [tabindex]:not([tabindex="-1"])',
-        ),
-      ).filter(
-        (element) =>
-          !element.hasAttribute('disabled') && element.getAttribute('aria-disabled') !== 'true',
-      );
+      const focusableElements = focusableIn(sheet);
       if (focusableElements.length === 0) return;
 
       const first = focusableElements[0];

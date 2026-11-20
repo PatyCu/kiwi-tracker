@@ -73,23 +73,22 @@ describe('calendar items', () => {
 
   it('filters by kind and by pet together', () => {
     const ids = (filtered: CalendarItem[]) => filtered.map((item) => item.id);
+    const both = ['kiwi', 'luna'];
 
-    expect(ids(filterCalendarItems(items, { kind: 'all', petIds: ['kiwi', 'luna'] }))).toEqual([
+    expect(
+      ids(filterCalendarItems(items, { kinds: ['calendar-event', 'pet-event'], petIds: both })),
+    ).toEqual(['symptom', 'other', 'vaccines']);
+    expect(ids(filterCalendarItems(items, { kinds: ['pet-event'], petIds: both }))).toEqual([
       'symptom',
       'other',
+    ]);
+    expect(ids(filterCalendarItems(items, { kinds: ['calendar-event'], petIds: both }))).toEqual([
       'vaccines',
     ]);
     expect(
-      ids(filterCalendarItems(items, { kind: 'pet-events', petIds: ['kiwi', 'luna'] })),
-    ).toEqual(['symptom', 'other']);
-    expect(
-      ids(filterCalendarItems(items, { kind: 'calendar-events', petIds: ['kiwi', 'luna'] })),
-    ).toEqual(['vaccines']);
-    expect(ids(filterCalendarItems(items, { kind: 'all', petIds: ['luna'] }))).toEqual([
-      'other',
-      'vaccines',
-    ]);
-    expect(ids(filterCalendarItems(items, { kind: 'pet-events', petIds: ['luna'] }))).toEqual([
+      ids(filterCalendarItems(items, { kinds: ['calendar-event', 'pet-event'], petIds: ['luna'] })),
+    ).toEqual(['other', 'vaccines']);
+    expect(ids(filterCalendarItems(items, { kinds: ['pet-event'], petIds: ['luna'] }))).toEqual([
       'other',
     ]);
   });

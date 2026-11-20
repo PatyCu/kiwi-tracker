@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -17,9 +18,14 @@ type MonthGridProps = {
   /** Adds the pet's name to each item, for when several pets are shown. */
   showPetNames: boolean;
   onOpenItem: (item: CalendarItem) => void;
+  /** Adds a calendar event on a day, when its empty space is clicked. */
+  onAddEvent: (day: Date) => void;
 };
 
-/** The whole month as a grid of days, each listing its first few items. */
+/**
+ * The whole month as a grid of days, each listing its first few items. The
+ * weeks share the height the grid is given, down to a minimum per row.
+ */
 export function MonthGrid({
   weeks,
   weekdayNames,
@@ -27,6 +33,7 @@ export function MonthGrid({
   todayKey,
   showPetNames,
   onOpenItem,
+  onAddEvent,
 }: MonthGridProps) {
   const { colors } = useAppearance();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -53,6 +60,7 @@ export function MonthGrid({
                     items={itemsByDay.get(key) ?? []}
                     showPetNames={showPetNames}
                     onOpenItem={onOpenItem}
+                    onAddEvent={onAddEvent}
                     styles={styles}
                   />
                 )}
@@ -71,26 +79,63 @@ type DayCellProps = {
   items: CalendarItem[];
   showPetNames: boolean;
   onOpenItem: (item: CalendarItem) => void;
+  onAddEvent: (day: Date) => void;
   styles: ReturnType<typeof makeStyles>;
 };
 
-function DayCell({ day, isToday, items, showPetNames, onOpenItem, styles }: DayCellProps) {
+/**
+ * One day: a pressable that fills the box and adds an event, with the day's
+ * items laid over it as their own buttons. They are siblings, not nested, so
+ * no button sits inside another; everything but the items lets clicks through
+ * to the add button underneath.
+ */
+function DayCell({
+  day,
+  isToday,
+  items,
+  showPetNames,
+  onOpenItem,
+  onAddEvent,
+  styles,
+}: DayCellProps) {
+  const { colors } = useAppearance();
   const hidden = items.length - VISIBLE_ITEMS_PER_DAY;
   return (
     <>
-      <View style={[styles.dayNumber, isToday && styles.today]}>
-        <Text style={[styles.dayNumberText, isToday && styles.todayText]}>{day.getDate()}</Text>
+      <Pressable
+        accessibilityLabel={`Add calendar event on ${day.toLocaleDateString([], {
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long',
+        })}`}
+        accessibilityRole="button"
+        onPress={() => onAddEvent(day)}
+        style={({ pressed, hovered }) => [
+          styles.addArea,
+          (pressed || hovered) && styles.addAreaActive,
+        ]}
+      >
+        {({ pressed, hovered }) =>
+          (pressed || hovered) && (
+            <Ionicons name="add" size={16} color={colors.kiwi} style={styles.addHint} />
+          )
+        }
+      </Pressable>
+      <View style={styles.dayContent}>
+        <View style={[styles.dayNumber, isToday && styles.today, styles.passThrough]}>
+          <Text style={[styles.dayNumberText, isToday && styles.todayText]}>{day.getDate()}</Text>
+        </View>
+        {items.slice(0, VISIBLE_ITEMS_PER_DAY).map((item) => (
+          <GridItem
+            key={`${item.kind}-${item.id}`}
+            item={item}
+            showPetName={showPetNames}
+            onOpen={onOpenItem}
+            styles={styles}
+          />
+        ))}
+        {hidden > 0 && <Text style={[styles.more, styles.passThrough]}>+{hidden} more</Text>}
       </View>
-      {items.slice(0, VISIBLE_ITEMS_PER_DAY).map((item) => (
-        <GridItem
-          key={`${item.kind}-${item.id}`}
-          item={item}
-          showPetName={showPetNames}
-          onOpen={onOpenItem}
-          styles={styles}
-        />
-      ))}
-      {hidden > 0 && <Text style={styles.more}>+{hidden} more</Text>}
     </>
   );
 }
@@ -130,6 +175,7 @@ function GridItem({ item, showPetName, onOpen, styles }: GridItemProps) {
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
     grid: {
+      flexGrow: 1,
       borderWidth: 1,
       borderColor: colors.line,
       borderRadius: 22,
@@ -145,8 +191,19 @@ const makeStyles = (colors: Palette) =>
       fontWeight: '700',
       letterSpacing: 0.6,
     },
-    week: { flexDirection: 'row', borderTopWidth: 1, borderTopColor: colors.line },
-    day: { flex: 1, minWidth: 0, minHeight: 116, padding: 6, gap: 3 },
+    week: {
+      flex: 1,
+      flexDirection: 'row',
+      borderTopWidth: 1,
+      borderTopColor: colors.line,
+    },
+    day: { flex: 1, minWidth: 0, minHeight: 104 },
+    addArea: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 },
+    addAreaActive: { backgroundColor: `${colors.kiwi}0D` },
+    addHint: { position: 'absolute', top: 10, right: 8 },
+    // Lets clicks through to the add area everywhere but on the items.
+    dayContent: { padding: 6, gap: 3, pointerEvents: 'box-none' },
+    passThrough: { pointerEvents: 'none' },
     dayDivider: { borderLeftWidth: 1, borderLeftColor: colors.line },
     dayNumber: {
       alignSelf: 'center',

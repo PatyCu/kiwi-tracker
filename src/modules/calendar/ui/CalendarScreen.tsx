@@ -3,8 +3,9 @@ import { useMemo, useState } from 'react';
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import {
+  CALENDAR_ITEM_KINDS,
   CalendarItem,
-  CalendarKindChoice,
+  CalendarItemKind,
   filterCalendarItems,
   groupCalendarItemsByDay,
   toCalendarItems,
@@ -18,18 +19,17 @@ import {
   Weekday,
   weekdayNames,
 } from '@/modules/calendar/monthGrid';
+import { toggleSelection } from '@/modules/calendar/filterSelection';
 import {
   readPetSelection,
   togglePetSelection,
   toPetSelectionParam,
 } from '@/modules/calendar/petSelection';
-import { CalendarKindFilter } from '@/modules/calendar/ui/CalendarKindFilter';
-import { CalendarPetFilter } from '@/modules/calendar/ui/CalendarPetFilter';
+import { CalendarFilter } from '@/modules/calendar/ui/CalendarFilter';
 import { CalendarToolbar } from '@/modules/calendar/ui/CalendarToolbar';
 import { CompactMonth } from '@/modules/calendar/ui/CompactMonth';
 import { DayAgenda } from '@/modules/calendar/ui/DayAgenda';
 import { MonthGrid } from '@/modules/calendar/ui/MonthGrid';
-import { scheduleAction } from '@/modules/calendar/ui/scheduleAction';
 import { useCalendarDataLoad } from '@/modules/calendar/useCalendarDataLoad';
 import { useCalendarEventDetails } from '@/modules/calendar-events/state/CalendarEventDetailsProvider';
 import { useCalendarEventForms } from '@/modules/calendar-events/state/CalendarEventFormsProvider';
@@ -41,7 +41,6 @@ import { useAppearance } from '@/shared/theme/AppearanceProvider';
 import { WIDE_CONTENT_BREAKPOINT } from '@/shared/ui/breakpoints';
 import { LoadState } from '@/shared/ui/LoadState';
 import { Screen } from '@/shared/ui/Screen';
-import { SectionActionButton } from '@/shared/ui/SectionHeader';
 
 /** Monday; a user setting may choose another day later. */
 const WEEK_STARTS_ON: Weekday = 1;
@@ -61,7 +60,7 @@ export function CalendarScreen() {
   const { openCalendarEventDetails } = useCalendarEventDetails();
   const { openAddCalendarEvent } = useCalendarEventForms();
   const { loadStatus, retryLoad } = useCalendarDataLoad();
-  const [kind, setKind] = useState<CalendarKindChoice>('all');
+  const [kinds, setKinds] = useState<readonly CalendarItemKind[]>(CALENDAR_ITEM_KINDS);
   const [month, setMonth] = useState(() => monthOf(new Date()));
   const [selectedDay, setSelectedDay] = useState(() => new Date());
 
@@ -73,8 +72,8 @@ export function CalendarScreen() {
       other: colors.muted,
       calendarEvent: colors.blue,
     });
-    return groupCalendarItemsByDay(filterCalendarItems(items, { kind, petIds: selectedPetIds }));
-  }, [calendarEvents, colors, events, kind, pets, selectedPetIds]);
+    return groupCalendarItemsByDay(filterCalendarItems(items, { kinds, petIds: selectedPetIds }));
+  }, [calendarEvents, colors, events, kinds, pets, selectedPetIds]);
   const weeks = useMemo(() => buildMonthGrid(month, WEEK_STARTS_ON), [month]);
 
   if (loadStatus !== 'ready') {
@@ -113,37 +112,37 @@ export function CalendarScreen() {
     });
   };
   // One pet needs no picker; with several, the form asks which one.
-  const schedule = (day?: Date) =>
+  const addEvent = (day: Date) =>
     openAddCalendarEvent(pets.length === 1 ? pets[0].id : undefined, day);
   const names = weekdayNames(WEEK_STARTS_ON);
+  const filter = (
+    <CalendarFilter
+      pets={pets}
+      selectedPetIds={selectedPetIds}
+      onTogglePet={(petId) =>
+        router.setParams({
+          petIds: toPetSelectionParam(togglePetSelection(selectedPetIds, petId, pets), pets),
+        })
+      }
+      kinds={kinds}
+      onToggleKind={(kind) => setKinds(toggleSelection(CALENDAR_ITEM_KINDS, kinds, kind))}
+      onReset={() => {
+        setKinds(CALENDAR_ITEM_KINDS);
+        router.setParams({ petIds: undefined });
+      }}
+      wide={wide}
+    />
+  );
 
   return (
-    <Screen fullWidth={wide}>
-      <View style={styles.content}>
+    <Screen fullWidth={wide} fill={wide}>
+      <View style={[styles.content, wide && styles.fill]}>
         <CalendarToolbar
           month={month}
           wide={wide}
           onPreviousMonth={() => changeMonth(-1)}
           onNextMonth={() => changeMonth(1)}
-          petFilter={
-            pets.length > 1 && (
-              <CalendarPetFilter
-                pets={pets}
-                selectedPetIds={selectedPetIds}
-                large={wide}
-                onTogglePet={(petId) =>
-                  router.setParams({
-                    petIds: toPetSelectionParam(
-                      togglePetSelection(selectedPetIds, petId, pets),
-                      pets,
-                    ),
-                  })
-                }
-              />
-            )
-          }
-          kindFilter={<CalendarKindFilter kind={kind} onKindChange={setKind} />}
-          wideAction={wide && <SectionActionButton action={scheduleAction(() => schedule())} />}
+          end={wide && filter}
         />
         {wide ? (
           <MonthGrid
@@ -153,6 +152,7 @@ export function CalendarScreen() {
             todayKey={todayKey}
             showPetNames={showPetNames}
             onOpenItem={openItem}
+            onAddEvent={addEvent}
           />
         ) : (
           <>
@@ -161,16 +161,17 @@ export function CalendarScreen() {
               weekdayNames={names}
               itemsByDay={itemsByDay}
               todayKey={todayKey}
-              selectedDayKey={toDayKey(selectedDay)}
+              selectedDay={selectedDay}
               onSelectDay={setSelectedDay}
+              onAddEvent={() => addEvent(selectedDay)}
+              headerStart={filter}
             />
             <DayAgenda
               day={selectedDay}
               items={itemsByDay.get(toDayKey(selectedDay)) ?? []}
-              kind={kind}
+              kinds={kinds}
               showPetNames={showPetNames}
               onOpenItem={openItem}
-              onSchedule={() => schedule(selectedDay)}
             />
           </>
         )}
@@ -181,4 +182,5 @@ export function CalendarScreen() {
 
 const styles = StyleSheet.create({
   content: { gap: 18 },
+  fill: { flexGrow: 1 },
 });
